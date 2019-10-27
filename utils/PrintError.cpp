@@ -41,7 +41,10 @@ map<RC, string> msg = {
         {RM_NOTPROPERRID,       "RM WARNING: RID is not properly initialized"},
         {RM_SCANNOTOPEN,        "RM WARNING: scan is not opened"},
         {RM_SCANNOTCLOSE,       "RM WARNING: last opened scan is not closed"},
-        {RM_INVALIDRECORD,      "RM_WARNING: invalid record page"},
+        {RM_INVALIDRECORD,      "RM WARNING: invalid record page"},
+        {x:RM_INVALIDBITIND,    "RM WARNING: bit int is out of range"},
+        {RM_BITINUSE,           "RM WARNING: bit already in use"},
+        {RM_BITNOTINUSE,        "RM WARNING: bit not in use"},
 
         {RM_TOOLARGERECORDSIZE, "RM ERROR: recordSize is too large for current pagefile system"},
 

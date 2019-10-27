@@ -8,6 +8,17 @@
 
 #include "../def.h"
 #include "RM_Record.h"
+#include "../PF/PF_FileHandle.h"
+
+struct RM_FileHeader {
+    int recordSize;
+    int recordNumPerPage;
+    int pageCount;
+    int bitMapOffset;
+    int bitCount;
+};
+
+typedef int MultiBits;
 
 class RM_FileHandle {
 public:
@@ -26,6 +37,23 @@ public:
     // Forces a page (along with any contents stored in this class)
     // from the buffer pool to disk.  Default value forces all pages.
     RC ForcePages(PageNum pageNum = ALL_PAGES);
+
+private:
+    RC GetBitPosition(int index, int &slot, int &bit);
+
+    RC ResetBitmap(MultiBits *bitmap, int size);
+
+    RC SetBit(MultiBits *bitmap, int size, int index);
+
+    RC ClearBit(MultiBits *bitmap, int size, int index);
+
+    RC GetBit(MultiBits *bitmap, int size, int index, bool &inUse);
+
+    int ConvertBitToMultiBits(int size);
+
+    PF_FileHandle pfh;
+
+
 };
 
 
