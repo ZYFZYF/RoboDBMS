@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.15)
+project(RoboDBMS)
+set(HEADER
+        ${HEADER}
+        ${CMAKE_CURRENT_SOURCE_DIR}/def.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/LinkList.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/PrintError.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/Statistics.h)
+set(SOURCE
+        ${SOURCE}
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/LinkList.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/PrintError.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/Statistics.cpp)
+add_subdirectory(PF)
+add_subdirectory(RM)
+add_subdirectory(IX)
+add_subdirectory(SM)
+add_subdirectory(QL)

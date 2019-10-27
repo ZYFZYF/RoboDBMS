@@ -52,6 +52,8 @@ protected:
 		int pos, bit;
 		getPos(index, pos, bit);
 		uint umask = (1 << bit);
+        //为什么不直接 sefLeafData(getLeafData(pos) | umask)
+        //因为k有可能是 0
 		uint mask = (~umask);
 		if (k == 0) {
 			umask = 0;
