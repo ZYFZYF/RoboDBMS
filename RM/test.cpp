@@ -107,7 +107,7 @@ RC GetNextRecScan(RM_FileScan &fs, RM_Record &rec);
 //
 // Array of pointers to the test functions
 //
-int (*tests[])() =                      // RC doesn't work on some compilers
+RC (*tests[])() =                      // RC doesn't work on some compilers
         {
                 Test1,
                 Test2,
@@ -253,7 +253,7 @@ RC AddRecs(RM_FileHandle &fh, int numRecs) {
     printf("Page/Slot: %d %d\n", pageNum, slotNum);
 
     // Return ok
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -287,7 +287,7 @@ RC VerifyFile(RM_FileHandle &fh, int numRecs) {
 
         // Make sure the record is correct
         if ((rc = rec.GetData((char *&) pRecBuf)) ||
-            (rc = rec.GetRM_RID(RM_RID)))
+            (rc = rec.GetRid(RM_RID)))
             goto err;
 
         memset(stringBuf, ' ', STRLEN);
@@ -324,7 +324,7 @@ RC VerifyFile(RM_FileHandle &fh, int numRecs) {
     }
 
     // Return ok
-    rc = 0;
+    rc = OK_RC;
 
     err:
     fs.CloseScan();
@@ -353,7 +353,7 @@ RC PrintFile(RM_FileScan &fs) {
 
         // Get the record data and record id
         if ((rc = rec.GetData((char *&) pRecBuf)) ||
-            (rc = rec.GetRM_RID(RM_RID)))
+            (rc = rec.GetRid(RM_RID)))
             return (rc);
 
         // Print the record contents
@@ -366,7 +366,7 @@ RC PrintFile(RM_FileScan &fs) {
     printf("%d records found\n", n);
 
     // Return ok
-    return (0);
+    return OK_RC;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -476,7 +476,7 @@ RC Test1(void) {
         return (rc);
 
     printf("\ntest1 done ********************\n");
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -501,7 +501,7 @@ RC Test2(void) {
         return (rc);
 
     printf("\ntest2 done ********************\n");
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -526,7 +526,7 @@ RC Test3(void) {
         return (rc);
 
     printf("\ntest3 done ********************\n");
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -550,7 +550,8 @@ RC Test4(void) {
     TRY(scan.OpenScan(fh, INT, sizeof(int), offsetof(TestRec, num),
                       LT_OP, (void *) &numComp));
     {
-        int rc, n = 0;
+        RC rc;
+        int n = 0;
         RM_Record rec;
         while (true) {
             rc = scan.GetNextRec(rec);
@@ -573,7 +574,7 @@ RC Test4(void) {
         return (rc);
 
     printf("\ntest4 done ********************\n");
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -624,7 +625,7 @@ RC Test5(void) {
         return (rc);
 
     printf("\ntest5 done ********************\n");
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -655,7 +656,7 @@ RC Test6(void) {
     TRY(sc.CloseScan());
 
     RM_RID RM_RID;
-    TRY(rec.GetRM_RID(RM_RID));
+    TRY(rec.GetRid(RM_RID));
     TRY(fh.DeleteRec(RM_RID));
 
     TRY(sc.OpenScan(fh, STRING, strlen(searchStr), offsetof(TestRec, str),
@@ -668,6 +669,6 @@ RC Test6(void) {
         return (rc);
 
     printf("\ntest6 done ********************\n");
-    return (0);
+    return OK_RC;
 }
 

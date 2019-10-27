@@ -117,4 +117,8 @@ enum ClientHint {
 #define NULL 0
 #endif
 
+#define TRY(_x) if (RC __rc = (_x)) return __rc;
+#define CVOID(_x) (*(reinterpret_cast<char**>(&(_x))))
+
+
 #endif
