@@ -52,7 +52,7 @@ public:
     RC DisposeBlock(char *buffer);
 
 private:
-    PF_BufferManager *pBufferMgr;                      // page-buffer manager
+    PF_BufferManager *pBufferManager;                      // page-buffer manager
 };
 
 

@@ -14,9 +14,11 @@ public:
 
     ~RM_Record();
 
-    void SetData(char *data, size_t size);
+    RM_Record(RM_RID &rmRid, char *bufferData, int size);
 
-    void UpdateData(char *data, size_t size);
+    RM_Record(const RM_Record &rmRecord);
+
+    RM_Record &operator=(const RM_Record &rmRecord);
 
     // Return the data corresponding to the record.  Sets *pData to the
     // record contents.
@@ -24,6 +26,11 @@ public:
 
     // Return the RID associated with the record
     RC GetRid(RM_RID &rid) const;
+
+private:
+    RM_RID rmRid;
+    char *data;
+    int size;
 };
 
 

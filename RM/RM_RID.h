@@ -22,10 +22,23 @@ public:
     RM_RID();                                         // Default constructor
     RM_RID(PageNum pageNum, SlotNum slotNum);
 
-    ~RM_RID();                                        // Destructor
+    RM_RID(const RM_RID &rmRid);
+
+    RM_RID &operator=(const RM_RID &rmRid);
+
+    bool operator==(const RM_RID &rhs) const;
+
+    bool operator!=(const RM_RID &rhs) const;
+
+    ~RM_RID();
+
+    // Destructor
 
     RC GetPageNum(PageNum &pageNum) const;         // Return page number
     RC GetSlotNum(SlotNum &slotNum) const;         // Return slot number
+private:
+    PageNum pageNum;
+    SlotNum slotNum;
 };
 
 

@@ -28,7 +28,7 @@
 //
 PF_Manager::PF_Manager() {
     // Create Buffer Manager
-    pBufferMgr = new PF_BufferManager(PF_BUFFER_SIZE);
+    pBufferManager = new PF_BufferManager(PF_BUFFER_SIZE);
 }
 
 //
@@ -40,7 +40,7 @@ PF_Manager::PF_Manager() {
 //
 PF_Manager::~PF_Manager() {
     // Destroy the buffer manager objects
-    delete pBufferMgr;
+    delete pBufferManager;
 }
 
 //
@@ -159,7 +159,7 @@ RC PF_Manager::OpenFile(const char *fileName, PF_FileHandle &fileHandle) {
     fileHandle.bHdrChanged = FALSE;
 
     // Set local variables in file handle object to refer to open file
-    fileHandle.pBufferMgr = pBufferMgr;
+    fileHandle.pBufferMgr = pBufferManager;
     fileHandle.bFileOpen = TRUE;
 
     // Return ok
@@ -222,7 +222,7 @@ RC PF_Manager::CloseFile(PF_FileHandle &fileHandle) {
 //       It is a code: 0 for success, something else for a PF error.
 //
 RC PF_Manager::ClearBuffer() {
-    return pBufferMgr->ClearBuffer();
+    return pBufferManager->ClearBuffer();
 }
 
 //
@@ -236,7 +236,7 @@ RC PF_Manager::ClearBuffer() {
 //       It is a code: 0 for success, something else for a PF error.
 //
 RC PF_Manager::PrintBuffer() {
-    return pBufferMgr->PrintBuffer();
+    return pBufferManager->PrintBuffer();
 }
 
 //
@@ -251,7 +251,7 @@ RC PF_Manager::PrintBuffer() {
 //       would be too small.
 //
 RC PF_Manager::ResizeBuffer(int iNewSize) {
-    return pBufferMgr->ResizeBuffer(iNewSize);
+    return pBufferManager->ResizeBuffer(iNewSize);
 }
 
 //------------------------------------------------------------------------------
@@ -264,13 +264,13 @@ RC PF_Manager::ResizeBuffer(int iNewSize) {
 //------------------------------------------------------------------------------
 
 RC PF_Manager::GetBlockSize(int &length) const {
-    return pBufferMgr->GetBlockSize(length);
+    return pBufferManager->GetBlockSize(length);
 }
 
 RC PF_Manager::AllocateBlock(char *&buffer) {
-    return pBufferMgr->AllocateBlock(buffer);
+    return pBufferManager->AllocateBlock(buffer);
 }
 
 RC PF_Manager::DisposeBlock(char *buffer) {
-    return pBufferMgr->DisposeBlock(buffer);
+    return pBufferManager->DisposeBlock(buffer);
 }
