@@ -360,7 +360,6 @@ RC PF_BufferManager::MarkDirty(int fd, PageNum pageNum) {
 RC PF_BufferManager::UnpinPage(int fd, PageNum pageNum) {
     RC rc;       // return code
     int slot;     // buffer slot where page is located
-
     // The page must be found and pinned in the buffer
     if ((rc = hashTable.Find(fd, pageNum, slot))) {
         if (rc == PF_HASHNOTFOUND)
@@ -929,15 +928,25 @@ RC PF_BufferManager::AllocateBlock(char *&buffer) {
 
     // Get an empty slot from the buffer pool
     int slot;
-    if ((rc = InternalAlloc(slot)) != OK_RC)
+    if ((rc = InternalAlloc(slot)) != OK_RC) {
         return rc;
+    }
 
     // Create artificial page number (just needs to be unique for hash table)
-    PageNum pageNum = *(PageNum *) bufTable[slot].pData;
+    //不用伪造了，直接用slot可以过单元测试，一直累加可能超出范围，slot的话
+    //但我仍然觉得用pData的头四个字节当PageNum未免也太不合时了？因为按照测例这样运行完之后ptr1[5]和ptr2[5]的PageNum都是5，怎么解释？
+    PageNum pageNum = slot;
+    // 伪造一个blockCnt来保证每次的PageNum是不一样的，原来的话pData都是0可不就冲突了么
+//    static int blockCnt = 0;
+//    PageNum pageNum = blockCnt++;
+
+    //PageNum pageNum = *(PageNum *) bufTable[slot].pData;
+    //PageNum pageNum = bufTable[slot].pageNum;
 
     // Insert the page into the hash table, and initialize the page description entry
-    if (((rc = hashTable.Insert(MEMORY_FD, pageNum, slot)) != OK_RC) ||
-        ((rc = InitPageDesc(MEMORY_FD, pageNum, slot))) != OK_RC) {
+    //cerr << slot << ' ' << MEMORY_FD << ' ' << pageNum << endl;
+    if ((rc = hashTable.Insert(MEMORY_FD, pageNum, slot)) ||
+        (rc = InitPageDesc(MEMORY_FD, pageNum, slot))) {
         // Put the slot back on the free list before returning the error
         Unlink(slot);
         InsertFree(slot);
@@ -957,5 +966,9 @@ RC PF_BufferManager::AllocateBlock(char *&buffer) {
 // Free the block of memory from the buffer pool.
 //
 RC PF_BufferManager::DisposeBlock(char *buffer) {
+    //buffer可能是空指针，出现在test3.cpp的测例中
+    if (buffer == nullptr) {
+        return PF_INVALIDPAGE;
+    }
     return UnpinPage(MEMORY_FD, *(PageNum *) buffer);
 }

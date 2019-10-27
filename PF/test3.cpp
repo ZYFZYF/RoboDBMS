@@ -149,13 +149,14 @@ RC TestChunk() {
         cout << "FAILED!\a\a\n";
         return rc;
     }
-    cout << "Pass\n";
 
+    cout << "Pass\n";
     // Now ask to remove a chunk which doesn't exist
     if ((rc = DisposeChunk(pfm, 1, ptr3)) == 0) {
         cout << "FAILED!\a\a\n";
         return rc;
     }
+
     cout << "Pass\n";
 
     // Now remove the block of 35 chunks from before
