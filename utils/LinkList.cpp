@@ -5,7 +5,6 @@
 #include "cstdio"
 #include "../def.h"
 #include "LinkList.h"
-
 //
 // SetNull
 //

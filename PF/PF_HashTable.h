@@ -36,7 +36,7 @@ public:
     RC Delete(int fd, PageNum pageNum);  // Delete a hash table entry
 
 private:
-    int Hash(int fd, PageNum pageNum) const { return ((fd + pageNum) % numBuckets); }   // Hash function
+    int Hash(int fd, PageNum pageNum) const { return ((fd + 1) * (pageNum + 1) % numBuckets); }   // Hash function
     int numBuckets;                               // Number of hash table buckets
     PF_HashEntry **hashTable;                     // Hash table
 };
