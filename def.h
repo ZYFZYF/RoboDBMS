@@ -61,13 +61,49 @@ enum RC {
     PF_HASHNOTFOUND,     // hash table entry not found
     PF_HASHPAGEEXIST,    // page already exists in hash table
     PF_INVALIDNAME,      // invalid file name
-    PF_UNIX,
+    PF_UNIX,// Unix error
+
+
+    RM_EOF,
+    RM_SLOTNOTINRANGE,
+    RM_DELETEDRECORD,
+    RM_NOMORERECODE,
+    RM_NOTPROPERRECORD,
+    RM_NOTPROPERRID,
+    RM_SCANNOTOPEN,
+    RM_SCANNOTCLOSE,
+
+    RM_TOOLARGERECORDSIZE,
 
     STAT_INVALID_ARGS,
     STAT_UNKNOWN_KEY,
 
     UNKNOWN_RC
-};            // Unix error// };
+};
+
+//
+// Attribute types
+//
+enum AttrType {
+    INT,
+    FLOAT,
+    STRING
+};
+
+//
+// Comparison operators
+//
+enum CompOp {
+    NO_OP,                                      // no comparison
+    EQ_OP, NE_OP, LT_OP, GT_OP, LE_OP, GE_OP    // binary atomic operators
+};
+
+//
+// Pin Strategy Hint
+//
+enum ClientHint {
+    NO_HINT                                     // default value
+};
 
 #ifndef TRUE
 #define TRUE 1
