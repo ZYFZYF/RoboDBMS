@@ -34,11 +34,11 @@ public:
 
 //private:
 
-    RC GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pph, bool findInNextPage);
+    RC GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pfPageHandle, bool findInNextPage);
 
-    RC AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum);
+    RC AllocateNewPage(PF_PageHandle &pfPageHandle, PageNum &pageNum);
 
-    RC GetPageHeaderAndBitmap(PF_PageHandle &pph, RM_PageHeader *&rph, MultiBits *&bitmap) const;
+    RC GetPageHeaderAndBitmap(PF_PageHandle &pph, RM_PageHeader *&rmPageHeader, MultiBits *&bitmap) const;
 
     RC GetBitPosition(int slot, int &index, int &bit) const;
 
@@ -59,9 +59,9 @@ public:
 
     static int CalcRecordNumPerPage(int recordSize);
 
-    PF_FileHandle pfh;
+    PF_FileHandle pfFileHandle;
 
-    RM_FileHeader rfh;
+    RM_FileHeader rmFileHeader;
 
     bool isFileOpen;
 

@@ -16,7 +16,7 @@ public:
 
     ~RM_FileScan();
 
-    RC OpenScan(const RM_FileHandle &fileHandle,
+    RC OpenScan(const RM_FileHandle &rmFileHandle,
                 AttrType attrType,
                 int attrLength,
                 int attrOffset,
@@ -26,9 +26,9 @@ public:
     RC GetNextRec(RM_Record &rec);               // Get next matching record
     RC CloseScan();                             // Close the scan
 private:
-    RC GetRecordNumOnPage(PF_PageHandle &ph, int &recordNum);
+    RC GetRecordNumOnPage(PF_PageHandle &pfPageHandle, int &recordNum);
 
-    RM_FileHandle *rfh;
+    RM_FileHandle *rmFileHandle;
 
     bool (*comparator)(void *, void *, AttrType, int);
 

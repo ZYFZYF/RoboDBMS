@@ -700,8 +700,8 @@ RC Test7(void) {
         (rc = VerifyFile(fh, LOTS_OF_RECS)))
         return (rc);
     printf("Create open add verify pass\n");
-    PrintRmFileHeader(fh.rfh);
-    RM_FileHeader old_rfh = fh.rfh;
+    PrintRmFileHeader(fh.rmFileHeader);
+    RM_FileHeader old_rfh = fh.rmFileHeader;
     if ((rc = CloseFile((char *) FILENAME, fh))) {
         return (rc);
     }
@@ -710,10 +710,10 @@ RC Test7(void) {
         return (rc);
     }
     printf("Reopen the file\n");
-    PrintRmFileHeader(fh.rfh);
+    PrintRmFileHeader(fh.rmFileHeader);
     printf("Make sure the file header saved\n");
-    assert(old_rfh.pageCount == fh.rfh.pageCount);
-    assert(old_rfh.firstFreePage == fh.rfh.firstFreePage);
+    assert(old_rfh.pageCount == fh.rmFileHeader.pageCount);
+    assert(old_rfh.firstFreePage == fh.rmFileHeader.firstFreePage);
 
     if ((rc = DestroyFile((char *) FILENAME))) {
         return (rc);

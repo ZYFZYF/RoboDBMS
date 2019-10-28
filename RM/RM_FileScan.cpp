@@ -96,7 +96,7 @@ RM_FileScan::RM_FileScan() {
 
 RM_FileScan::~RM_FileScan() {
     if (!scanEnded && hasPagePinned && openScan) {
-        rfh->pfh.UnpinPage(pageNum);
+        rmFileHandle->pfFileHandle.UnpinPage(pageNum);
     }
     if (initializedValue) {
         free(value);
@@ -104,7 +104,7 @@ RM_FileScan::~RM_FileScan() {
     }
 }
 
-RC RM_FileScan::OpenScan(const RM_FileHandle &fileHandle,
+RC RM_FileScan::OpenScan(const RM_FileHandle &rmFileHandle,
                          AttrType attrType,
                          int attrLength,
                          int attrOffset,
@@ -113,7 +113,7 @@ RC RM_FileScan::OpenScan(const RM_FileHandle &fileHandle,
                          ClientHint pinHint) {
     if (openScan)
         return (RM_INVALIDSCAN);
-    this->rfh = const_cast<RM_FileHandle *>(&fileHandle);
+    this->rmFileHandle = const_cast<RM_FileHandle *>(&rmFileHandle);
     this->value = nullptr;
     this->compOp = compOp;
     switch (compOp) {
@@ -142,7 +142,7 @@ RC RM_FileScan::OpenScan(const RM_FileHandle &fileHandle,
             return (RM_INVALIDSCAN);
     }
 
-    int recSize = (this->rfh)->rfh.recordSize;
+    int recSize = (this->rmFileHandle)->rmFileHeader.recordSize;
     if (this->compOp != NO_OP) {
         if ((attrOffset + attrLength) > recSize || attrOffset < 0 || attrOffset > MAXSTRINGLEN)
             return (RM_INVALIDSCAN);
@@ -177,10 +177,10 @@ RC RM_FileScan::OpenScan(const RM_FileHandle &fileHandle,
 }
 
 //从pph中获取这一页的记录数
-RC RM_FileScan::GetRecordNumOnPage(PF_PageHandle &ph, int &recordNum) {
+RC RM_FileScan::GetRecordNumOnPage(PF_PageHandle &pfPageHandle, int &recordNum) {
     char *bitmap;
     struct RM_PageHeader *rph;
-    TRY((this->rfh)->GetPageHeaderAndBitmap(ph, rph, bitmap));
+    TRY((this->rmFileHandle)->GetPageHeaderAndBitmap(pfPageHandle, rph, bitmap));
     recordNum = rph->recordNum;
     return OK_RC;
 }
@@ -195,7 +195,7 @@ RC RM_FileScan::GetNextRec(RM_Record &rec) {
     RC rc;
     while (true) {
         RM_Record tempRec;
-        if ((rc = rfh->GetNextRecord(pageNum, slotNum, tempRec, currentPH, useNextPage))) {
+        if ((rc = rmFileHandle->GetNextRecord(pageNum, slotNum, tempRec, currentPH, useNextPage))) {
             if (rc == RM_EOF) {
                 hasPagePinned = false;
                 scanEnded = true;
@@ -213,7 +213,7 @@ RC RM_FileScan::GetNextRec(RM_Record &rec) {
         numSeenOnPage++;
         if (numTotalOnPage == numSeenOnPage) {
             useNextPage = true;
-            TRY(rfh->pfh.UnpinPage(pageNum));
+            TRY(rmFileHandle->pfFileHandle.UnpinPage(pageNum));
             hasPagePinned = false;
         }
         //从record中拿到RID并拿到存储位置和数据
@@ -243,7 +243,7 @@ RC RM_FileScan::CloseScan() {
         return (RM_INVALIDSCAN);
     }
     if (hasPagePinned) {
-        TRY(rfh->pfh.UnpinPage(pageNum));
+        TRY(rmFileHandle->pfFileHandle.UnpinPage(pageNum));
     }
     if (initializedValue) {
         free(this->value);

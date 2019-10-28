@@ -96,31 +96,25 @@ RM_FileHandle::RM_FileHandle() {
     isHeaderModified = false;
 }
 
-RM_FileHandle::~RM_FileHandle() {
-
-}
+RM_FileHandle::~RM_FileHandle() = default;
 
 RC RM_FileHandle::GetRec(const RM_RID &rmRid, RM_Record &rec) const {
-    RC rc = OK_RC;
+    RC rc;
     //先拿到RID的页号和槽位
     int page = -1, slot = -1;
-    if ((rc = rmRid.GetPageNumAndSlotNum(page, slot))) {
-        return rc;
-    }
+    TRY(rmRid.GetPageNumAndSlotNum(page, slot));
     //拿到这一页的handle，成功之后退出时必须Unpin掉这一页
-    PF_PageHandle pph;
-    if ((rc = pfh.GetThisPage(page, pph))) {
-        return rc;
-    }
+    PF_PageHandle pfPageHandle;
+    TRY(pfFileHandle.GetThisPage(page, pfPageHandle));
     //拿到PageHeader以及Bitmap
-    RM_PageHeader *rph;
+    RM_PageHeader *rmPageHeader;
     MultiBits *bitmap;
-    if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
+    if ((rc = GetPageHeaderAndBitmap(pfPageHandle, rmPageHeader, bitmap))) {
         goto safe_exit;
     }
     //确保这个槽位上有这条记录，通过访问这一页的bitmap来实现
     bool exist;
-    if ((rc = GetBit(bitmap, rfh.recordNumPerPage, slot, exist))) {
+    if ((rc = GetBit(bitmap, rmFileHeader.recordNumPerPage, slot, exist))) {
         goto safe_exit;
     }
     if (!exist) {
@@ -128,140 +122,121 @@ RC RM_FileHandle::GetRec(const RM_RID &rmRid, RM_Record &rec) const {
         goto safe_exit;
     }
     //取出record
-    if ((rc = rec.Set(rmRid, bitmap + rfh.bitMapSize + slot * (rfh.recordSize), rfh.recordSize))) {
+    if ((rc = rec.Set(rmRid, bitmap + rmFileHeader.bitMapSize + slot * (rmFileHeader.recordSize),
+                      rmFileHeader.recordSize))) {
         goto safe_exit;
     }
     safe_exit:
-    RC rc1;
-    if ((rc1 = pfh.UnpinPage(page))) {
-        return rc1;
-    };
+    TRY(pfFileHandle.UnpinPage(page));
     return rc;
 }
 
 RC RM_FileHandle::InsertRec(const char *pData, RM_RID &rmRid) {
-    RC rc = OK_RC;
-    PF_PageHandle pph;
+    RC rc;
+    PF_PageHandle pfPageHandle;
     PageNum pageNum;
     //先定位页，没页就分配新的
-    if (rfh.firstFreePage == NO_MORE_FREE_PAGE) {
-        AllocateNewPage(pph, pageNum);
+    if (rmFileHeader.firstFreePage == NO_MORE_FREE_PAGE) {
+        AllocateNewPage(pfPageHandle, pageNum);
     } else {
-        pageNum = rfh.firstFreePage;
-        if ((rc = pfh.GetThisPage(pageNum, pph))) {
-            return rc;
-        }
+        pageNum = rmFileHeader.firstFreePage;
+        TRY(pfFileHandle.GetThisPage(pageNum, pfPageHandle));
     }
     //然后拿到页的信息
     char *bitmap;
-    RM_PageHeader *rph;
+    RM_PageHeader *rmPageHeader;
     int index;
-    if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
+    if ((rc = GetPageHeaderAndBitmap(pfPageHandle, rmPageHeader, bitmap))) {
         goto safe_exit;
     }
     //再从bitmap中找到free的第一条
-    if ((rc = FindFirstZero(bitmap, rfh.recordNumPerPage, index))) {
+    if ((rc = FindFirstZero(bitmap, rmFileHeader.recordNumPerPage, index))) {
         goto safe_exit;
     }
     //将其设置为1
-    if ((rc = SetBit(bitmap, rfh.recordNumPerPage, index))) {
+    if ((rc = SetBit(bitmap, rmFileHeader.recordNumPerPage, index))) {
         goto safe_exit;
     }
     //把record内容拷贝过去
-    memcpy(bitmap + rfh.bitMapSize + index * (rfh.recordSize), pData, rfh.recordSize);
+    memcpy(bitmap + rmFileHeader.bitMapSize + index * (rmFileHeader.recordSize), pData, rmFileHeader.recordSize);
     //更新page的header，如果满了就指向下一个，因为每次都从开头插所以能保证下一个freepage一定是真正free的
-    if (++rph->recordNum == rfh.recordNumPerPage) {
-        rfh.firstFreePage = rph->nextFreePage;
+    if (++rmPageHeader->recordNum == rmFileHeader.recordNumPerPage) {
+        rmFileHeader.firstFreePage = rmPageHeader->nextFreePage;
         isHeaderModified = true;
     }
     //设置rid的返回值
     rmRid = RM_RID(pageNum, index);
     safe_exit:
-    RC rc1;
-    if ((rc1 = pfh.MarkDirty(pageNum)) || (rc1 = pfh.UnpinPage(pageNum))) {
-        return rc1;
-    }
+    TRY(pfFileHandle.MarkDirty(pageNum));
+    TRY(pfFileHandle.UnpinPage(pageNum));
     return rc;
 }
 
 RC RM_FileHandle::DeleteRec(const RM_RID &rmRid) {
-    RC rc = OK_RC;
-    PF_PageHandle pph;
+    RC rc;
+    PF_PageHandle pfPageHandle;
     //先从RID中拿到page和slot
     PageNum pageNum;
     SlotNum slotNum;
     bool isOne;
-    if ((rc = rmRid.GetPageNumAndSlotNum(pageNum, slotNum))) {
-        return rc;
-    }
+    TRY(rmRid.GetPageNumAndSlotNum(pageNum, slotNum));
     //把页拿出来
-    if ((rc = pfh.GetThisPage(pageNum, pph))) {
-        return rc;
-    }
+    TRY(pfFileHandle.GetThisPage(pageNum, pfPageHandle));
     //然后拿到页的信息
     char *bitmap;
-    RM_PageHeader *rph;
-    int index;
-    if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
+    RM_PageHeader *rmPageHeader;
+    if ((rc = GetPageHeaderAndBitmap(pfPageHandle, rmPageHeader, bitmap))) {
         goto safe_exit;
     }
     //看看这个位置是否确实被使用
-    if ((rc = GetBit(bitmap, rfh.recordNumPerPage, slotNum, isOne))) {
-        return rc;
+    if ((rc = GetBit(bitmap, rmFileHeader.recordNumPerPage, slotNum, isOne))) {
+        goto safe_exit;
     }
     if (!isOne) {
         rc = RM_RIDDELETED;
         goto safe_exit;
     }
     //删除其占用标志
-    if ((rc = ClearBit(bitmap, rfh.recordNumPerPage, slotNum))) {
-        return rc;
+    if ((rc = ClearBit(bitmap, rmFileHeader.recordNumPerPage, slotNum))) {
+        goto safe_exit;
     }
-    if (rph->recordNum-- == rfh.recordNumPerPage) {
-        rph->nextFreePage = rfh.firstFreePage;
-        rfh.firstFreePage = pageNum;
+    //更新pageheader的信息和fileheader的信息
+    if (rmPageHeader->recordNum-- == rmFileHeader.recordNumPerPage) {
+        rmPageHeader->nextFreePage = rmFileHeader.firstFreePage;
+        rmFileHeader.firstFreePage = pageNum;
         isHeaderModified = true;
     };
 
     safe_exit:
-    RC rc1;
-    if ((rc1 = pfh.MarkDirty(pageNum)) || (rc1 = pfh.UnpinPage(pageNum))) {
-        return rc1;
-    }
+    TRY(pfFileHandle.MarkDirty(pageNum));
+    TRY(pfFileHandle.UnpinPage(pageNum));
     return rc;
 }
 
 RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
-    RC rc = OK_RC;
+    RC rc;
     //定义变量
     bool exist;
     char *data;
     //先用rec拿到RID
     RM_RID rmRid;
-    if ((rc = rec.GetRid(rmRid))) {
-        return rc;
-    }
+    TRY(rec.GetRid(rmRid));
     //拿到RID的页号和槽位
     int page = -1, slot = -1;
-    if ((rc = rmRid.GetPageNumAndSlotNum(page, slot))) {
-        return rc;
-    }
+    TRY(rmRid.GetPageNumAndSlotNum(page, slot));
     printf("Get page = %d and slot = %d\n", page, slot);
     //拿到这一页的handle，成功之后退出时必须Unpin掉这一页
-    PF_PageHandle pph;
-    if ((rc = pfh.GetThisPage(page, pph))) {
-        return rc;
-    }
+    PF_PageHandle pfPageHandle;
+    TRY(pfFileHandle.GetThisPage(page, pfPageHandle));
     //拿到PageHeader以及Bitmap
-    RM_PageHeader *rph;
+    RM_PageHeader *rmPageHeader;
     MultiBits *bitmap;
     char *recData;
-    if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
+    if ((rc = GetPageHeaderAndBitmap(pfPageHandle, rmPageHeader, bitmap))) {
         goto safe_exit;
     }
     //确保这个槽位上有这条记录，通过访问这一页的bitmap来实现
-
-    if ((rc = GetBit(bitmap, rfh.recordNumPerPage, slot, exist))) {
+    if ((rc = GetBit(bitmap, rmFileHeader.recordNumPerPage, slot, exist))) {
         goto safe_exit;
     }
     if (!exist) {
@@ -269,17 +244,16 @@ RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
         goto safe_exit;
     }
     //设置record
-    data = bitmap + rfh.bitMapSize + slot * (rfh.recordSize);
-    rec.GetData(recData);
-    memcpy(data, recData, rfh.recordSize);
+    data = bitmap + rmFileHeader.bitMapSize + slot * (rmFileHeader.recordSize);
+    TRY(rec.GetData(recData));
+    memcpy(data, recData, rmFileHeader.recordSize);
     safe_exit:
-    RC rc1;
-    if ((rc1 = pfh.MarkDirty(page)) || (rc1 = pfh.UnpinPage(page))) {
-        return rc1;
-    }
+    TRY(pfFileHandle.MarkDirty(page));
+    TRY(pfFileHandle.UnpinPage(page));
     return rc;
 }
 
+//TODO: 实现强制刷新
 RC RM_FileHandle::ForcePages(PageNum pageNum) {
     return PF_NOBUF;
 }
@@ -302,47 +276,36 @@ int RM_FileHandle::CalcRecordNumPerPage(int recordSize) {
     //return floor((PF_PAGE_SIZE - RM_PAGE_HEADER_SIZE) / (recordSize + 1.0 / (8 * sizeof(MultiBits))));
 }
 
-RC RM_FileHandle::GetPageHeaderAndBitmap(PF_PageHandle &pph, RM_PageHeader *&rph, MultiBits *&bitmap) const {
-    RC rc;
+RC RM_FileHandle::GetPageHeaderAndBitmap(PF_PageHandle &pph, RM_PageHeader *&rmPageHeader, MultiBits *&bitmap) const {
     char *data;
-    if ((rc = pph.GetData(data))) {
-        return rc;
-    }
-    rph = (RM_PageHeader *) data;
-    bitmap = (MultiBits *) (data + rfh.bitMapOffset);
+    TRY(pph.GetData(data));
+    rmPageHeader = (RM_PageHeader *) data;
+    bitmap = (MultiBits *) (data + rmFileHeader.bitMapOffset);
     return OK_RC;
 }
 
-RC RM_FileHandle::AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum) {
-    RC rc;
+RC RM_FileHandle::AllocateNewPage(PF_PageHandle &pfPageHandle, PageNum &pageNum) {
     //申请新页
-    if ((rc = pfh.AllocatePage(pph))) {
-        return rc;
-    }
-    if ((rc = pph.GetPageNum(pageNum))) {
-        return rc;
-    }
+    TRY(pfFileHandle.AllocatePage(pfPageHandle));
+    TRY(pfPageHandle.GetPageNum(pageNum));
     //拿到新页的header和bitmap
     char *bitmap;
-    RM_PageHeader *rph;
-    if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
-        return rc;
-    }
+    RM_PageHeader *rmPageHeader;
+    TRY(GetPageHeaderAndBitmap(pfPageHandle, rmPageHeader, bitmap));
     //初始化header，将freepage链表串起来
-    rph->recordNum = 0;
-    rph->nextFreePage = rfh.firstFreePage;
-    rfh.firstFreePage = pageNum;
-    ResetBitmap(bitmap, rfh.recordNumPerPage);
-    rfh.pageCount++;
+    rmPageHeader->recordNum = 0;
+    rmPageHeader->nextFreePage = rmFileHeader.firstFreePage;
+    rmFileHeader.firstFreePage = pageNum;
+    ResetBitmap(bitmap, rmFileHeader.recordNumPerPage);
+    rmFileHeader.pageCount++;
     isHeaderModified = true;
     //这里不应该把header变成脏的么 updated:已经添加
     return OK_RC;
 }
 
-RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pph, bool findInNextPage) {
-    RC rc = OK_RC;
+RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pfPageHandle, bool findInNextPage) {
     char *bitmap;
-    struct RM_PageHeader *rph;
+    struct RM_PageHeader *rmPageHeader;
     int nextRec;
     PageNum nextRecPage = page;
     SlotNum nextRecSlot;
@@ -351,20 +314,20 @@ RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_P
     if (findInNextPage) {
         while (true) {
             //取出下一页并且拿到page以及页头
-            if ((pfh.GetNextPage(nextRecPage, pph)) == PF_EOF) {
+            if ((pfFileHandle.GetNextPage(nextRecPage, pfPageHandle)) == PF_EOF) {
                 return RM_EOF;
             }
-            TRY(pph.GetPageNum(nextRecPage));
-            TRY(GetPageHeaderAndBitmap(pph, rph, bitmap));
+            TRY(pfPageHandle.GetPageNum(nextRecPage));
+            TRY(GetPageHeaderAndBitmap(pfPageHandle, rmPageHeader, bitmap));
             //如果找到一个1那么就可以返回了，否则继续下一页
-            if (FindNextOne(bitmap, rfh.recordNumPerPage, 0, nextRec) != RM_ENDOFPAGE)
+            if (FindNextOne(bitmap, rmFileHeader.recordNumPerPage, 0, nextRec) != RM_ENDOFPAGE)
                 break;
-            TRY(pfh.UnpinPage(nextRecPage));
+            TRY(pfFileHandle.UnpinPage(nextRecPage));
         }
     } else {
         // 直接用bitmap拿到下一个1的位置
-        TRY(GetPageHeaderAndBitmap(pph, rph, bitmap));
-        if (FindNextOne(bitmap, rfh.recordNumPerPage, slot + 1, nextRec) == RM_ENDOFPAGE) {
+        TRY(GetPageHeaderAndBitmap(pfPageHandle, rmPageHeader, bitmap));
+        if (FindNextOne(bitmap, rmFileHeader.recordNumPerPage, slot + 1, nextRec) == RM_ENDOFPAGE) {
             return RM_EOF;
         }
     }
@@ -372,7 +335,7 @@ RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_P
     nextRecSlot = nextRec;
     RM_RID rid(nextRecPage, nextRecSlot);
     //printf("nextRecPage = %d, nextRecSlot = %d\n", nextRecPage, nextRecSlot);
-    TRY(rec.Set(rid, bitmap + (rfh.bitMapSize) + (nextRecSlot) * (rfh.recordSize),
-                rfh.recordSize));
+    TRY(rec.Set(rid, bitmap + (rmFileHeader.bitMapSize) + (nextRecSlot) * (rmFileHeader.recordSize),
+                rmFileHeader.recordSize));
     return OK_RC;
 }

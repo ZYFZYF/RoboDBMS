@@ -11,7 +11,7 @@
 
 class RM_Manager {
 public:
-    RM_Manager(PF_Manager &pfm);
+    RM_Manager(PF_Manager &pfManager);
 
     ~RM_Manager();
 
@@ -19,12 +19,12 @@ public:
 
     RC DestroyFile(const char *fileName);
 
-    RC OpenFile(const char *fileName, RM_FileHandle &fileHandle);
+    RC OpenFile(const char *fileName, RM_FileHandle &rmFileHandle);
 
-    RC CloseFile(RM_FileHandle &fileHandle);
+    RC CloseFile(RM_FileHandle &rmFileHandle);
 
 private:
-    PF_Manager pfm;
+    PF_Manager pfManager;
 };
 
 
