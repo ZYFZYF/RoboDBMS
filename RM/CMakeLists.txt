@@ -15,3 +15,4 @@ set(SOURCE
 message(STATUS ${HEADER})
 message(STATUS ${SOURCE})
 add_executable(RM_TEST test.cpp ${HEADER} ${SOURCE})
+target_link_libraries(RM_TEST PF)

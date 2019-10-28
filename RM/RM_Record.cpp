@@ -33,6 +33,7 @@ RM_Record &RM_Record::operator=(const RM_Record &rmRecord) {
     data = new char[rmRecord.size];
     this->size = rmRecord.size;
     memcpy(data, rmRecord.data, size);
+    return *this;
 }
 
 RC RM_Record::GetData(char *&pData) const {

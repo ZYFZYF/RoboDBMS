@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include "RM_Manager.h"
 #include "RM_FileScan.h"
+#include "../utils/printError.h"
 
 using namespace std;
 
@@ -75,8 +76,6 @@ RC Test4(void);
 RC Test5(void);
 
 RC Test6(void);
-
-void PrintError(RC rc);
 
 void LsFile(char *fileName);
 
@@ -142,7 +141,7 @@ int main(int argc, char *argv[]) {
             if ((rc = (tests[testNum])())) {
 
                 // Print the error and exit
-                PrintError(rc);
+                printError(rc);
                 return (1);
             }
     } else {
@@ -166,7 +165,7 @@ int main(int argc, char *argv[]) {
             if ((rc = (tests[testNum - 1])())) {
 
                 // Print the error and exit
-                PrintError(rc);
+                printError(rc);
                 return (1);
             }
         }
@@ -179,7 +178,7 @@ int main(int argc, char *argv[]) {
 }
 
 //
-// PrintError
+// printError
 //
 // Desc: Print an error message by calling the proper component-specific
 //       print-error function

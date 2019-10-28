@@ -38,6 +38,7 @@ RC RM_FileHandle::ClearBit(MultiBits *bitmap, int size, int index) {
         return RM_BITNOTINUSE;
     }
     bitmap[slot] &= !(1 << index);
+    return OK_RC;
 }
 
 RC RM_FileHandle::GetBit(MultiBits *bitmap, int size, int index, bool &inUse) const {

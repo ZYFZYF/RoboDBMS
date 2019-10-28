@@ -8,7 +8,6 @@
 
 #include "RM_FileHandle.h"
 
-
 class RM_FileScan {
 public:
     RM_FileScan();
