@@ -77,6 +77,8 @@ RC Test5(void);
 
 RC Test6(void);
 
+RC Test7(void);
+
 void LsFile(char *fileName);
 
 void PrintRecord(TestRec &recBuf);
@@ -114,6 +116,7 @@ RC (*tests[])() =                      // RC doesn't work on some compilers
                 Test4,
                 Test5,
                 Test6,
+                Test7,
         };
 
 #define NUM_TESTS       ((int)((sizeof(tests)) / sizeof(tests[0])))    // number of tests
@@ -277,7 +280,7 @@ RC VerifyFile(RM_FileHandle &fh, int numRecs) {
     for (rc = GetNextRecScan(fs, rec), n = 0;
          rc == 0;
          rc = GetNextRecScan(fs, rec), n++) {
-        printf("It's the %dth record(s)\n", n);
+        //printf("It's the %dth record(s)\n", n);
 
         // Make sure the record is correct
         if ((rc = rec.GetData((char *&) pRecBuf)) ||
@@ -361,6 +364,15 @@ RC PrintFile(RM_FileScan &fs) {
 
     // Return ok
     return OK_RC;
+}
+
+void PrintRmFileHeader(RM_FileHeader rfh) {
+    printf("header->recordSie = %d\n", rfh.recordSize);
+    printf("header->recordNumPerPage = %d\n", rfh.recordNumPerPage);
+    printf("header->firstFreePage = %d\n", rfh.firstFreePage);
+    printf("header->pageCount = %d\n", rfh.pageCount);
+    printf("header->bitMapOffset = %d\n", rfh.bitMapOffset);
+    printf("header->bitMapSize = %d\n", rfh.bitMapSize);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -672,3 +684,42 @@ RC Test6(void) {
     return OK_RC;
 }
 
+
+//
+// Test7 test open the same file twice
+//
+RC Test7(void) {
+    RC rc;
+    RM_FileHandle fh;
+
+    printf("test7 starting ****************\n");
+
+    if ((rc = CreateFile((char *) FILENAME, sizeof(TestRec))) ||
+        (rc = OpenFile((char *) FILENAME, fh)) ||
+        (rc = AddRecs(fh, LOTS_OF_RECS)) ||
+        (rc = VerifyFile(fh, LOTS_OF_RECS)))
+        return (rc);
+    printf("Create open add verify pass\n");
+    PrintRmFileHeader(fh.rfh);
+    RM_FileHeader old_rfh = fh.rfh;
+    if ((rc = CloseFile((char *) FILENAME, fh))) {
+        return (rc);
+    }
+    if ((rc = OpenFile((char *) FILENAME, fh)) ||
+        (rc = VerifyFile(fh, LOTS_OF_RECS))) {
+        return (rc);
+    }
+    printf("Reopen the file\n");
+    PrintRmFileHeader(fh.rfh);
+    printf("Make sure the file header saved\n");
+    assert(old_rfh.pageCount == fh.rfh.pageCount);
+    assert(old_rfh.firstFreePage == fh.rfh.firstFreePage);
+
+    if ((rc = DestroyFile((char *) FILENAME))) {
+        return (rc);
+    }
+
+
+    printf("\ntest7 done ********************\n");
+    return OK_RC;
+}

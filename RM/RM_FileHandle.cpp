@@ -373,7 +373,7 @@ RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_P
     // set the RID, and data contents of this record
     nextRecSlot = nextRec;
     RM_RID rid(nextRecPage, nextRecSlot);
-    printf("nextRecPage = %d, nextRecSlot = %d\n", nextRecPage, nextRecSlot);
+    //printf("nextRecPage = %d, nextRecSlot = %d\n", nextRecPage, nextRecSlot);
     if ((rc = rec.Set(rid, bitmap + (rfh.bitMapSize) + (nextRecSlot) * (rfh.recordSize),
                       rfh.recordSize)))
         return (rc);
