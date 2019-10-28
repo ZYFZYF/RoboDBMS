@@ -9,18 +9,18 @@
 #include "../def.h"
 #include "RM_Record.h"
 #include "../PF/PF_FileHandle.h"
+#include "def.h"
 
 struct RM_FileHeader {
     int recordSize;
     int recordNumPerPage;
-    int pageCount;
     int bitMapOffset;
-    int bitCount;
+    int bitMapSize;
 };
 
-typedef int MultiBits;
-
 class RM_FileHandle {
+    friend class RM_Manager;
+
 public:
     RM_FileHandle();
 
@@ -49,10 +49,13 @@ private:
 
     RC GetBit(MultiBits *bitmap, int size, int index, bool &inUse);
 
-    int ConvertBitToMultiBits(int size);
+    static int ConvertBitToMultiBits(int size);
+
+    static int CalcRecordNumPerPage(int recordSize);
 
     PF_FileHandle pfh;
 
+    RM_FileHeader rfh;
 
 };
 

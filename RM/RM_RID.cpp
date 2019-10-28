@@ -46,3 +46,10 @@ RM_RID &RM_RID::operator=(const RM_RID &rmRid) {
     this->slotNum = rmRid.slotNum;
     return *this;
 }
+
+RC RM_RID::IsValidRID() const {
+    if (pageNum > 0 && slotNum >= 0) {
+        return OK_RC;
+    }
+    return RM_INVALIDRID;
+}

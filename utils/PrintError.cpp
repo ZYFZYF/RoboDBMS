@@ -45,6 +45,9 @@ map<RC, string> msg = {
         {x:RM_INVALIDBITIND,    "RM WARNING: bit int is out of range"},
         {RM_BITINUSE,           "RM WARNING: bit already in use"},
         {RM_BITNOTINUSE,        "RM WARNING: bit not in use"},
+        {RM_INVALIDRID,         "RM WARNING: invalid record id"},
+        {RM_NULLFILENAME,       "RM WARNING: null file name"},
+        {RM_BADRECORDSIZE,      "RM WARNING: bad record size"},
 
         {RM_TOOLARGERECORDSIZE, "RM ERROR: recordSize is too large for current pagefile system"},
 
