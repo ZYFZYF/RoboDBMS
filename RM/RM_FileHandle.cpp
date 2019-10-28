@@ -335,50 +335,44 @@ RC RM_FileHandle::AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum) {
     ResetBitmap(bitmap, rfh.recordNumPerPage);
     rfh.pageCount++;
     isHeaderModified = true;
-    //这里不应该把header变成脏的么
+    //这里不应该把header变成脏的么 updated:已经添加
     return OK_RC;
 }
 
-RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pph, bool nextPage) {
+RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pph, bool findInNextPage) {
     RC rc = OK_RC;
     char *bitmap;
-    struct RM_PageHeader *pageheader;
+    struct RM_PageHeader *rph;
     int nextRec;
     PageNum nextRecPage = page;
     SlotNum nextRecSlot;
 
-    // If we are looking in the next page, keep running GetNextPage until
-    // we reach a page that has some records in it.
-    if (nextPage) {
+    //拿下一页的第一条
+    if (findInNextPage) {
         while (true) {
-            if ((PF_EOF == pfh.GetNextPage(nextRecPage, pph)))
-                return (RM_EOF); // reached the end of file
-            // retrieve page and bitmap information
-            if ((rc = pph.GetPageNum(nextRecPage)))
-                return (rc);
-            if ((rc = GetPageHeaderAndBitmap(pph, pageheader, bitmap)))
-                return (rc);
-            // search for the next record
+            //取出下一页并且拿到page以及页头
+            if ((pfh.GetNextPage(nextRecPage, pph)) == PF_EOF) {
+                return RM_EOF;
+            }
+            TRY(pph.GetPageNum(nextRecPage));
+            TRY(GetPageHeaderAndBitmap(pph, rph, bitmap));
+            //如果找到一个1那么就可以返回了，否则继续下一页
             if (FindNextOne(bitmap, rfh.recordNumPerPage, 0, nextRec) != RM_ENDOFPAGE)
                 break;
-            // if there are no records, on the page, unpin and get the next page
-            //printf("Unpinning page\n");
-            if ((rc = pfh.UnpinPage(nextRecPage)))
-                return (rc);
+            TRY(pfh.UnpinPage(nextRecPage));
         }
     } else {
-        // get the bitmap for this page, and the next record location
-        if ((rc = GetPageHeaderAndBitmap(pph, pageheader, bitmap)))
-            return (rc);
-        if (FindNextOne(bitmap, rfh.recordNumPerPage, slot + 1, nextRec) == RM_ENDOFPAGE)
-            return (RM_EOF);
+        // 直接用bitmap拿到下一个1的位置
+        TRY(GetPageHeaderAndBitmap(pph, rph, bitmap));
+        if (FindNextOne(bitmap, rfh.recordNumPerPage, slot + 1, nextRec) == RM_ENDOFPAGE) {
+            return RM_EOF;
+        }
     }
-    // set the RID, and data contents of this record
+
     nextRecSlot = nextRec;
     RM_RID rid(nextRecPage, nextRecSlot);
     //printf("nextRecPage = %d, nextRecSlot = %d\n", nextRecPage, nextRecSlot);
-    if ((rc = rec.Set(rid, bitmap + (rfh.bitMapSize) + (nextRecSlot) * (rfh.recordSize),
-                      rfh.recordSize)))
-        return (rc);
+    TRY(rec.Set(rid, bitmap + (rfh.bitMapSize) + (nextRecSlot) * (rfh.recordSize),
+                rfh.recordSize));
     return OK_RC;
 }

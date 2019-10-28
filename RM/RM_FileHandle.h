@@ -34,7 +34,7 @@ public:
 
 //private:
 
-    RC GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pph, bool nextPage);
+    RC GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pph, bool findInNextPage);
 
     RC AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum);
 
@@ -50,6 +50,7 @@ public:
 
     RC GetBit(MultiBits *bitmap, int size, int slot, bool &inUse) const;
 
+    //TODO：优化这两个函数的实现，这个复杂度太高了，又要能方便地序列化和反序列化
     RC FindFirstZero(MultiBits *bitmap, int size, int &slot) const;
 
     RC FindNextOne(MultiBits *bitmap, int size, int start, int &slot) const;

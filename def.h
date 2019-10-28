@@ -94,6 +94,7 @@ enum RC {
     UNKNOWN_RC
 };
 
+
 //
 // Attribute types
 //
@@ -130,7 +131,7 @@ enum ClientHint {
 #define NULL 0
 #endif
 
-#define TRY(_x) if (RC __rc = (_x)) return __rc;
+#define TRY(_something) if (RC __rc = (_something)) return __rc;
 #define CVOID(_x) (*(reinterpret_cast<char**>(&(_x))))
 
 

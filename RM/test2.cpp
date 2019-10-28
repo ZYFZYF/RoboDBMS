@@ -30,5 +30,19 @@ int main() {
     }
     rfh.FindFirstZero(bitmap, size, x);
     assert(x == 50);
+    if (int w = 1) {
+        cout << w << endl;
+    }
+    if (int w = 2) {
+        cout << w << endl;
+    }
+    if (int w = 3) {
+        if (int w = 4) {
+            cout << w << endl;
+        }
+        cout << w << endl;
+    }
+
+
     return 0;
 }
