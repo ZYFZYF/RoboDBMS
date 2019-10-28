@@ -107,11 +107,93 @@ RC RM_FileHandle::GetRec(const RM_RID &rmRid, RM_Record &rec) const {
 }
 
 RC RM_FileHandle::InsertRec(const char *pData, RM_RID &rmRid) {
-    return PF_NOBUF;
+    RC rc = OK_RC;
+    PF_PageHandle pph;
+    PageNum pageNum;
+    //先定位页，没页就分配新的
+    if (rfh.firstFreePage == NO_MORE_FREE_PAGE) {
+        AllocateNewPage(pph, pageNum);
+    } else {
+        pageNum = rfh.firstFreePage;
+        if ((rc = pfh.GetThisPage(pageNum, pph))) {
+            return rc;
+        }
+    }
+    //然后拿到页的信息
+    char *bitmap;
+    RM_PageHeader *rph;
+    int index;
+    if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
+        goto safe_exit;
+    }
+    //再从bitmap中找到free的第一条
+    if ((rc = FindFirstZero(bitmap, rfh.bitMapSize, index))) {
+        goto safe_exit;
+    }
+    //将其设置为1
+    if ((rc = SetBit(bitmap, rfh.bitMapSize, index))) {
+        goto safe_exit;
+    }
+    //把record内容拷贝过去
+    memcpy(bitmap + rfh.bitMapSize + index * (rfh.recordSize), pData, rfh.recordSize);
+    //更新page的header，如果满了就指向下一个，因为每次都从开头插所以能保证下一个freepage一定是真正free的
+    if (++rph->recordNum == rfh.recordNumPerPage) {
+        rfh.firstFreePage = rph->nextFreePage;
+    }
+    //设置rid的返回值
+    rmRid = RM_RID(pageNum, index);
+    safe_exit:
+    RC rc1;
+    if ((rc1 = pfh.MarkDirty(pageNum)) || (rc1 = pfh.UnpinPage(pageNum))) {
+        return rc1;
+    }
+    return rc;
 }
 
 RC RM_FileHandle::DeleteRec(const RM_RID &rmRid) {
-    return PF_NOBUF;
+    RC rc = OK_RC;
+    PF_PageHandle pph;
+    //先从RID中拿到page和slot
+    PageNum pageNum;
+    SlotNum slotNum;
+    bool isOne;
+    if ((rc = rmRid.GetPageNumAndSlotNum(pageNum, slotNum))) {
+        return rc;
+    }
+    //把页拿出来
+    if ((rc = pfh.GetThisPage(pageNum, pph))) {
+        return rc;
+    }
+    //然后拿到页的信息
+    char *bitmap;
+    RM_PageHeader *rph;
+    int index;
+    if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
+        goto safe_exit;
+    }
+    //看看这个位置是否确实被使用
+    if ((rc = GetBit(bitmap, rfh.bitMapSize, slotNum, isOne))) {
+        return rc;
+    }
+    if (!isOne) {
+        rc = RM_RIDDELETED;
+        goto safe_exit;
+    }
+    //删除其占用标志
+    if ((rc = ClearBit(bitmap, rfh.bitMapSize, slotNum))) {
+        return rc;
+    }
+    if (rph->recordNum-- == rfh.recordNumPerPage) {
+        rph->nextFreePage = rfh.firstFreePage;
+        rfh.firstFreePage = pageNum;
+    };
+
+    safe_exit:
+    RC rc1;
+    if ((rc1 = pfh.MarkDirty(pageNum)) || (rc1 = pfh.UnpinPage(pageNum))) {
+        return rc1;
+    }
+    return rc;
 }
 
 RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
@@ -191,4 +273,41 @@ RC RM_FileHandle::GetPageHeaderAndBitmap(PF_PageHandle &pph, RM_PageHeader *&rph
     rph = (RM_PageHeader *) data;
     bitmap = (MultiBits *) (data + rfh.bitMapOffset);
     return OK_RC;
+}
+
+RC RM_FileHandle::AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum) {
+    RC rc;
+    //申请新页
+    if ((rc = pfh.AllocatePage(pph))) {
+        return rc;
+    }
+    if ((rc = pph.GetPageNum(pageNum))) {
+        return rc;
+    }
+    //拿到新页的header和bitmap
+    char *bitmap;
+    RM_PageHeader *rph;
+    if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
+        return rc;
+    }
+    //初始化header，将freepage链表串起来
+    rph->recordNum = 0;
+    rph->nextFreePage = rfh.firstFreePage;
+    rfh.firstFreePage = pageNum;
+    ResetBitmap(bitmap, rfh.bitMapSize);
+    rfh.pageCount++;
+    //这里不应该把header变成脏的么
+    return OK_RC;
+}
+
+RC RM_FileHandle::FindFirstZero(MultiBits *bitmap, int size, int &index) const {
+    for (int i = 0; i < size; i++) {
+        int slot, bit;
+        GetBitPosition(i, slot, bit);
+        if (!(bitmap[slot] >> bit & 1)) {
+            index = i;
+            return OK_RC;
+        }
+    }
+    return RM_BITMAPISFULL;
 }

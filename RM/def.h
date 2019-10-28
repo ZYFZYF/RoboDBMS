@@ -10,13 +10,17 @@ struct RM_FileHeader {
     int recordNumPerPage;
     int bitMapOffset;
     int bitMapSize;
+    PageNum firstFreePage;
+    int pageCount;
 };
 
 struct RM_PageHeader {
     int recordNum;
+    PageNum nextFreePage;
 };
 
 typedef char MultiBits;
+#define NO_MORE_FREE_PAGE -1
 
 #define RM_FILE_HEADER_SIZE sizeof(RM_FileHeader)
 #define RM_PAGE_HEADER_SIZE sizeof(RM_PageHeader)

@@ -32,6 +32,7 @@ public:
     RC ForcePages(PageNum pageNum = ALL_PAGES);
 
 private:
+    RC AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum);
 
     RC GetPageHeaderAndBitmap(PF_PageHandle &pph, RM_PageHeader *&rph, MultiBits *&bitmap) const;
 
@@ -44,6 +45,8 @@ private:
     RC ClearBit(MultiBits *bitmap, int size, int index);
 
     RC GetBit(MultiBits *bitmap, int size, int index, bool &inUse) const;
+
+    RC FindFirstZero(MultiBits *bitmap, int size, int &index) const;
 
     static int ConvertBitToMultiBits(int size);
 
