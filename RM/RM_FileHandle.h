@@ -11,13 +11,6 @@
 #include "../PF/PF_FileHandle.h"
 #include "def.h"
 
-struct RM_FileHeader {
-    int recordSize;
-    int recordNumPerPage;
-    int bitMapOffset;
-    int bitMapSize;
-};
-
 class RM_FileHandle {
     friend class RM_Manager;
 
@@ -27,11 +20,11 @@ public:
     ~RM_FileHandle();
 
     // Given a RM_RID, return the record
-    RC GetRec(const RM_RID &RM_RID, RM_Record &rec) const;
+    RC GetRec(const RM_RID &rmRid, RM_Record &rec) const;
 
-    RC InsertRec(const char *pData, RM_RID &RM_RID);       // Insert a new record
+    RC InsertRec(const char *pData, RM_RID &rmRid);       // Insert a new record
 
-    RC DeleteRec(const RM_RID &RM_RID);                    // Delete a record
+    RC DeleteRec(const RM_RID &rmRid);                    // Delete a record
     RC UpdateRec(const RM_Record &rec);              // Update a record
 
     // Forces a page (along with any contents stored in this class)
@@ -39,7 +32,10 @@ public:
     RC ForcePages(PageNum pageNum = ALL_PAGES);
 
 private:
-    RC GetBitPosition(int index, int &slot, int &bit);
+
+    RC GetPageHeaderAndBitmap(PF_PageHandle &pph, RM_PageHeader *&rph, MultiBits *&bitmap) const;
+
+    RC GetBitPosition(int index, int &slot, int &bit) const;
 
     RC ResetBitmap(MultiBits *bitmap, int size);
 
@@ -47,7 +43,7 @@ private:
 
     RC ClearBit(MultiBits *bitmap, int size, int index);
 
-    RC GetBit(MultiBits *bitmap, int size, int index, bool &inUse);
+    RC GetBit(MultiBits *bitmap, int size, int index, bool &inUse) const;
 
     static int ConvertBitToMultiBits(int size);
 

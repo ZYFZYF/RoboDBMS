@@ -4,7 +4,21 @@
 
 #ifndef ROBODBMS_DEF_H
 #define ROBODBMS_DEF_H
-typedef int MultiBits;
-#define RM_PAGE_HEADER_SIZE  0
+
+struct RM_FileHeader {
+    int recordSize;
+    int recordNumPerPage;
+    int bitMapOffset;
+    int bitMapSize;
+};
+
+struct RM_PageHeader {
+    int recordNum;
+};
+
+typedef char MultiBits;
+
+#define RM_FILE_HEADER_SIZE sizeof(RM_FileHeader)
+#define RM_PAGE_HEADER_SIZE sizeof(RM_PageHeader)
 
 #endif //ROBODBMS_DEF_H

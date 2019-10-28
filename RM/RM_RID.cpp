@@ -18,11 +18,19 @@ RM_RID::~RM_RID() {
 }
 
 RC RM_RID::GetPageNum(PageNum &pageNum) const {
+    RC rc;
+    if ((rc = IsValidRID())) {
+        return rc;
+    }
     pageNum = this->pageNum;
     return OK_RC;
 }
 
 RC RM_RID::GetSlotNum(SlotNum &slotNum) const {
+    RC rc;
+    if ((rc = IsValidRID())) {
+        return rc;
+    }
     slotNum = this->slotNum;
     return OK_RC;
 }
@@ -52,4 +60,12 @@ RC RM_RID::IsValidRID() const {
         return OK_RC;
     }
     return RM_INVALIDRID;
+}
+
+RC RM_RID::GetPageNumAndSlotNum(PageNum &pageNum, SlotNum slotNum) const {
+    RC rc;
+    if ((rc = GetPageNum(pageNum)) || (rc = GetSlotNum(slotNum))) {
+        return rc;
+    }
+    return OK_RC;
 }

@@ -20,6 +20,8 @@ public:
 
     RM_Record &operator=(const RM_Record &rmRecord);
 
+    RC Set(const RM_RID &rmRid, char *bufferData, int size);
+
     // Return the data corresponding to the record.  Sets *pData to the
     // record contents.
     RC GetData(char *&pData) const;

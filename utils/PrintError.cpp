@@ -48,6 +48,7 @@ map<RC, string> msg = {
         {RM_INVALIDRID,         "RM WARNING: invalid record id"},
         {RM_NULLFILENAME,       "RM WARNING: null file name"},
         {RM_BADRECORDSIZE,      "RM WARNING: bad record size"},
+        {RM_NOMEMORYLEFT,       "RM WARNING: no enough memory to alloc"},
 
         {RM_TOOLARGERECORDSIZE, "RM ERROR: recordSize is too large for current pagefile system"},
 

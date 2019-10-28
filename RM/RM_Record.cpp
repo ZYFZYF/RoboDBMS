@@ -47,3 +47,14 @@ RC RM_Record::GetRid(RM_RID &rid) const {
     rid = this->rmRid;
     return OK_RC;
 }
+
+RC RM_Record::Set(const RM_RID &rmRid, char *bufferData, int size) {
+    this->rmRid = rmRid;
+    delete[] data;
+    if ((data = new char[size]) == nullptr) {
+        return RM_NOMEMORYLEFT;
+    };
+    memcpy(data, bufferData, size);
+    this->size = size;
+    return OK_RC;
+}
