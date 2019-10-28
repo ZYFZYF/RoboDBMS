@@ -3,6 +3,7 @@
 //
 
 #include <cmath>
+#include <cstring>
 #include "RM_FileHandle.h"
 
 const int BitsNum = sizeof(MultiBits);
@@ -67,7 +68,7 @@ RM_FileHandle::~RM_FileHandle() {
 }
 
 RC RM_FileHandle::GetRec(const RM_RID &rmRid, RM_Record &rec) const {
-    RC rc;
+    RC rc = OK_RC;
     //先拿到RID的页号和槽位
     int page = -1, slot = -1;
     if ((rc = rmRid.GetPageNumAndSlotNum(page, slot))) {
@@ -82,26 +83,27 @@ RC RM_FileHandle::GetRec(const RM_RID &rmRid, RM_Record &rec) const {
     RM_PageHeader *rph;
     MultiBits *bitmap;
     if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
-        pfh.UnpinPage(page);
-        return rc;
+        goto safe_exit;
     }
     //确保这个槽位上有这条记录，通过访问这一页的bitmap来实现
     bool exist;
     if ((rc = GetBit(bitmap, rfh.bitMapSize, slot, exist))) {
-        pfh.UnpinPage(page);
-        return rc;
+        goto safe_exit;
     }
     if (!exist) {
-        pfh.UnpinPage(page);
-        return RM_INVALIDRECORD;
+        rc = RM_INVALIDRECORD;
+        goto safe_exit;
     }
     //取出record
-    if ((rc = rec.Set(rmRid, bitmap + slot * (rfh.recordSize), rfh.recordSize))) {
-        pfh.UnpinPage(page);
-        return rc;
+    if ((rc = rec.Set(rmRid, bitmap + rfh.bitMapSize + slot * (rfh.recordSize), rfh.recordSize))) {
+        goto safe_exit;
     }
-    pfh.UnpinPage(page);
-    return OK_RC;
+    safe_exit:
+    RC rc1;
+    if ((rc1 = pfh.UnpinPage(page))) {
+        return rc1;
+    };
+    return rc;
 }
 
 RC RM_FileHandle::InsertRec(const char *pData, RM_RID &rmRid) {
@@ -113,7 +115,49 @@ RC RM_FileHandle::DeleteRec(const RM_RID &rmRid) {
 }
 
 RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
-    return PF_NOBUF;
+    RC rc = OK_RC;
+    //定义变量
+    bool exist;
+    char *data;
+    //先用rec拿到RID
+    RM_RID rmRid;
+    if ((rc = rec.GetRid(rmRid))) {
+        return rc;
+    }
+    //拿到RID的页号和槽位
+    int page = -1, slot = -1;
+    if ((rc = rmRid.GetPageNumAndSlotNum(page, slot))) {
+        return rc;
+    }
+    //拿到这一页的handle，成功之后退出时必须Unpin掉这一页
+    PF_PageHandle pph;
+    if ((rc = pfh.GetThisPage(page, pph))) {
+        return rc;
+    }
+    //拿到PageHeader以及Bitmap
+    RM_PageHeader *rph;
+    MultiBits *bitmap;
+    if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
+        goto safe_exit;
+    }
+    //确保这个槽位上有这条记录，通过访问这一页的bitmap来实现
+
+    if ((rc = GetBit(bitmap, rfh.bitMapSize, slot, exist))) {
+        goto safe_exit;
+    }
+    if (!exist) {
+        rc = RM_INVALIDRECORD;
+        goto safe_exit;
+    }
+    //设置record
+    data = bitmap + rfh.bitMapSize + slot * (rfh.recordSize);
+    memcpy(data, &rec, rfh.recordSize);
+    safe_exit:
+    RC rc1;
+    if ((rc1 = pfh.MarkDirty(page)) || (rc1 = pfh.UnpinPage(page))) {
+        return rc1;
+    }
+    return rc;
 }
 
 RC RM_FileHandle::ForcePages(PageNum pageNum) {
