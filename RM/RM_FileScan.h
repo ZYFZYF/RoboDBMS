@@ -26,15 +26,9 @@ public:
     RC GetNextRec(RM_Record &rec);               // Get next matching record
     RC CloseScan();                             // Close the scan
 private:
-    // Retrieves the number of records on ph's page, and returns it in
-    // numRecords
-    RC GetNumRecOnPage(PF_PageHandle &ph, int &numRecords);
+    RC GetRecordNumOnPage(PF_PageHandle &ph, int &recordNum);
 
-
-    bool openScan; // whether this instance is currently a valid, open scan
-
-    // save the parameters of the scan:
-    RM_FileHandle *fileHandle;
+    RM_FileHandle *rfh;
 
     bool (*comparator)(void *, void *, AttrType, int);
 
@@ -44,21 +38,17 @@ private:
     AttrType attrType;
     CompOp compOp;
 
-    // whether the scan has ended or not. This dictages whether to unpin the
-    // page that the scan is on (currentPH)
+    bool openScan;
     bool scanEnded;
-
-    // The current state of the scan. currentPH is the page that's pinned
-    PageNum scanPage;
-    SlotNum scanSlot;
-    PF_PageHandle currentPH;
-    // Dictates whether to seek a record on the same page, or unpin it and
-    // seek a record on the following page
-    int numRecOnPage;
-    int numSeenOnPage;
     bool useNextPage;
     bool hasPagePinned;
     bool initializedValue;
+    PageNum pageNum;
+    SlotNum slotNum;
+    PF_PageHandle currentPH;
+    int numTotalOnPage;
+    int numSeenOnPage;
+
 };
 
 
