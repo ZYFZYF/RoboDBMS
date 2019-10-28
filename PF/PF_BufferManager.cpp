@@ -148,10 +148,11 @@ PF_BufferManager::PF_BufferManager(int _numPages) : hashTable(PF_HASH_TBL_SIZE) 
 //
 PF_BufferManager::~PF_BufferManager() {
     // Free up buffer pages and tables
-    for (int i = 0; i < this->numPages; i++)
-        delete[] bufTable[i].pData;
-
-    delete[] bufTable;
+//    for (int i = 0; i < this->numPages; i++) {
+//        delete[] bufTable[i].pData;
+//    }
+//
+//    delete[] bufTable;
 
 #ifdef PF_STATS
     // Destroy the global statistics manager

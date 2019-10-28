@@ -176,14 +176,6 @@ int main(int argc, char *argv[]) {
 
     return (0);
 }
-
-//
-// printError
-//
-// Desc: Print an error message by calling the proper component-specific
-//       print-error function
-//
-
 ////////////////////////////////////////////////////////////////////
 // The following functions may be useful in tests that you devise //
 ////////////////////////////////////////////////////////////////////

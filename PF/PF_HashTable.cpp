@@ -36,19 +36,19 @@ PF_HashTable::PF_HashTable(int _numBuckets) {
 //
 PF_HashTable::~PF_HashTable() {
     // Clear out all buckets
-    for (int i = 0; i < numBuckets; i++) {
-
-        // Delete all entries in the bucket
-        PF_HashEntry *entry = hashTable[i];
-        while (entry != NULL) {
-            PF_HashEntry *next = entry->next;
-            delete entry;
-            entry = next;
-        }
-    }
-
-    // Finally delete the hash table
-    delete[] hashTable;
+//    for (int i = 0; i < numBuckets; i++) {
+//
+//        // Delete all entries in the bucket
+//        PF_HashEntry *entry = hashTable[i];
+//        while (entry != nullptr) {
+//            PF_HashEntry *next = entry->next;
+//            delete entry;
+//            entry = next;
+//        }
+//    }
+//
+//    // Finally delete the hash table
+//    delete[] hashTable;
 }
 
 //

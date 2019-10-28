@@ -40,7 +40,7 @@ PF_Manager::PF_Manager() {
 //
 PF_Manager::~PF_Manager() {
     // Destroy the buffer manager objects
-    delete pBufferManager;
+    //delete pBufferManager;
 }
 
 //
