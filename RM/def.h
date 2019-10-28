@@ -5,6 +5,8 @@
 #ifndef ROBODBMS_DEF_H
 #define ROBODBMS_DEF_H
 
+#include "../PF/def.h"
+
 struct RM_FileHeader {
     int recordSize;
     int recordNumPerPage;

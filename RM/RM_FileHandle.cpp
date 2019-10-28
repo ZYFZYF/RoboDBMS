@@ -4,9 +4,10 @@
 
 #include <cmath>
 #include <cstring>
+#include <iostream>
 #include "RM_FileHandle.h"
 
-const int BitsNum = sizeof(MultiBits);
+const int BitsNum = sizeof(MultiBits) * 8;
 
 RC RM_FileHandle::ResetBitmap(MultiBits *bitmap, int size) {
     for (int i = 0; i < ConvertBitToMultiBits(size); i++) {
@@ -15,48 +16,64 @@ RC RM_FileHandle::ResetBitmap(MultiBits *bitmap, int size) {
     return PF_NOBUF;
 }
 
-RC RM_FileHandle::SetBit(MultiBits *bitmap, int size, int index) {
-    if (index < 0 || index >= size) {
+RC RM_FileHandle::SetBit(MultiBits *bitmap, int size, int slot) {
+    if (slot < 0 || slot >= size) {
         return RM_INVALIDBITIND;
     }
-    int slot, bit;
-    GetBitPosition(index, slot, bit);
-    if (bitmap[slot] >> index & 1) {
+    int index, bit;
+    GetBitPosition(slot, index, bit);
+    if (bitmap[index] >> bit & 1) {
         return RM_BITINUSE;
     }
-    bitmap[slot] |= 1 << index;
+    bitmap[index] |= 1 << bit;
     return OK_RC;
 }
 
-RC RM_FileHandle::ClearBit(MultiBits *bitmap, int size, int index) {
-    if (index < 0 || index >= size) {
+RC RM_FileHandle::ClearBit(MultiBits *bitmap, int size, int slot) {
+    if (slot < 0 || slot >= size) {
         return RM_INVALIDBITIND;
     }
-    int slot, bit;
-    GetBitPosition(index, slot, bit);
-    if (!(bitmap[slot] >> index & 1)) {
+    int index, bit;
+    GetBitPosition(slot, index, bit);
+    if (!(bitmap[index] >> bit & 1)) {
         return RM_BITNOTINUSE;
     }
-    bitmap[slot] &= !(1 << index);
+    //std::cerr << index << ' ' << bit << ' ' << int(bitmap[index]) << ' ';
+    bitmap[index] &= ~(1 << bit);
+    //std::cerr << int(bitmap[index]) << std::endl;
     return OK_RC;
 }
 
-RC RM_FileHandle::GetBit(MultiBits *bitmap, int size, int index, bool &inUse) const {
-    if (index < 0 || index >= size) {
+RC RM_FileHandle::GetBit(MultiBits *bitmap, int size, int slot, bool &inUse) const {
+    if (slot < 0 || slot >= size) {
         return RM_INVALIDBITIND;
     }
-    int slot, bit;
-    GetBitPosition(index, slot, bit);
-    inUse = bitmap[slot] >> index & 1;
+    int index, bit;
+    GetBitPosition(slot, index, bit);
+    inUse = bitmap[index] >> bit & 1;
     return OK_RC;
+}
+
+RC RM_FileHandle::FindFirstZero(MultiBits *bitmap, int size, int &slot) const {
+    for (int i = 0; i < size; i++) {
+        //std::cerr << "i get " << ' ' << i << std::endl;
+        int index, bit;
+        GetBitPosition(i, index, bit);
+        if (!(bitmap[index] >> bit & 1)) {
+            slot = i;
+            return OK_RC;
+        }
+    }
+    return RM_BITMAPISFULL;
 }
 
 int RM_FileHandle::ConvertBitToMultiBits(int size) {
     return (size - 1) / BitsNum + 1;
 }
 
-RC RM_FileHandle::GetBitPosition(int index, int &slot, int &bit) const {
-    slot = index / BitsNum, bit = index - slot * BitsNum;
+RC RM_FileHandle::GetBitPosition(int slot, int &index, int &bit) const {
+    index = slot / BitsNum;
+    bit = slot - index * BitsNum;
     return OK_RC;
 }
 
@@ -88,7 +105,7 @@ RC RM_FileHandle::GetRec(const RM_RID &rmRid, RM_Record &rec) const {
     }
     //确保这个槽位上有这条记录，通过访问这一页的bitmap来实现
     bool exist;
-    if ((rc = GetBit(bitmap, rfh.bitMapSize, slot, exist))) {
+    if ((rc = GetBit(bitmap, rfh.recordNumPerPage, slot, exist))) {
         goto safe_exit;
     }
     if (!exist) {
@@ -128,11 +145,11 @@ RC RM_FileHandle::InsertRec(const char *pData, RM_RID &rmRid) {
         goto safe_exit;
     }
     //再从bitmap中找到free的第一条
-    if ((rc = FindFirstZero(bitmap, rfh.bitMapSize, index))) {
+    if ((rc = FindFirstZero(bitmap, rfh.recordNumPerPage, index))) {
         goto safe_exit;
     }
     //将其设置为1
-    if ((rc = SetBit(bitmap, rfh.bitMapSize, index))) {
+    if ((rc = SetBit(bitmap, rfh.recordNumPerPage, index))) {
         goto safe_exit;
     }
     //把record内容拷贝过去
@@ -173,7 +190,7 @@ RC RM_FileHandle::DeleteRec(const RM_RID &rmRid) {
         goto safe_exit;
     }
     //看看这个位置是否确实被使用
-    if ((rc = GetBit(bitmap, rfh.bitMapSize, slotNum, isOne))) {
+    if ((rc = GetBit(bitmap, rfh.recordNumPerPage, slotNum, isOne))) {
         return rc;
     }
     if (!isOne) {
@@ -181,7 +198,7 @@ RC RM_FileHandle::DeleteRec(const RM_RID &rmRid) {
         goto safe_exit;
     }
     //删除其占用标志
-    if ((rc = ClearBit(bitmap, rfh.bitMapSize, slotNum))) {
+    if ((rc = ClearBit(bitmap, rfh.recordNumPerPage, slotNum))) {
         return rc;
     }
     if (rph->recordNum-- == rfh.recordNumPerPage) {
@@ -225,7 +242,7 @@ RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
     }
     //确保这个槽位上有这条记录，通过访问这一页的bitmap来实现
 
-    if ((rc = GetBit(bitmap, rfh.bitMapSize, slot, exist))) {
+    if ((rc = GetBit(bitmap, rfh.recordNumPerPage, slot, exist))) {
         goto safe_exit;
     }
     if (!exist) {
@@ -295,20 +312,8 @@ RC RM_FileHandle::AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum) {
     rph->recordNum = 0;
     rph->nextFreePage = rfh.firstFreePage;
     rfh.firstFreePage = pageNum;
-    ResetBitmap(bitmap, rfh.bitMapSize);
+    ResetBitmap(bitmap, rfh.recordNumPerPage);
     rfh.pageCount++;
     //这里不应该把header变成脏的么
     return OK_RC;
-}
-
-RC RM_FileHandle::FindFirstZero(MultiBits *bitmap, int size, int &index) const {
-    for (int i = 0; i < size; i++) {
-        int slot, bit;
-        GetBitPosition(i, slot, bit);
-        if (!(bitmap[slot] >> bit & 1)) {
-            index = i;
-            return OK_RC;
-        }
-    }
-    return RM_BITMAPISFULL;
 }

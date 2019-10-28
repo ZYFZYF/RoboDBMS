@@ -31,22 +31,22 @@ public:
     // from the buffer pool to disk.  Default value forces all pages.
     RC ForcePages(PageNum pageNum = ALL_PAGES);
 
-private:
+//private:
     RC AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum);
 
     RC GetPageHeaderAndBitmap(PF_PageHandle &pph, RM_PageHeader *&rph, MultiBits *&bitmap) const;
 
-    RC GetBitPosition(int index, int &slot, int &bit) const;
+    RC GetBitPosition(int slot, int &index, int &bit) const;
 
     RC ResetBitmap(MultiBits *bitmap, int size);
 
-    RC SetBit(MultiBits *bitmap, int size, int index);
+    RC SetBit(MultiBits *bitmap, int size, int slot);
 
-    RC ClearBit(MultiBits *bitmap, int size, int index);
+    RC ClearBit(MultiBits *bitmap, int size, int slot);
 
-    RC GetBit(MultiBits *bitmap, int size, int index, bool &inUse) const;
+    RC GetBit(MultiBits *bitmap, int size, int slot, bool &inUse) const;
 
-    RC FindFirstZero(MultiBits *bitmap, int size, int &index) const;
+    RC FindFirstZero(MultiBits *bitmap, int size, int &slot) const;
 
     static int ConvertBitToMultiBits(int size);
 
@@ -55,6 +55,10 @@ private:
     PF_FileHandle pfh;
 
     RM_FileHeader rfh;
+
+    bool isFileOpen;
+
+    bool isHeaderModified;
 
 };
 

@@ -3,6 +3,7 @@
 //
 
 #include <cstring>
+#include <iostream>
 #include "RM_Manager.h"
 
 RM_Manager::RM_Manager(PF_Manager &pfm) {
@@ -52,6 +53,9 @@ RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
     rfh->bitMapOffset = bitMapOffset;
     rfh->bitMapSize = bitMapSize;
     rfh->firstFreePage = NO_MORE_FREE_PAGE;
+    rfh->pageCount = 1;
+    std::cerr << rfh->recordSize << ' ' << recordNumPerPage << ' ' << bitMapOffset << ' ' << bitMapSize << ' '
+              << rfh->firstFreePage << ' ' << rfh->pageCount << std::endl;
     //关闭文件
     if ((rc = pfh.MarkDirty(pageNum)) || (rc = pfh.UnpinPage(pageNum)) || (rc = pfm.CloseFile(pfh))) {
         return rc;
@@ -68,6 +72,13 @@ RC RM_Manager::DestroyFile(const char *fileName) {
 
 RC RM_Manager::OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
     RC rc;
+    if (fileName == nullptr) {
+        return RM_NULLFILENAME;
+    }
+    //原先的handle还没有释放
+    if (fileHandle.isFileOpen) {
+        return RM_INVALIDFILHANDLE;
+    }
     //打开文件，拿到PF_FileHandle
     PF_FileHandle pfh;
     if ((rc = pfm.OpenFile(fileName, pfh))) {
@@ -87,6 +98,8 @@ RC RM_Manager::OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
     auto rfh = (RM_FileHeader *) pageData;
     memcpy(&fileHandle.rfh, rfh, sizeof(struct RM_FileHeader));
     fileHandle.pfh = pfh;
+    fileHandle.isFileOpen = true;
+    fileHandle.isHeaderModified = false;
 
     //释放文件头页
     if ((rc = pfh.UnpinPage(pageNum))) {
@@ -100,8 +113,30 @@ RC RM_Manager::OpenFile(const char *fileName, RM_FileHandle &fileHandle) {
 
 RC RM_Manager::CloseFile(RM_FileHandle &fileHandle) {
     RC rc;
+    PF_PageHandle pph;
+    PageNum pageNum;
+    char *data;
+    //如果文件头变了的话，关闭文件的时候要写回
+    //所以就需要保证任何时刻指向同一个文件的handle只有一个？
+    if (fileHandle.isHeaderModified) {
+        if ((rc = fileHandle.pfh.GetFirstPage(pph)) || (rc = pph.GetPageNum(pageNum))) {
+            return rc;
+        }
+        pph.GetData(data);
+        memcpy(data, &fileHandle.rfh, sizeof(RM_FileHeader));
+        if ((rc = fileHandle.pfh.MarkDirty(pageNum)) || (rc = fileHandle.pfh.UnpinPage(pageNum))) {
+            return rc;
+        }
+    }
+    //关闭文件
     if ((rc = pfm.CloseFile(fileHandle.pfh))) {
         return rc;
     }
+    //清除handle的标记
+    if (!fileHandle.isFileOpen) {
+        return RM_INVALIDFILHANDLE;
+    }
+    fileHandle.isFileOpen = false;
+
     return OK_RC;
 }

@@ -230,9 +230,9 @@ RC AddRecs(RM_FileHandle &fh, int numRecs) {
 
     printf("\nadding %d records\n", numRecs);
     for (i = 0; i < numRecs; i++) {
+        cerr << i << endl;
         memset(recBuf.str, ' ', STRLEN);
         sprintf(recBuf.str, "a%d", i);
-        recBuf.num = i;
         recBuf.r = (float) i;
         if ((rc = InsertRec(fh, (char *) &recBuf, RM_RID)) ||
             (rc = RM_RID.GetPageNum(pageNum)) ||
