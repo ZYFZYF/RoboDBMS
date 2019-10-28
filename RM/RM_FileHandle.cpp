@@ -172,6 +172,7 @@ RC RM_FileHandle::InsertRec(const char *pData, RM_RID &rmRid) {
     //更新page的header，如果满了就指向下一个，因为每次都从开头插所以能保证下一个freepage一定是真正free的
     if (++rph->recordNum == rfh.recordNumPerPage) {
         rfh.firstFreePage = rph->nextFreePage;
+        isHeaderModified = true;
     }
     //设置rid的返回值
     rmRid = RM_RID(pageNum, index);
@@ -219,6 +220,7 @@ RC RM_FileHandle::DeleteRec(const RM_RID &rmRid) {
     if (rph->recordNum-- == rfh.recordNumPerPage) {
         rph->nextFreePage = rfh.firstFreePage;
         rfh.firstFreePage = pageNum;
+        isHeaderModified = true;
     };
 
     safe_exit:
@@ -332,6 +334,7 @@ RC RM_FileHandle::AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum) {
     rfh.firstFreePage = pageNum;
     ResetBitmap(bitmap, rfh.recordNumPerPage);
     rfh.pageCount++;
+    isHeaderModified = true;
     //这里不应该把header变成脏的么
     return OK_RC;
 }
