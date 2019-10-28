@@ -67,6 +67,20 @@ RC RM_FileHandle::FindFirstZero(MultiBits *bitmap, int size, int &slot) const {
     return RM_BITMAPISFULL;
 }
 
+RC RM_FileHandle::FindNextOne(MultiBits *bitmap, int size, int start, int &slot) const {
+    for (int i = start; i < size; i++) {
+        int index, bit;
+        GetBitPosition(i, index, bit);
+        //printf("i = %d, bit = %d\n", i, bitmap[index] >> bit & 1);
+        if (bitmap[index] >> bit & 1) {
+            slot = i;
+            return OK_RC;
+        }
+    }
+    return RM_ENDOFPAGE;
+}
+
+
 int RM_FileHandle::ConvertBitToMultiBits(int size) {
     return (size - 1) / BitsNum + 1;
 }
@@ -78,7 +92,8 @@ RC RM_FileHandle::GetBitPosition(int slot, int &index, int &bit) const {
 }
 
 RM_FileHandle::RM_FileHandle() {
-
+    isFileOpen = false;
+    isHeaderModified = false;
 }
 
 RM_FileHandle::~RM_FileHandle() {
@@ -229,6 +244,7 @@ RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
     if ((rc = rmRid.GetPageNumAndSlotNum(page, slot))) {
         return rc;
     }
+    printf("Get page = %d and slot = %d\n", page, slot);
     //拿到这一页的handle，成功之后退出时必须Unpin掉这一页
     PF_PageHandle pph;
     if ((rc = pfh.GetThisPage(page, pph))) {
@@ -237,6 +253,7 @@ RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
     //拿到PageHeader以及Bitmap
     RM_PageHeader *rph;
     MultiBits *bitmap;
+    char *recData;
     if ((rc = GetPageHeaderAndBitmap(pph, rph, bitmap))) {
         goto safe_exit;
     }
@@ -251,7 +268,8 @@ RC RM_FileHandle::UpdateRec(const RM_Record &rec) {
     }
     //设置record
     data = bitmap + rfh.bitMapSize + slot * (rfh.recordSize);
-    memcpy(data, &rec, rfh.recordSize);
+    rec.GetData(recData);
+    memcpy(data, recData, rfh.recordSize);
     safe_exit:
     RC rc1;
     if ((rc1 = pfh.MarkDirty(page)) || (rc1 = pfh.UnpinPage(page))) {
@@ -315,5 +333,49 @@ RC RM_FileHandle::AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum) {
     ResetBitmap(bitmap, rfh.recordNumPerPage);
     rfh.pageCount++;
     //这里不应该把header变成脏的么
+    return OK_RC;
+}
+
+RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pph, bool nextPage) {
+    RC rc = OK_RC;
+    char *bitmap;
+    struct RM_PageHeader *pageheader;
+    int nextRec;
+    PageNum nextRecPage = page;
+    SlotNum nextRecSlot;
+
+    // If we are looking in the next page, keep running GetNextPage until
+    // we reach a page that has some records in it.
+    if (nextPage) {
+        while (true) {
+            if ((PF_EOF == pfh.GetNextPage(nextRecPage, pph)))
+                return (RM_EOF); // reached the end of file
+            // retrieve page and bitmap information
+            if ((rc = pph.GetPageNum(nextRecPage)))
+                return (rc);
+            if ((rc = GetPageHeaderAndBitmap(pph, pageheader, bitmap)))
+                return (rc);
+            // search for the next record
+            if (FindNextOne(bitmap, rfh.recordNumPerPage, 0, nextRec) != RM_ENDOFPAGE)
+                break;
+            // if there are no records, on the page, unpin and get the next page
+            //printf("Unpinning page\n");
+            if ((rc = pfh.UnpinPage(nextRecPage)))
+                return (rc);
+        }
+    } else {
+        // get the bitmap for this page, and the next record location
+        if ((rc = GetPageHeaderAndBitmap(pph, pageheader, bitmap)))
+            return (rc);
+        if (FindNextOne(bitmap, rfh.recordNumPerPage, slot + 1, nextRec) == RM_ENDOFPAGE)
+            return (RM_EOF);
+    }
+    // set the RID, and data contents of this record
+    nextRecSlot = nextRec;
+    RM_RID rid(nextRecPage, nextRecSlot);
+    printf("nextRecPage = %d, nextRecSlot = %d\n", nextRecPage, nextRecSlot);
+    if ((rc = rec.Set(rid, bitmap + (rfh.bitMapSize) + (nextRecSlot) * (rfh.recordSize),
+                      rfh.recordSize)))
+        return (rc);
     return OK_RC;
 }

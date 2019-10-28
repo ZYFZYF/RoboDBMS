@@ -230,10 +230,12 @@ RC AddRecs(RM_FileHandle &fh, int numRecs) {
 
     printf("\nadding %d records\n", numRecs);
     for (i = 0; i < numRecs; i++) {
-        cerr << i << endl;
         memset(recBuf.str, ' ', STRLEN);
         sprintf(recBuf.str, "a%d", i);
         recBuf.r = (float) i;
+        //这里不设置num为什么verify的时候要让r==num...
+        recBuf.num = i;
+        //以上为添加设置
         if ((rc = InsertRec(fh, (char *) &recBuf, RM_RID)) ||
             (rc = RM_RID.GetPageNum(pageNum)) ||
             (rc = RM_RID.GetSlotNum(slotNum)))
@@ -283,6 +285,7 @@ RC VerifyFile(RM_FileHandle &fh, int numRecs) {
     for (rc = GetNextRecScan(fs, rec), n = 0;
          rc == 0;
          rc = GetNextRecScan(fs, rec), n++) {
+        printf("It's the %dth record(s)\n", n);
 
         // Make sure the record is correct
         if ((rc = rec.GetData((char *&) pRecBuf)) ||
@@ -593,16 +596,19 @@ RC Test5(void) {
 
     RM_Record rec;
     RM_FileScan sc;
-
+    printf("start to scan\n");
     TRY(sc.OpenScan(fh, INT, sizeof(int), 0, NO_OP, NULL));
-    for (rc = sc.GetNextRec(rec); rc != RM_EOF; rc = sc.GetNextRec(rec)) {
+    int n = 0;
+    for (rc = sc.GetNextRec(rec); rc != RM_EOF; rc = sc.GetNextRec(rec), n++) {
         if (rc) {
             return rc;
         }
+        printf("It's the %dth record(s)\n", n);
         TestRec *data;
         rec.GetData(CVOID(data));
         data->num++;
         TRY(fh.UpdateRec(rec));
+        printf("Succeed to update the %dth record(s)\n", n);
     }
     TRY(sc.CloseScan());
 
@@ -615,6 +621,9 @@ RC Test5(void) {
         rec.GetData(CVOID(data));
         int old_num;
         sscanf(data->str, "a%d", &old_num);
+        printf("old_num is %d, data->num is %d, data->r is %f, data->str is %s\n", old_num, data->num, data->r,
+               data->str);
+
         assert(old_num + 1 == data->num);
     }
     TRY(sc.CloseScan());

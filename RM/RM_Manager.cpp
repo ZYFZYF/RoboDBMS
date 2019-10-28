@@ -54,8 +54,8 @@ RC RM_Manager::CreateFile(const char *fileName, int recordSize) {
     rfh->bitMapSize = bitMapSize;
     rfh->firstFreePage = NO_MORE_FREE_PAGE;
     rfh->pageCount = 1;
-    std::cerr << rfh->recordSize << ' ' << recordNumPerPage << ' ' << bitMapOffset << ' ' << bitMapSize << ' '
-              << rfh->firstFreePage << ' ' << rfh->pageCount << std::endl;
+    // std::cerr << rfh->recordSize << ' ' << recordNumPerPage << ' ' << bitMapOffset << ' ' << bitMapSize << ' '
+    //         << rfh->firstFreePage << ' ' << rfh->pageCount << std::endl;
     //关闭文件
     if ((rc = pfh.MarkDirty(pageNum)) || (rc = pfh.UnpinPage(pageNum)) || (rc = pfm.CloseFile(pfh))) {
         return rc;

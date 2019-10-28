@@ -25,6 +25,7 @@ public:
     RC InsertRec(const char *pData, RM_RID &rmRid);       // Insert a new record
 
     RC DeleteRec(const RM_RID &rmRid);                    // Delete a record
+
     RC UpdateRec(const RM_Record &rec);              // Update a record
 
     // Forces a page (along with any contents stored in this class)
@@ -32,6 +33,9 @@ public:
     RC ForcePages(PageNum pageNum = ALL_PAGES);
 
 //private:
+
+    RC GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pph, bool nextPage);
+
     RC AllocateNewPage(PF_PageHandle &pph, PageNum &pageNum);
 
     RC GetPageHeaderAndBitmap(PF_PageHandle &pph, RM_PageHeader *&rph, MultiBits *&bitmap) const;
@@ -47,6 +51,8 @@ public:
     RC GetBit(MultiBits *bitmap, int size, int slot, bool &inUse) const;
 
     RC FindFirstZero(MultiBits *bitmap, int size, int &slot) const;
+
+    RC FindNextOne(MultiBits *bitmap, int size, int start, int &slot) const;
 
     static int ConvertBitToMultiBits(int size);
 

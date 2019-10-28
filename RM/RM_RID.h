@@ -36,7 +36,7 @@ public:
 
     RC GetPageNum(PageNum &pageNum) const;         // Return page number
     RC GetSlotNum(SlotNum &slotNum) const;         // Return slot number
-    RC GetPageNumAndSlotNum(PageNum &pageNum, SlotNum slotNum) const;
+    RC GetPageNumAndSlotNum(PageNum &pageNum, SlotNum &slotNum) const;
 
     RC IsValidRID() const;
 

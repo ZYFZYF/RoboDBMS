@@ -62,10 +62,11 @@ RC RM_RID::IsValidRID() const {
     return RM_INVALIDRID;
 }
 
-RC RM_RID::GetPageNumAndSlotNum(PageNum &pageNum, SlotNum slotNum) const {
+RC RM_RID::GetPageNumAndSlotNum(PageNum &pageNum, SlotNum &slotNum) const {
     RC rc;
     if ((rc = GetPageNum(pageNum)) || (rc = GetSlotNum(slotNum))) {
         return rc;
     }
+    printf("return code is %d and page is %d, slot is %d\n", rc, pageNum, slotNum);
     return OK_RC;
 }
