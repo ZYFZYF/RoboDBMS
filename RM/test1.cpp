@@ -721,5 +721,9 @@ RC Test7(void) {
 
 
     printf("\ntest7 done ********************\n");
+
+    cout
+            << "******************************** Congratulations to you! You have passed all tests! ********************************"
+            << endl;
     return OK_RC;
 }

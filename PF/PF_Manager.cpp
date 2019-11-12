@@ -108,7 +108,6 @@ RC PF_Manager::DestroyFile(const char *fileName) {
     // Remove the file
     if (unlink(fileName) < 0)
         return (PF_UNIX);
-
     // Return ok
     return OK_RC;
 }

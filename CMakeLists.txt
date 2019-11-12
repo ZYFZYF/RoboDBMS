@@ -11,6 +11,7 @@ set(SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/LinkList.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/PrintError.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/Statistics.cpp)
+add_subdirectory(SP)
 add_subdirectory(PF)
 add_subdirectory(RM)
 add_subdirectory(IX)
