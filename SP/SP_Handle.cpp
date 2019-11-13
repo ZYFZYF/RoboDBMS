@@ -14,12 +14,10 @@ SP_Handle::~SP_Handle() {
 }
 
 RC SP_Handle::InsertString(const char *string, int length, int &offset) {
-    SP_Header spHeader;
-    TRY(ReadHeader(spHeader));
-    int nowSpaceOffset = spHeader.firstSpaceOffset;
+    int nowSpaceOffset = 0;
     SP_SpaceHeader prevSpaceHeader, nowSpaceHeader, nextSpaceHeader;
     while (1) {
-        ReadSpaceHeader(nowSpaceHeader, nowSpaceOffset);
+        TRY(ReadSpaceHeader(nowSpaceHeader, nowSpaceOffset));
         if (nowSpaceHeader.spaceLength > length) {
             //要看一下这个空还能不能剩下
             //不剩下一个头的大小了，整个给它
@@ -63,16 +61,15 @@ RC SP_Handle::InsertString(const char *string, int length, int &offset) {
         }
         nowSpaceOffset = nowSpaceHeader.nextOffset;
     }
+    return OK_RC;
 }
 
 RC SP_Handle::DeleteString(int offset, int length) {
     int allocSize = ((length - 1) / SP_SPACE_HEADER_SIZE + 1) * SP_SPACE_HEADER_SIZE;
-    SP_Header spHeader;
-    TRY(ReadHeader(spHeader));
-    int nowSpaceOffset = spHeader.firstSpaceOffset;
+    int nowSpaceOffset = 0;
     SP_SpaceHeader prevSpaceHeader, nowSpaceHeader, nextSpaceHeader;
     while (1) {
-        ReadSpaceHeader(nowSpaceHeader, nowSpaceOffset);
+        TRY(ReadSpaceHeader(nowSpaceHeader, nowSpaceOffset));
         //发现下一个空白的开始已经超过了该字符串的开始位置，那么这个就一定是这个字符串前面的最后一块儿空白了
         if (nowSpaceHeader.nextOffset > offset) {
             //判断一下是否恰好与前一块儿空白相接
@@ -81,11 +78,17 @@ RC SP_Handle::DeleteString(int offset, int length) {
                 TRY(WriteSpaceHeader(nowSpaceHeader, nowSpaceOffset));
             } else {
                 //在当前空白后新插一块儿空白
-                //先修改当前空白
+                //先修改后续的空白
+                if (nowSpaceHeader.nextOffset != NO_MORE_SPACE) {
+                    TRY(ReadSpaceHeader(nextSpaceHeader, nowSpaceHeader.nextOffset));
+                    nextSpaceHeader.prevOffset = offset;
+                    TRY(WriteSpaceHeader(nextSpaceHeader, nowSpaceHeader.nextOffset));
+                }
+                //再修改当前空白
                 int nextSpaceOffset = nowSpaceHeader.nextOffset;
                 nowSpaceHeader.nextOffset = offset;
                 TRY(WriteSpaceHeader(nowSpaceHeader, nowSpaceOffset));
-                //插入新增的空白
+                //最后插入新增的空白
                 nowSpaceHeader.prevOffset = nowSpaceOffset;
                 nowSpaceHeader.nextOffset = nextSpaceOffset;
                 nowSpaceHeader.spaceLength = allocSize;
@@ -99,9 +102,11 @@ RC SP_Handle::DeleteString(int offset, int length) {
                 nowSpaceHeader.nextOffset = nextSpaceHeader.nextOffset;
                 WriteSpaceHeader(nowSpaceHeader, nowSpaceOffset);
             }
+            break;
         }
         nowSpaceOffset = nowSpaceHeader.nextOffset;
     }
+    return OK_RC;
 }
 
 RC SP_Handle::UpdateString(const char *string, int length, int &offset, int old_length) {
@@ -113,28 +118,9 @@ RC SP_Handle::GetStringData(char *data, int offset, int length) {
     TRY(ReadBuf(data, length, offset));
 }
 
-RC SP_Handle::ReadHeader(SP_Header &spHeader) {
-    if (lseek(fd, 0, SEEK_SET) < 0) {
-        return SP_UNIX;
-    }
-    if (read(fd, &spHeader, SP_HEADER_SIZE) != SP_HEADER_SIZE) {
-        return SP_UNIX;
-    }
-    return OK_RC;
-}
-
-RC SP_Handle::WriteHeader(SP_Header spHeader) {
-    if (lseek(fd, 0, SEEK_SET) < 0) {
-        return SP_UNIX;
-    }
-    if (write(fd, &spHeader, SP_HEADER_SIZE) != SP_HEADER_SIZE) {
-        return SP_UNIX;
-    }
-    return OK_RC;
-}
-
 RC SP_Handle::ReadSpaceHeader(SP_SpaceHeader &spSpaceHeader, int offset) {
-    if (lseek(fd, offset, SEEK_SET)) {
+    if (lseek(fd, offset, SEEK_SET) < 0) {
+        printf("%d\n", errno);
         return SP_UNIX;
     }
     if (read(fd, &spSpaceHeader, SP_SPACE_HEADER_SIZE) != SP_SPACE_HEADER_SIZE) {
@@ -144,7 +130,7 @@ RC SP_Handle::ReadSpaceHeader(SP_SpaceHeader &spSpaceHeader, int offset) {
 }
 
 RC SP_Handle::WriteSpaceHeader(SP_SpaceHeader spSpaceHeader, int offset) {
-    if (lseek(fd, offset, SEEK_SET)) {
+    if (lseek(fd, offset, SEEK_SET) < 0) {
         return SP_UNIX;
     }
     if (write(fd, &spSpaceHeader, SP_SPACE_HEADER_SIZE) != SP_SPACE_HEADER_SIZE) {
@@ -154,7 +140,7 @@ RC SP_Handle::WriteSpaceHeader(SP_SpaceHeader spSpaceHeader, int offset) {
 }
 
 RC SP_Handle::ReadBuf(char *data, int length, int offset) {
-    if (lseek(fd, offset, SEEK_SET)) {
+    if (lseek(fd, offset, SEEK_SET) < 0) {
         return SP_UNIX;
     }
     if (read(fd, data, length) != length) {
@@ -164,7 +150,7 @@ RC SP_Handle::ReadBuf(char *data, int length, int offset) {
 }
 
 RC SP_Handle::WriteBuf(const char *data, int length, int offset) {
-    if (lseek(fd, offset, SEEK_SET)) {
+    if (lseek(fd, offset, SEEK_SET) < 0) {
         return SP_UNIX;
     }
     if (write(fd, data, length) < 0) {

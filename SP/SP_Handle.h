@@ -7,12 +7,7 @@
 
 #include "../def.h"
 
-#define SP_HEADER_SIZE sizeof(struct SP_Header)
 #define SP_SPACE_HEADER_SIZE sizeof(struct SP_SpaceHeader)
-struct SP_Header {
-    int firstSpaceOffset;
-    int lastSpaceOffset;
-};
 
 //分配给Varchar的空间一定是SP_SPACE_HEADER_SIZE的倍数
 struct SP_SpaceHeader {
@@ -25,6 +20,7 @@ struct SP_SpaceHeader {
 class SP_Handle {
     friend class SP_Manager;
 
+public:
     SP_Handle();
 
     ~SP_Handle();
@@ -39,10 +35,7 @@ class SP_Handle {
 
     int fd;
 
-private:
-    RC ReadHeader(SP_Header &spHeader);
-
-    RC WriteHeader(SP_Header spHeader);
+//private:
 
     RC ReadSpaceHeader(SP_SpaceHeader &spSpaceHeader, int offset);
 

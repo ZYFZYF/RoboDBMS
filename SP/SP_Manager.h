@@ -10,13 +10,14 @@
 #include "SP_Handle.h"
 
 class SP_Manager {
-    RC CreateStringPool(const char *fileName);
+public:
+    static RC CreateStringPool(const char *fileName);
 
-    RC DestroyStringPool(const char *fileName);
+    static RC DestroyStringPool(const char *fileName);
 
-    RC OpenStringPool(const char *fileName, SP_Handle &spHandle);
+    static RC OpenStringPool(const char *fileName, SP_Handle &spHandle);
 
-    RC CloseStringPool(SP_Handle &spHandle);
+    static RC CloseStringPool(SP_Handle &spHandle);
 
 };
 

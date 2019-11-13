@@ -57,6 +57,9 @@ map<RC, string> msg = {
 
         {RM_TOOLARGERECSIZE, "RM ERROR: recordSize is too large for current pagefile system"},
 
+        {SP_NULLFILENAME, "SP WARNING: NULL FILE NAME"},
+        {SP_UNIX, "SP ERROR: LINUX FILE OPERATION ERROR"},
+
         {STAT_INVALID_ARGS, "STAT ERROR: invalid args"},
         {STAT_UNKNOWN_KEY, "STAT ERROR: unknown key"},
 
