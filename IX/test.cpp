@@ -20,10 +20,11 @@
 #include <cstdlib>
 #include <ctime>
 
-#include "redbase.h"
-#include "pf.h"
-#include "rm.h"
-#include "ix.h"
+#include "IX_Manager.h"
+#include "../RM/RM_FileHandle.h"
+#include "IX_IndexScan.h"
+#include "../RM/RM_Manager.h"
+#include "../utils/PrintError.h"
 
 using namespace std;
 
@@ -62,7 +63,6 @@ RC Test3(void);
 
 RC Test4(void);
 
-void PrintError(RC rc);
 
 void LsFiles(char *fileName);
 
@@ -91,7 +91,7 @@ RC PrintIndex(IX_IndexHandle &ih);
 //
 #define NUM_TESTS       3               // number of tests
 
-int (*tests[])() =                      // RC doesn't work on some compilers
+RC (*tests[])() =                      // RC doesn't work on some compilers
         {
                 Test1,
                 Test2,
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
         for (testNum = 0; testNum < NUM_TESTS; testNum++)
             if ((rc = (tests[testNum])())) {
                 // Print the error and exit
-                PrintError(rc);
+                printError(rc);
                 return (1);
             }
     } else {
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
             // Perform the test
             if ((rc = (tests[testNum - 1])())) {
                 // Print the error and exit
-                PrintError(rc);
+                printError(rc);
                 return (1);
             }
         }
@@ -159,23 +159,6 @@ int main(int argc, char *argv[]) {
     printf("Ending IX component test.\n\n");
 
     return (0);
-}
-
-//
-// PrintError
-//
-// Desc: Print an error message by calling the proper component-specific
-//       print-error function
-//
-void PrintError(RC rc) {
-    if (abs(rc) <= END_PF_WARN)
-        PF_PrintError(rc);
-    else if (abs(rc) <= END_RM_WARN)
-        RM_PrintError(rc);
-    else if (abs(rc) <= END_IX_WARN)
-        IX_PrintError(rc);
-    else
-        cerr << "Error code out of range: " << rc << "\n";
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -229,7 +212,7 @@ RC InsertIntEntries(IX_IndexHandle &ih, int nEntries) {
     ran(nEntries);
     for (i = 0; i < nEntries; i++) {
         value = values[i] + 1;
-        RID rid(value, value * 2);
+        RM_RID rid(value, value * 2);
         if ((rc = ih.InsertEntry((void *) &value, rid)))
             return (rc);
 
@@ -242,7 +225,7 @@ RC InsertIntEntries(IX_IndexHandle &ih, int nEntries) {
     printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
 
     // Return ok
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -257,7 +240,7 @@ RC InsertFloatEntries(IX_IndexHandle &ih, int nEntries) {
     ran(nEntries);
     for (i = 0; i < nEntries; i++) {
         value = values[i] + 1;
-        RID rid((PageNum) value, (SlotNum) value * 2);
+        RM_RID rid((PageNum) value, (SlotNum) value * 2);
         if ((rc = ih.InsertEntry((void *) &value, rid)))
             return (rc);
 
@@ -269,7 +252,7 @@ RC InsertFloatEntries(IX_IndexHandle &ih, int nEntries) {
     printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
 
     // Return ok
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -285,7 +268,7 @@ RC InsertStringEntries(IX_IndexHandle &ih, int nEntries) {
     for (i = 0; i < nEntries; i++) {
         memset(value, ' ', STRLEN);
         sprintf(value, "number %d", values[i] + 1);
-        RID rid(values[i] + 1, (values[i] + 1) * 2);
+        RM_RID rid(values[i] + 1, (values[i] + 1) * 2);
         if ((rc = ih.InsertEntry(value, rid)))
             return (rc);
 
@@ -297,7 +280,7 @@ RC InsertStringEntries(IX_IndexHandle &ih, int nEntries) {
     printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
 
     // Return ok
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -309,7 +292,7 @@ RC AddRecs(RM_FileHandle &fh, int nRecs) {
     RC rc;
     int i;
     int value;
-    RID rid;
+    RM_RID rid;
     PageNum pageNum;
     SlotNum slotNum;
 
@@ -330,7 +313,7 @@ RC AddRecs(RM_FileHandle &fh, int nRecs) {
     printf("\r\t%d%%      \n", (int) (i * 100L / nRecs));
 
     // Return ok
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -345,7 +328,7 @@ RC DeleteIntEntries(IX_IndexHandle &ih, int nEntries) {
     ran(nEntries);
     for (i = 0; i < nEntries; i++) {
         value = values[i] + 1;
-        RID rid(value, value * 2);
+        RM_RID rid(value, value * 2);
         if ((rc = ih.DeleteEntry((void *) &value, rid)))
             return (rc);
 
@@ -356,7 +339,7 @@ RC DeleteIntEntries(IX_IndexHandle &ih, int nEntries) {
     }
     printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
 
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -371,7 +354,7 @@ RC DeleteFloatEntries(IX_IndexHandle &ih, int nEntries) {
     ran(nEntries);
     for (i = 0; i < nEntries; i++) {
         value = values[i] + 1;
-        RID rid((PageNum) value, (SlotNum) value * 2);
+        RM_RID rid((PageNum) value, (SlotNum) value * 2);
         if ((rc = ih.DeleteEntry((void *) &value, rid)))
             return (rc);
 
@@ -382,7 +365,7 @@ RC DeleteFloatEntries(IX_IndexHandle &ih, int nEntries) {
     }
     printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
 
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -397,7 +380,7 @@ RC DeleteStringEntries(IX_IndexHandle &ih, int nEntries) {
     ran(nEntries);
     for (i = 0; i < nEntries; i++) {
         sprintf(value, "number %d", values[i] + 1);
-        RID rid(values[i] + 1, (values[i] + 1) * 2);
+        RM_RID rid(values[i] + 1, (values[i] + 1) * 2);
         if ((rc = ih.DeleteEntry(value, rid)))
             return (rc);
 
@@ -409,7 +392,7 @@ RC DeleteStringEntries(IX_IndexHandle &ih, int nEntries) {
     printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
 
     // Return ok
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -424,7 +407,7 @@ RC DeleteStringEntries(IX_IndexHandle &ih, int nEntries) {
 RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
     RC rc;
     int i;
-    RID rid;
+    RM_RID rid;
     IX_IndexScan scan;
     PageNum pageNum;
     SlotNum slotNum;
@@ -478,7 +461,7 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
         }
     }
 
-    return (0);
+    return OK_RC;
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -506,7 +489,7 @@ RC Test1(void) {
         return (rc);
 
     printf("Passed Test 1\n\n");
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -539,7 +522,7 @@ RC Test2(void) {
         return (rc);
 
     printf("Passed Test 2\n\n");
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -572,7 +555,7 @@ RC Test3(void) {
         return (rc);
 
     printf("Passed Test 3\n\n");
-    return (0);
+    return OK_RC;
 }
 
 //
@@ -584,7 +567,7 @@ RC Test4(void) {
     int index = 0;
     int i;
     int value = FEW_ENTRIES / 2;
-    RID rid;
+    RM_RID rid;
 
     printf("Test4: Inequality scans... \n");
 
@@ -667,5 +650,5 @@ RC Test4(void) {
         return (rc);
 
     printf("Passed Test 4\n\n");
-    return (0);
+    return OK_RC;
 }

@@ -88,9 +88,12 @@ enum RC {
 
     RM_TOOLARGERECSIZE,
 
-    //Rreturn code for SP
+    //return code for SP
             SP_UNIX,
     SP_NULLFILENAME,
+
+    //return code for IX
+            IX_EOF,
 
     STAT_INVALID_ARGS,
     STAT_UNKNOWN_KEY,

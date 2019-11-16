@@ -5,7 +5,8 @@
     - Bitmap查找效率问题 ×
  - IX
     - 索引建立 ×
-    - 变长字符串做索引 ×  
+    - 变长字符串做索引 × (不打算支持)
+    - 支持日期类型并支持日期类型做索引 ×
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase
