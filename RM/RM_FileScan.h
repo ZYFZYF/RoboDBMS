@@ -30,8 +30,6 @@ private:
 
     RM_FileHandle *rmFileHandle;
 
-    bool (*comparator)(void *, void *, AttrType, int);
-
     int attrOffset;
     int attrLength;
     void *value;

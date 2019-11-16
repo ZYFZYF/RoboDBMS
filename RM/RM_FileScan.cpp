@@ -6,85 +6,7 @@
 #include <cstdlib>
 #include <iostream>
 #include "RM_FileScan.h"
-
-//TODO: support varchar and date
-bool equal(void *value1, void *value2, AttrType attrtype, int attrLength) {
-    switch (attrtype) {
-        case FLOAT:
-            return (*(float *) value1 == *(float *) value2);
-        case INT:
-            return (*(int *) value1 == *(int *) value2);
-        case STRING:
-            return (strncmp((char *) value1, (char *) value2, attrLength) == 0);
-        default:
-            return false;
-    }
-}
-
-bool less_than(void *value1, void *value2, AttrType attrtype, int attrLength) {
-    switch (attrtype) {
-        case FLOAT:
-            return (*(float *) value1 < *(float *) value2);
-        case INT:
-            return (*(int *) value1 < *(int *) value2);
-        case STRING:
-            return (strncmp((char *) value1, (char *) value2, attrLength) < 0);
-        default:
-            return false;
-    }
-}
-
-bool greater_than(void *value1, void *value2, AttrType attrtype, int attrLength) {
-    switch (attrtype) {
-        case FLOAT:
-            return (*(float *) value1 > *(float *) value2);
-        case INT:
-            return (*(int *) value1 > *(int *) value2);
-        case STRING:
-            return (strncmp((char *) value1, (char *) value2, attrLength) > 0);
-        default:
-            return false;
-    }
-}
-
-bool less_than_or_eq_to(void *value1, void *value2, AttrType attrtype, int attrLength) {
-    switch (attrtype) {
-        case FLOAT:
-            return (*(float *) value1 <= *(float *) value2);
-        case INT:
-            return (*(int *) value1 <= *(int *) value2);
-        case STRING:
-            return (strncmp((char *) value1, (char *) value2, attrLength) <= 0);
-        default:
-            return false;
-    }
-}
-
-bool greater_than_or_eq_to(void *value1, void *value2, AttrType attrtype, int attrLength) {
-    switch (attrtype) {
-        case FLOAT:
-            return (*(float *) value1 >= *(float *) value2);
-        case INT:
-            return (*(int *) value1 >= *(int *) value2);
-        case STRING:
-            return (strncmp((char *) value1, (char *) value2, attrLength) >= 0);
-        default:
-            return false;
-    }
-}
-
-bool not_equal(void *value1, void *value2, AttrType attrtype, int attrLength) {
-    switch (attrtype) {
-        case FLOAT:
-            return (*(float *) value1 != *(float *) value2);
-        case INT:
-            return (*(int *) value1 != *(int *) value2);
-        case STRING:
-            return (strncmp((char *) value1, (char *) value2, attrLength) != 0);
-        default:
-            return false;
-    }
-}
+#include "../utils/Utils.h"
 
 RM_FileScan::RM_FileScan() {
     openScan = false; // initially a filescan is not valid
@@ -116,31 +38,6 @@ RC RM_FileScan::OpenScan(const RM_FileHandle &rmFileHandle,
     this->rmFileHandle = const_cast<RM_FileHandle *>(&rmFileHandle);
     this->value = nullptr;
     this->compOp = compOp;
-    switch (compOp) {
-        case EQ_OP :
-            comparator = &equal;
-            break;
-        case NE_OP :
-            comparator = &not_equal;
-            break;
-        case LT_OP :
-            comparator = &less_than;
-            break;
-        case GT_OP :
-            comparator = &greater_than;
-            break;
-        case LE_OP :
-            comparator = &less_than_or_eq_to;
-            break;
-        case GE_OP :
-            comparator = &greater_than_or_eq_to;
-            break;
-        case NO_OP :
-            comparator = nullptr;
-            break;
-        default:
-            return (RM_INVALIDSCAN);
-    }
 
     int recSize = (this->rmFileHandle)->rmFileHeader.recordSize;
     if (this->compOp != NO_OP) {
@@ -225,7 +122,8 @@ RC RM_FileScan::GetNextRec(RM_Record &rec) {
         TRY(tempRec.GetData(pData));
         //有比较函数需要结果为真才能返回
         if (compOp != NO_OP) {
-            bool satisfies = (*comparator)(pData + attrOffset, this->value, attrType, attrLength);
+            bool satisfies = Utils::Compare(pData + attrOffset, this->value, attrType, attrLength, compOp);
+            //bool satisfies = (*comparator)(pData + attrOffset, this->value, attrType, attrLength);
             if (satisfies) {
                 rec = tempRec;
                 break;

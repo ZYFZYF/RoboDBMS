@@ -5,12 +5,14 @@ set(HEADER
         ${CMAKE_CURRENT_SOURCE_DIR}/def.h
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/LinkList.h
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/PrintError.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/utils/Statistics.h)
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/Statistics.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/Utils.h)
 set(SOURCE
         ${SOURCE}
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/LinkList.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/PrintError.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/utils/Statistics.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/Statistics.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils/Utils.cpp)
 add_subdirectory(SP)
 add_subdirectory(PF)
 add_subdirectory(RM)

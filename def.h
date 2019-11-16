@@ -108,7 +108,9 @@ enum RC {
 enum AttrType {
     INT,
     FLOAT,
-    STRING
+    STRING,
+    DATE,
+    VARCHAR
 };
 
 //
