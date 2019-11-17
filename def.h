@@ -95,6 +95,7 @@ enum RC {
     //return code for IX
             IX_EOF,
     IX_ALREADY_IN_BTREE,
+    IX_ALREADY_NOT_IN_BTREE,
     IX_INDEX_SCAN_CLOSE,
 
     STAT_INVALID_ARGS,

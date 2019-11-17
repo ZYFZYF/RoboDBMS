@@ -98,7 +98,7 @@ RC PrintIndex(IX_IndexHandle &ih);
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
-                // Test1,
+                Test1,
                 Test2,
                 Test5,
                 Test6,
@@ -338,6 +338,7 @@ RC DeleteIntEntries(IX_IndexHandle &ih, int nEntries) {
     for (i = 0; i < nEntries; i++) {
         value = values[i] + 1;
         RM_RID rid(value, value * 2);
+        cout << "Delete " << i + 1 << "th key = " << value << " value = (" << value << ',' << value * 2 << ')' << endl;
         if ((rc = ih.DeleteEntry((void *) &value, rid)))
             return (rc);
 
@@ -750,3 +751,6 @@ RC Test4(void) {
     printf("Passed Test 4\n\n");
     return OK_RC;
 }
+
+//TODO  插入已经插入的和删除已经删除的测试
+//TODO  其他类型的测试

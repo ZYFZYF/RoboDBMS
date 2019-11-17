@@ -63,6 +63,7 @@ map<RC, string> msg = {
         {IX_EOF, "IX WARNING: end of index, no more entry"},
         {IX_ALREADY_IN_BTREE, "IX WARNING: entry already in b+ tree"},
         {IX_INDEX_SCAN_CLOSE, "IX WARNING: index scan is closed cannot get next entry"},
+        {IX_ALREADY_NOT_IN_BTREE, "IX WARNING: entry already not in b+ tree"},
 
         {STAT_INVALID_ARGS, "STAT ERROR: invalid args"},
         {STAT_UNKNOWN_KEY, "STAT ERROR: unknown key"},

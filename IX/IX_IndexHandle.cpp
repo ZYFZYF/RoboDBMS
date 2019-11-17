@@ -42,7 +42,19 @@ RC IX_IndexHandle::InsertEntry(void *key, const RM_RID &value) {
 }
 
 RC IX_IndexHandle::DeleteEntry(void *key, const RM_RID &value) {
-    return PF_NOBUF;
+    BPlusTreeNodePointer leaf;
+    void *temp = const_cast<RM_RID *>(&value);
+    int index;
+    Find(key, temp, false, leaf, index);
+    char *leafPageStart;
+    TRY(pfFileHandle.GetThisPageData(leaf, leafPageStart));
+    auto leafTreeNode = (IX_BPlusTreeNode *) leafPageStart;
+    if (Compare(NE_OP, key, temp, GetKeyAt(leafPageStart, index), GetValueAt(leafPageStart, index))) {
+        return IX_ALREADY_NOT_IN_BTREE;
+    }
+    TRY(Delete(leaf, key, temp));
+    TRY(pfFileHandle.UnpinPage(leaf));
+    return OK_RC;
 }
 
 RC IX_IndexHandle::ForcePages() {
@@ -123,6 +135,7 @@ RC IX_IndexHandle::BinarySearch(BPlusTreeNodePointer cur, void *key, void *value
     TRY(pfFileHandle.GetThisPageData(cur, data));
     auto ixBPlusTreeNode = (IX_BPlusTreeNode *) data;
     int l = 0, r = ixBPlusTreeNode->keyNum;
+    //先判断两个边界
     if (ixBPlusTreeNode->keyNum > 0 && Compare(LT_OP, key, value, GetKeyAt(data, l), GetValueAt(data, l))) {
         index = l;
         goto CLEAN_UP;
@@ -260,6 +273,7 @@ RC IX_IndexHandle::Insert(BPlusTreeNodePointer cur, void *key, void *value, BPlu
         TRY(pfFileHandle.GetThisPageData(firstChild, firstChildPageStart));
         auto firstChildTreeNode = (IX_BPlusTreeNode *) firstChildPageStart;
         if (firstChildTreeNode->isLeaf) {
+            //是的话要前后串起来
             if (index > 0) {
                 auto prevChild = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, index - 1);
                 char *prevChildPageStart;
@@ -302,11 +316,91 @@ RC IX_IndexHandle::Resort(BPlusTreeNodePointer left, BPlusTreeNodePointer right)
 }
 
 RC IX_IndexHandle::Redistribute(BPlusTreeNodePointer cur) {
-    return PF_NOBUF;
+    return OK_RC;
 }
 
 RC IX_IndexHandle::Delete(BPlusTreeNodePointer cur, void *key, void *value) {
-    return PF_NOBUF;
+    //先拿当前用到的指针什么的
+    char *curPageStart;
+    TRY(pfFileHandle.GetThisPageData(cur, curPageStart));
+    auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
+    int index;
+    BinarySearch(cur, key, value, index);
+    //拿到要删除的节点的页
+    auto deleteChild = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, index);
+    //把后面的往前挪
+    for (int i = index; i < curTreeNode->keyNum - 1; i++) {
+        SetKeyAt(curPageStart, i, GetKeyAt(curPageStart, i + 1));
+        SetValueAt(curPageStart, i, GetValueAt(curPageStart, i + 1));
+        SetChildAt(curPageStart, i, GetChildAt(curPageStart, i + 1));
+    }
+    curTreeNode->keyNum--;
+    //如果他们孩子是叶子的话，需要处理孩子之间的链接关系
+    if (!curTreeNode->isLeaf) {
+        //用第一个儿子的isLeaf来看
+        auto firstChild = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, 0);
+        char *firstChildPageStart;
+        TRY(pfFileHandle.GetThisPageData(firstChild, firstChildPageStart));
+        auto firstChildTreeNode = (IX_BPlusTreeNode *) firstChildPageStart;
+        if (firstChildTreeNode->isLeaf) {
+            char *deleteChildPageStart;
+            TRY(pfFileHandle.GetThisPageData(deleteChild, deleteChildPageStart));
+            auto deleteChildTreeNode = (IX_BPlusTreeNode *) deleteChildPageStart;
+            BPlusTreeNodePointer prevChild = deleteChildTreeNode->prev;
+            BPlusTreeNodePointer nextChild = deleteChildTreeNode->next;
+            if (prevChild != NULL_NODE) {
+                char *prevChildPageStart;
+                TRY(pfFileHandle.GetThisPageData(prevChild, prevChildPageStart));
+                auto prevChildTreeNode = (IX_BPlusTreeNode *) prevChildPageStart;
+                prevChildTreeNode->next = nextChild;
+                TRY(pfFileHandle.MarkDirty(prevChild));
+                TRY(pfFileHandle.UnpinPage(prevChild));
+            }
+            if (nextChild != NULL_NODE) {
+                char *nextChildPageStart;
+                TRY(pfFileHandle.GetThisPageData(nextChild, nextChildPageStart));
+                auto nextChildTreeNode = (IX_BPlusTreeNode *) nextChildPageStart;
+                nextChildTreeNode->prev = prevChild;
+                TRY(pfFileHandle.MarkDirty(nextChild));
+                TRY(pfFileHandle.UnpinPage(nextChild));
+            }
+        }
+        TRY(pfFileHandle.UnpinPage(firstChild));
+    }
+    //沿着父亲边修改一些key值(以及value值)
+    if (index == 0 && !curTreeNode->isRoot) {
+        BPlusTreeNodePointer temp = cur;
+        IX_BPlusTreeNode *tempTreeNode = curTreeNode;
+        //更新一路向上的节点的key值
+        while (!tempTreeNode->isRoot) {
+            char *fatherPageStart;
+            BPlusTreeNodePointer father = tempTreeNode->father;
+            TRY(pfFileHandle.GetThisPageData(father, fatherPageStart));
+            auto fatherTreeNode = (IX_BPlusTreeNode *) fatherPageStart;
+            if (*(BPlusTreeNodePointer *) GetChildAt(fatherPageStart, 0) == temp) {
+                SetKeyAt(fatherPageStart, 0, GetKeyAt(curPageStart, 0));
+                SetValueAt(fatherPageStart, 0, GetValueAt(curPageStart, 0));
+                temp = father;
+                tempTreeNode = fatherTreeNode;
+            } else {
+                int childIndex;
+                BinarySearch(father, key, value, childIndex);
+                SetKeyAt(fatherPageStart, childIndex, GetKeyAt(curPageStart, 0));
+                SetValueAt(fatherPageStart, childIndex, GetValueAt(curPageStart, 0));
+                TRY(pfFileHandle.MarkDirty(father));
+                TRY(pfFileHandle.UnpinPage(father));
+                break;
+            }
+            TRY(pfFileHandle.MarkDirty(father));
+            TRY(pfFileHandle.UnpinPage(father));
+        }
+    }
+    if (curTreeNode->keyNum * 2 < ixFileHeader.maxKeyNum) {
+        TRY(Redistribute(cur));
+    }
+    TRY(pfFileHandle.MarkDirty(cur));
+    TRY(pfFileHandle.UnpinPage(cur));
+    return OK_RC;
 }
 
 bool IX_IndexHandle::Compare(CompOp compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight) {
