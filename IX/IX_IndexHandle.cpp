@@ -3,6 +3,7 @@
 //
 
 #include <cstring>
+#include <vector>
 #include "IX_IndexHandle.h"
 #include "../utils/Utils.h"
 #include "def.h"
@@ -23,11 +24,20 @@ RC IX_IndexHandle::InsertEntry(void *key, const RM_RID &value) {
     char *leafPageStart;
     TRY(pfFileHandle.GetThisPageData(leaf, leafPageStart));
     auto leafTreeNode = (IX_BPlusTreeNode *) leafPageStart;
-    if (Campare(EQ_OP, key, temp, GetKeyAt(leafPageStart, index), GetValueAt(leafPageStart, index))) {
+    if (Compare(EQ_OP, key, temp, GetKeyAt(leafPageStart, index), GetValueAt(leafPageStart, index))) {
         return IX_ALREADY_IN_BTREE;
     }
-    TRY(pfFileHandle.UnpinPage(leaf));
     TRY(Insert(leaf, key, temp, NULL_NODE));
+    int keyNum = leafTreeNode->keyNum;
+    int myKeys[keyNum];
+    RM_RID myValues[keyNum];
+    BPlusTreeNodePointer myChilds[keyNum];
+    for (int i = 0; i < leafTreeNode->keyNum; i++) {
+        myKeys[i] = *(int *) GetKeyAt(leafPageStart, i);
+        myValues[i] = *(RM_RID *) GetValueAt(leafPageStart, i);
+        myChilds[i] = *(BPlusTreeNodePointer *) GetChildAt(leafPageStart, i);
+    }
+    TRY(pfFileHandle.UnpinPage(leaf));
     return OK_RC;
 }
 
@@ -56,10 +66,10 @@ RC IX_IndexHandle::FindFirstEntry(BPlusTreeNodePointer &bPlusTreeNodePointer, in
     bPlusTreeNodePointer = cur;
     index = 0;
     memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
+    int mykey = *(int *) actualKey;
     TRY(pfFileHandle.UnpinPage(cur));
     return OK_RC;
 }
-
 
 RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer, int &index,
                         void *actualKey) {
@@ -72,7 +82,7 @@ RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointe
         if (curTreeNode->isLeaf) {
             break;
         }
-        if (Campare(LT_OP, key, value, GetKeyAt(curPageStart, 0), GetValueAt(curPageStart, 0))) {
+        if (Compare(LT_OP, key, value, GetKeyAt(curPageStart, 0), GetValueAt(curPageStart, 0))) {
             if (modify) {
                 SetKeyAt(curPageStart, 0, key);
                 SetValueAt(curPageStart, 0, value);
@@ -91,34 +101,50 @@ RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointe
     if (actualKey != nullptr) {
         memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
     }
+    auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
+    int keyNum = curTreeNode->keyNum;
+    int myKeys[keyNum];
+    RM_RID myValues[keyNum];
+    BPlusTreeNodePointer myChilds[keyNum];
+    for (int i = 0; i < curTreeNode->keyNum; i++) {
+        myKeys[i] = *(int *) GetKeyAt(curPageStart, i);
+        myValues[i] = *(RM_RID *) GetValueAt(curPageStart, i);
+        myChilds[i] = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, i);
+    }
     TRY(pfFileHandle.UnpinPage(cur));
     return OK_RC;
 }
 
 //记住，只要调用过GetThisPage或者AllocatePage或者GetThisPageData，就一定要unpin掉
+//返回的是最后一个<=key的index的下标
 RC IX_IndexHandle::BinarySearch(BPlusTreeNodePointer cur, void *key, void *value, int &index) {
+    int actualKey, queryKey, compareKey;
     char *data;
     TRY(pfFileHandle.GetThisPageData(cur, data));
     auto ixBPlusTreeNode = (IX_BPlusTreeNode *) data;
     int l = 0, r = ixBPlusTreeNode->keyNum;
-    if (Campare(LT_OP, key, value, GetKeyAt(data, l), GetValueAt(data, l))) {
+    if (ixBPlusTreeNode->keyNum > 0 && Compare(LT_OP, key, value, GetKeyAt(data, l), GetValueAt(data, l))) {
         index = l;
         goto CLEAN_UP;
     }
-    if (Campare(LT_OP, key, value, GetKeyAt(data, r - 1), GetValueAt(data, r - 1))) {
+    if (ixBPlusTreeNode->keyNum > 0 && Compare(GE_OP, key, value, GetKeyAt(data, r - 1), GetValueAt(data, r - 1))) {
         index = r - 1;
         goto CLEAN_UP;
     }
+    queryKey = *(int *) key;
     while (l < r - 1) {
         int mid = (l + r) >> 1;
-        if (Campare(GT_OP, key, value, GetKeyAt(data, mid), GetValueAt(data, mid))) {
+        compareKey = *(int *) GetKeyAt(data, mid);
+        if (Compare(LT_OP, key, value, GetKeyAt(data, mid), GetValueAt(data, mid))) {
             r = mid;
         } else {
             l = mid;
         }
     }
     index = l;
+
     CLEAN_UP:
+    actualKey = *(int *) key;
     TRY(pfFileHandle.UnpinPage(cur));
     return OK_RC;
 }
@@ -145,12 +171,15 @@ RC IX_IndexHandle::Split(BPlusTreeNodePointer cur) {
         SetKeyAt(tempPageStart, i - mid, GetKeyAt(curPageStart, i));
         SetValueAt(tempPageStart, i - mid, GetValueAt(curPageStart, i));
         BPlusTreeNodePointer child = *(BPlusTreeNodePointer *) GetChildAt(tempPageStart, i - mid);
-        char *childPageStart;
-        TRY(pfFileHandle.GetThisPageData(child, childPageStart));
-        auto childTreeNode = (IX_BPlusTreeNode *) childPageStart;
-        childTreeNode->father = temp;
-        TRY(pfFileHandle.MarkDirty(child));
-        TRY(pfFileHandle.UnpinPage(child));
+        //如果该节点不是叶子节点的话，才更新他的儿子的父指针
+        if (child != NULL_NODE) {
+            char *childPageStart;
+            TRY(pfFileHandle.GetThisPageData(child, childPageStart));
+            auto childTreeNode = (IX_BPlusTreeNode *) childPageStart;
+            childTreeNode->father = temp;
+            TRY(pfFileHandle.MarkDirty(child));
+            TRY(pfFileHandle.UnpinPage(child));
+        }
     }
     //改变当前节点的keyNum
     curTreeNode->keyNum = mid;
@@ -167,8 +196,8 @@ RC IX_IndexHandle::Split(BPlusTreeNodePointer cur) {
         SetKeyAt(rootPageStart, 0, GetKeyAt(curPageStart, 0));
         SetValueAt(rootPageStart, 0, GetValueAt(curPageStart, 0));
         SetChildAt(rootPageStart, 0, &cur);
-        SetKeyAt(rootPageStart, 1, GetKeyAt(curPageStart, 0));
-        SetValueAt(rootPageStart, 1, GetValueAt(curPageStart, 0));
+        SetKeyAt(rootPageStart, 1, GetKeyAt(tempPageStart, 0));
+        SetValueAt(rootPageStart, 1, GetValueAt(tempPageStart, 0));
         SetChildAt(rootPageStart, 1, &temp);
         curTreeNode->father = tempTreeNode->father = root;
         curTreeNode->isRoot = false;
@@ -178,6 +207,7 @@ RC IX_IndexHandle::Split(BPlusTreeNodePointer cur) {
         }
         //修改文件头中存储的根页
         ixFileHeader.rootPageNum = root;
+        headerChanged = true;
         TRY(pfFileHandle.MarkDirty(root));
         TRY(pfFileHandle.MarkDirty(temp));
         TRY(pfFileHandle.MarkDirty(cur));
@@ -203,9 +233,11 @@ RC IX_IndexHandle::Insert(BPlusTreeNodePointer cur, void *key, void *value, BPlu
     auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
     //找到插入的位置
     int index = 0;
-    if (Campare(GE_OP, key, value, GetKeyAt(curPageStart, 0), GetValueAt(curPageStart, 0))) {
+    if (curTreeNode->keyNum > 0 && Compare(GE_OP, key, value, GetKeyAt(curPageStart, 0), GetValueAt(curPageStart, 0))) {
         BinarySearch(cur, key, value, index);
+        index++;
     }
+    int actualKey = *(int *) key;
     //把后面的都往前挪
     for (int i = curTreeNode->keyNum; i > index; i--) {
         SetKeyAt(curPageStart, i, GetKeyAt(curPageStart, i - 1));
@@ -252,13 +284,16 @@ RC IX_IndexHandle::Insert(BPlusTreeNodePointer cur, void *key, void *value, BPlu
             }
             TRY(pfFileHandle.MarkDirty(child));
             TRY(pfFileHandle.UnpinPage(child));
+        } else {
+            TRY(pfFileHandle.UnpinPage(child));
         }
-        if (curTreeNode->keyNum == ixFileHeader.maxKeyNum) {
-            Split(cur);
-        }
+        TRY(pfFileHandle.UnpinPage(firstChild));
     }
     TRY(pfFileHandle.MarkDirty(cur));
     TRY(pfFileHandle.UnpinPage(cur));
+    if (curTreeNode->keyNum == ixFileHeader.maxKeyNum) {
+        Split(cur);
+    }
     return OK_RC;
 }
 
@@ -274,7 +309,7 @@ RC IX_IndexHandle::Delete(BPlusTreeNodePointer cur, void *key, void *value) {
     return PF_NOBUF;
 }
 
-bool IX_IndexHandle::Campare(CompOp compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight) {
+bool IX_IndexHandle::Compare(CompOp compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight) {
     RM_RID left = *(RM_RID *) valueLeft, right = *(RM_RID *) valueRight;
     bool keyEqual = Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, EQ_OP);
     switch (compOp) {
@@ -290,11 +325,11 @@ bool IX_IndexHandle::Campare(CompOp compOp, void *keyLeft, void *valueLeft, void
             if (keyEqual)return left <= right;
             else return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, LE_OP);
         case NE_OP:
-            return !Campare(EQ_OP, keyLeft, valueLeft, keyRight, valueRight);
+            return !Compare(EQ_OP, keyLeft, valueLeft, keyRight, valueRight);
         case GT_OP:
-            return !Campare(LE_OP, keyLeft, valueLeft, keyRight, valueRight);
+            return !Compare(LE_OP, keyLeft, valueLeft, keyRight, valueRight);
         case GE_OP:
-            return !Campare(LT_OP, keyLeft, valueLeft, keyRight, valueRight);
+            return !Compare(LT_OP, keyLeft, valueLeft, keyRight, valueRight);
     }
 }
 
@@ -331,12 +366,14 @@ RC IX_IndexHandle::GetNextEntry(BPlusTreeNodePointer &cur, int &index, void *act
     if (++index == curTreeNode->keyNum) {
         BPlusTreeNodePointer temp = cur;
         cur = curTreeNode->next;
-        pfFileHandle.UnpinPage(temp);
+        TRY(pfFileHandle.UnpinPage(temp));
         if (cur == NULL_NODE) {
             return IX_EOF;
         } else {
+            TRY(pfFileHandle.GetThisPageData(cur, curPageStart));
             index = 0;
             memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
+            TRY(pfFileHandle.UnpinPage(cur));
             return OK_RC;
         }
     } else {

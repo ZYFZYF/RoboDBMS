@@ -45,6 +45,7 @@ public:
 private:
     PF_FileHandle pfFileHandle;
     IX_FileHeader ixFileHeader;
+    bool headerChanged;
 
     RC Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer, int &index,
             void *actualKey = nullptr);
@@ -63,7 +64,7 @@ private:
 
     RC Delete(BPlusTreeNodePointer cur, void *key, void *value);
 
-    bool Campare(CompOp compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight);
+    bool Compare(CompOp compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight);
 
     void *GetKeyAt(char *pageStart, int index);
 

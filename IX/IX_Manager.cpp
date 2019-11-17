@@ -86,12 +86,25 @@ RC IX_Manager::OpenIndex(const char *fileName, int indexNo, IX_IndexHandle &inde
     char *pageData;
     TRY(pfPageHandle.GetData(pageData));
     memcpy(&(indexHandle.ixFileHeader), pageData, IX_FILE_HEADER_SIZE);
+    indexHandle.headerChanged = false;
     //把首页放回去
     TRY(pfFileHandle.UnpinPage(pageNum));
     return OK_RC;
 }
 
 RC IX_Manager::CloseIndex(IX_IndexHandle &indexHandle) {
+    if (indexHandle.headerChanged) {
+        PF_PageHandle pfPageHandle;
+        PageNum headerPageNum;
+        TRY(indexHandle.pfFileHandle.GetFirstPage(pfPageHandle));
+        TRY(pfPageHandle.GetPageNum(headerPageNum));
+        char *pageData;
+        TRY(pfPageHandle.GetData(pageData));
+        memcpy(pageData, &indexHandle.ixFileHeader, IX_FILE_HEADER_SIZE);
+        TRY(indexHandle.pfFileHandle.MarkDirty(headerPageNum));
+        TRY(indexHandle.pfFileHandle.UnpinPage(headerPageNum));
+        indexHandle.headerChanged = false;
+    }
     TRY(pfManager.CloseFile(indexHandle.pfFileHandle));
     return OK_RC;
 }

@@ -63,6 +63,8 @@ RC Test3(void);
 
 RC Test4(void);
 
+RC Test5(void);
+
 
 void LsFiles(char *fileName);
 
@@ -93,8 +95,9 @@ RC PrintIndex(IX_IndexHandle &ih);
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
-                Test1,
+                // Test1,
                 Test2,
+                Test5,
                 Test3,
                 Test4
         };
@@ -111,7 +114,7 @@ int main(int argc, char *argv[]) {
     printf("Starting IX component test.\n\n");
 
     // Init randomize function
-    srand((unsigned) time(NULL));
+    //srand((unsigned) time(NULL));
 
     // Delete files from last time (if found)
     // Don't check the return codes, since we expect to get an error
@@ -213,6 +216,7 @@ RC InsertIntEntries(IX_IndexHandle &ih, int nEntries) {
     for (i = 0; i < nEntries; i++) {
         value = values[i] + 1;
         RM_RID rid(value, value * 2);
+        cout << "Insert " << i + 1 << "th key = " << value << " value = (" << value << ',' << value * 2 << ')' << endl;
         if ((rc = ih.InsertEntry((void *) &value, rid)))
             return (rc);
 
@@ -429,10 +433,13 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
             printf("Verify error: found non-existent entry %d\n", value);
             return (IX_EOF);  // What should be returned here?
         } else if (bExists && rc == IX_EOF) {
-            printf("Verify error: entry %d not found\n", value);
+            printf("Verify error: %dth entry %d not found\n", i - nStart + 1, value);
             return (IX_EOF);  // What should be returned here?
         } else if (rc != 0 && rc != IX_EOF)
             return (rc);
+        else {
+            printf("Verify %dth entry %d\n", i - nStart + 1, value);
+        }
 
         if (bExists && rc == 0) {
             // Did we get the right entry?
@@ -522,6 +529,39 @@ RC Test2(void) {
         return (rc);
 
     printf("Passed Test 2\n\n");
+    return OK_RC;
+}
+
+//
+// Test5 tests inserting number of integer entries into the index.
+//
+RC Test5(void) {
+    RC rc;
+    IX_IndexHandle ih;
+    int index = 0;
+
+    printf("Test5: Insert number of integer entries into an index... \n");
+
+    if ((rc = ixm.CreateIndex(FILENAME, index, INT, sizeof(int))) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertIntEntries(ih, MANY_ENTRIES)) ||
+        (rc = ixm.CloseIndex(ih)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+
+        // ensure inserted entries are all there
+        (rc = VerifyIntIndex(ih, 0, MANY_ENTRIES, TRUE)) ||
+
+        // ensure an entry not inserted is not there
+        (rc = VerifyIntIndex(ih, MANY_ENTRIES, 1, FALSE)) ||
+        (rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+
+    printf("Passed Test 5\n\n");
     return OK_RC;
 }
 

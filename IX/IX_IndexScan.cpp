@@ -9,7 +9,7 @@
 #include "../utils/Utils.h"
 
 IX_IndexScan::IX_IndexScan() {
-
+    isOpen = false;
 }
 
 IX_IndexScan::~IX_IndexScan() {
@@ -22,10 +22,16 @@ RC IX_IndexScan::OpenScan(const IX_IndexHandle &indexHandle, CompOp compOp, void
     this->compareKey = (void *) malloc(ixIndexHandle->ixFileHeader.attrLength);
     memcpy(compareKey, value, ixIndexHandle->ixFileHeader.attrLength);
     currentKey = (void *) malloc(ixIndexHandle->ixFileHeader.attrLength);
-    isFirst = false;
+    isFirst = true;
+    isOpen = true;
+    return OK_RC;
 }
 
 RC IX_IndexScan::GetNextEntry(RM_RID &rid) {
+    int myCurrentKey;
+    if (!isOpen) {
+        return IX_INDEX_SCAN_CLOSE;
+    }
     //第一次返回的是第一个满足条件的
     if (isFirst) {
         isFirst = false;
@@ -33,19 +39,44 @@ RC IX_IndexScan::GetNextEntry(RM_RID &rid) {
         RM_RID maxRID(MAX_PAGE_NUM, MAX_SLOT_NUM);
         switch (compareOp) {
             case NO_OP:
-                ixIndexHandle->FindFirstEntry(currentLeaf, currentIndex, currentKey);
+                TRY(ixIndexHandle->FindFirstEntry(currentLeaf, currentIndex, currentKey));
+                break;
             case NE_OP:
-                ixIndexHandle->FindFirstEntry(currentLeaf, currentIndex, currentKey);
+                TRY(ixIndexHandle->FindFirstEntry(currentLeaf, currentIndex, currentKey));
+                break;
             case LT_OP:
-                ixIndexHandle->FindFirstEntry(currentLeaf, currentIndex, currentKey);
+                TRY(ixIndexHandle->FindFirstEntry(currentLeaf, currentIndex, currentKey));
+                break;
             case LE_OP:
-                ixIndexHandle->FindFirstEntry(currentLeaf, currentIndex, currentKey);
+                TRY(ixIndexHandle->FindFirstEntry(currentLeaf, currentIndex, currentKey));
+                break;
             case EQ_OP:
-                ixIndexHandle->Find(compareKey, &minRID, false, currentLeaf, currentIndex);
+                if (*(int *) compareKey == 764) {
+                    int x = 1;
+                }
+                TRY(ixIndexHandle->Find(compareKey, &minRID, false, currentLeaf, currentIndex, currentKey));
+                //上面返回的一定是小于的最后一个或者是全局的第一个
+                myCurrentKey = *(int *) currentKey;
+                if (!Utils::Compare(currentKey, compareKey, ixIndexHandle->ixFileHeader.attrType,
+                                    ixIndexHandle->ixFileHeader.attrLength, EQ_OP)) {
+                    TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
+                }
+                myCurrentKey = *(int *) currentKey;
+                break;
             case GT_OP:
-                ixIndexHandle->Find(compareKey, &maxRID, false, currentLeaf, currentIndex);
+                TRY(ixIndexHandle->Find(compareKey, &maxRID, false, currentLeaf, currentIndex));
+                if (!Utils::Compare(currentKey, compareKey, ixIndexHandle->ixFileHeader.attrType,
+                                    ixIndexHandle->ixFileHeader.attrLength, GT_OP)) {
+                    TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
+                }
+                break;
             case GE_OP:
-                ixIndexHandle->Find(compareKey, &minRID, false, currentLeaf, currentIndex);
+                TRY(ixIndexHandle->Find(compareKey, &minRID, false, currentLeaf, currentIndex));
+                if (!Utils::Compare(currentKey, compareKey, ixIndexHandle->ixFileHeader.attrType,
+                                    ixIndexHandle->ixFileHeader.attrLength, GE_OP)) {
+                    TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
+                }
+                break;
         }
     } else {
         TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
@@ -68,5 +99,6 @@ RC IX_IndexScan::GetNextEntry(RM_RID &rid) {
 }
 
 RC IX_IndexScan::CloseScan() {
-    return PF_NOBUF;
+    isOpen = false;
+    return OK_RC;
 }

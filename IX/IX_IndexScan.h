@@ -28,6 +28,7 @@ private:
     int currentIndex;
     void *currentKey;
     bool isFirst;
+    bool isOpen;
 };
 
 
