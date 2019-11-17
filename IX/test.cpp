@@ -102,8 +102,9 @@ RC (*tests[])() =                      // RC doesn't work on some compilers
                 Test2,
                 Test5,
                 Test6,
-                Test3,
-                Test4
+                Test4,
+                Test3
+
         };
 
 //
