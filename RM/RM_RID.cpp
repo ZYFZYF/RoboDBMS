@@ -35,7 +35,8 @@ bool RM_RID::operator==(const RM_RID &rhs) const {
 }
 
 bool RM_RID::operator!=(const RM_RID &rhs) const {
-    return !(rhs == *this);
+    return pageNum != rhs.pageNum ||
+           slotNum != rhs.pageNum;
 }
 
 RM_RID::RM_RID(const RM_RID &rmRid) {
@@ -60,4 +61,22 @@ RC RM_RID::GetPageNumAndSlotNum(PageNum &pageNum, SlotNum &slotNum) const {
     TRY(GetPageNum(pageNum));
     TRY(GetSlotNum(slotNum));
     return OK_RC;
+}
+
+bool RM_RID::operator<(const RM_RID &rhs) const {
+    if (pageNum != rhs.pageNum)return pageNum < rhs.pageNum;
+    else return slotNum < rhs.slotNum;
+}
+
+bool RM_RID::operator<=(const RM_RID &rhs) const {
+    if (pageNum != rhs.pageNum)return pageNum < rhs.pageNum;
+    else return slotNum <= rhs.slotNum;
+}
+
+bool RM_RID::operator>(const RM_RID &rhs) const {
+    return !(*this <= rhs);
+}
+
+bool RM_RID::operator>=(const RM_RID &rhs) const {
+    return !(*this < rhs);
 }

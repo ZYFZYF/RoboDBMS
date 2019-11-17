@@ -42,5 +42,16 @@ int main() {
         }
         cout << w << endl;
     }
+
+    cout << "sizeof(RM_RID) is " << sizeof(class RM_RID) << endl;
+    RM_RID rid1(2, 2);
+    RM_RID rid2(2, 2);
+    RM_RID rid3(1, 2);
+    RM_RID rid4(3, 2);
+    cout << "rid equal == " << (rid1 == rid2) << endl;
+    cout << "(2,2) < (2,2) is " << (rid1 < rid2) << endl;
+    cout << "(1,2) < (3,2) is " << (rid3 < rid4) << endl;
+    cout << "(3,2) >= (2,2) is " << (rid4 >= rid2) << endl;
+    cout << "(2,2) > (2,2) is " << (rid1 > rid2) << endl;
     return 0;
 }

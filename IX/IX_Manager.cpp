@@ -3,7 +3,9 @@
 //
 
 #include <string>
+#include <cstring>
 #include "IX_Manager.h"
+#include "def.h"
 
 IX_Manager::IX_Manager(PF_Manager &pfm) {
     pfManager = pfm;
@@ -19,16 +21,42 @@ RC IX_Manager::CreateIndex(const char *fileName, int indexNo, AttrType attrType,
     TRY(pfManager.CreateFile(indexFileName.c_str()));
     //尝试初始化
     PF_FileHandle pfFileHandle;
-    PF_PageHandle pfPageHandle;
-    PageNum pageNum;
+    PF_PageHandle pfHeaderPageHandle, pfRootPageHandle;
+    PageNum headerPageNum, rootPageNum;
+    char *pageData;
+    //打开文件
     TRY(pfManager.OpenFile(indexFileName.c_str(), pfFileHandle));
-    TRY(pfFileHandle.AllocatePage(pfPageHandle));
-    TRY(pfPageHandle.GetPageNum(pageNum));
-    //TODO  确定初始化的内容
-
+    //先分配头页
+    TRY(pfFileHandle.AllocatePage(pfHeaderPageHandle));
+    TRY(pfHeaderPageHandle.GetPageNum(headerPageNum));
+    //再分配根页
+    TRY(pfFileHandle.AllocatePage(pfRootPageHandle));
+    TRY(pfRootPageHandle.GetPageNum(rootPageNum));
+    //初始化索引文件头页并写入页数据
+    IX_FileHeader ixFileHeader;
+    ixFileHeader.attrType = attrType;
+    ixFileHeader.attrLength = attrLength;
+    ixFileHeader.maxKeyNum =
+            (PF_PAGE_SIZE - IX_FILE_HEADER_SIZE) / (ixFileHeader.attrLength + VALUE_LENGTH + CHILD_LENGTH);
+    ixFileHeader.firstKeyOffset = IX_BPLUS_TREE_NODE_SIZE;
+    ixFileHeader.firstValueOffset = ixFileHeader.firstKeyOffset + ixFileHeader.attrLength * ixFileHeader.maxKeyNum;
+    ixFileHeader.firstChildOffset = ixFileHeader.firstValueOffset + VALUE_LENGTH * ixFileHeader.maxKeyNum;
+    ixFileHeader.rootPageNum = rootPageNum;
+    TRY(pfHeaderPageHandle.GetData(pageData));
+    memcpy(pageData, &ixFileHeader, IX_FILE_HEADER_SIZE);
+    //初始化B+树根页并写入页数据
+    IX_BPlusTreeNode ixBPlusTreeNode;
+    ixBPlusTreeNode.isLeaf = true;
+    ixBPlusTreeNode.isRoot = true;
+    ixBPlusTreeNode.keyNum = 0;
+    ixBPlusTreeNode.prev = ixBPlusTreeNode.next = ixBPlusTreeNode.father = NULL_NODE;
+    TRY(pfRootPageHandle.GetData(pageData));
+    memcpy(pageData, &ixBPlusTreeNode, IX_BPLUS_TREE_NODE_SIZE);
     //标记为脏页并且取消pin
-    TRY(pfFileHandle.MarkDirty(pageNum));
-    TRY(pfFileHandle.UnpinPage(pageNum));
+    TRY(pfFileHandle.MarkDirty(headerPageNum));
+    TRY(pfFileHandle.UnpinPage(headerPageNum));
+    TRY(pfFileHandle.MarkDirty(rootPageNum));
+    TRY(pfFileHandle.UnpinPage(rootPageNum));
     //关闭文件
     TRY(pfManager.CloseFile(pfFileHandle));
     return OK_RC;
@@ -53,8 +81,11 @@ RC IX_Manager::OpenIndex(const char *fileName, int indexNo, IX_IndexHandle &inde
     TRY(pfManager.OpenFile(indexFileName.c_str(), pfFileHandle));
     TRY(pfFileHandle.GetFirstPage(pfPageHandle));
     TRY(pfPageHandle.GetPageNum(pageNum));
-    //TODO 拿到IndexHandle的相关信息
+    //拿到IndexHandle的相关信息
     indexHandle.pfFileHandle = pfFileHandle;
+    char *pageData;
+    TRY(pfPageHandle.GetData(pageData));
+    memcpy(&(indexHandle.ixFileHeader), pageData, IX_FILE_HEADER_SIZE);
     //把首页放回去
     TRY(pfFileHandle.UnpinPage(pageNum));
     return OK_RC;

@@ -30,6 +30,15 @@ public:
 
     bool operator!=(const RM_RID &rhs) const;
 
+    bool operator<(const RM_RID &rhs) const;
+
+    bool operator<=(const RM_RID &rhs) const;
+
+    bool operator>(const RM_RID &rhs) const;
+
+    bool operator>=(const RM_RID &rhs) const;
+
+
     ~RM_RID();
 
     // Destructor
