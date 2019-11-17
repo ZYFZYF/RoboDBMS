@@ -14,6 +14,7 @@
 #define IX_BPLUS_TREE_NODE_SIZE sizeof(IX_BPlusTreeNode)
 
 typedef PageNum BPlusTreeNodePointer
+typedef PageNum ChildType
 
 struct IX_BPlusTreeNode {
     bool isLeaf;
@@ -35,21 +36,33 @@ private:
     PF_FileHandle pfFileHandle;
     IX_FileHeader ixFileHeader;
 
-    RC Find(void *key, const RM_RID &value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer);
+    RC Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer);
 
-    RC BinarySearch(BPlusTreeNodePointer cur, void *key, const RM_RID &value, int &index);
+    RC BinarySearch(BPlusTreeNodePointer cur, void *key, void *value, int &index);
 
     RC Split(BPlusTreeNodePointer cur);
 
-    RC Insert(BPlusTreeNodePointer cur, void *key, const RM_RID &value);
+    RC Insert(BPlusTreeNodePointer cur, void *key, void *value, BPlusTreeNodePointer child);
 
     RC Resort(BPlusTreeNodePointer left, BPlusTreeNodePointer right);
 
     RC Redistribute(BPlusTreeNodePointer cur);
 
-    RC Delete(BPlusTreeNodePointer cur, void *key, const RM_RID &value);
+    RC Delete(BPlusTreeNodePointer cur, void *key, void *value);
 
     bool Campare(CompOp compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight);
+
+    void *GetKeyAt(char *pageStart, int index);
+
+    void *GetValueAt(char *pageStart, int index);
+
+    void *GetChildAt(char *pageStart, int index);
+
+    void SetKeyAt(char *pageStart, int index, void *key);
+
+    void SetValueAt(char *pageStart, int index, void *value);
+
+    void SetChildAt(char *pageStart, int index, void *child);
 };
 
 

@@ -57,6 +57,8 @@ public:
     // Force a page or pages to disk (but do not remove from the buffer pool)
     RC ForcePages(PageNum pageNum = ALL_PAGES) const;
 
+    RC GetThisPageData(PageNum pageNum, char *&pData);
+
 private:
 
     // IsValidPageNum will return TRUE if page number is valid and FALSE

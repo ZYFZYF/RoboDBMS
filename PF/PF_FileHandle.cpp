@@ -498,3 +498,10 @@ int PF_FileHandle::IsValidPageNum(PageNum pageNum) const {
             pageNum < hdr.numPages);
 }
 
+RC PF_FileHandle::GetThisPageData(PageNum pageNum, char *&pData) {
+    PF_PageHandle pfPageHandle;
+    TRY(GetThisPage(pageNum, pfPageHandle));
+    TRY(pfPageHandle.GetData(pData));
+    return OK_RC;
+}
+
