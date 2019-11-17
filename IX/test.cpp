@@ -221,7 +221,7 @@ RC InsertIntEntries(IX_IndexHandle &ih, int nEntries) {
     for (i = 0; i < nEntries; i++) {
         value = values[i] + 1;
         RM_RID rid(value, value * 2);
-        cout << "Insert " << i + 1 << "th key = " << value << " value = (" << value << ',' << value * 2 << ')' << endl;
+        //cout << "Insert " << i + 1 << "th key = " << value << " value = (" << value << ',' << value * 2 << ')' << endl;
         if ((rc = ih.InsertEntry((void *) &value, rid)))
             return (rc);
 
@@ -443,7 +443,7 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
         } else if (rc != 0 && rc != IX_EOF)
             return (rc);
         else {
-            printf("Verify %dth entry %d\n", i - nStart + 1, value);
+            // printf("Verify %dth entry %d\n", i - nStart + 1, value);
         }
 
         if (bExists && rc == 0) {
@@ -642,82 +642,102 @@ RC Test3(void) {
 RC Test4(void) {
     RC rc;
     IX_IndexHandle ih;
+
     int index = 0;
-    int i;
-    int value = FEW_ENTRIES / 2;
-    RM_RID rid;
-
-    printf("Test4: Inequality scans... \n");
-
     if ((rc = ixm.CreateIndex(FILENAME, index, INT, sizeof(int))) ||
         (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
         (rc = InsertIntEntries(ih, FEW_ENTRIES)))
         return (rc);
+    int i;
+    int valueList[] = {0, 1, -1, FEW_ENTRIES / 4, FEW_ENTRIES / 2, FEW_ENTRIES - 1, FEW_ENTRIES, FEW_ENTRIES + 1};
+    printf("Test4: Inequality scans... \n");
+    for (int value : valueList) {
+        RM_RID rid;
 
-    // Scan <
-    IX_IndexScan scanlt;
-    if ((rc = scanlt.OpenScan(ih, LT_OP, &value))) {
-        printf("Scan error: opening scan\n");
-        return (rc);
+
+
+        // Scan <
+        IX_IndexScan scanlt;
+        if ((rc = scanlt.OpenScan(ih, LT_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scanlt.GetNextEntry(rid))) {
+            i++;
+        }
+
+        if (rc != IX_EOF)
+            return (rc);
+
+        printf("Found %d entries in < %d\n", i, value);
+
+        // Scan <=
+        IX_IndexScan scanle;
+        if ((rc = scanle.OpenScan(ih, LE_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scanle.GetNextEntry(rid))) {
+            i++;
+        }
+        if (rc != IX_EOF)
+            return (rc);
+
+        printf("Found %d entries in <= %d\n", i, value);
+
+        // Scan >
+        IX_IndexScan scangt;
+        if ((rc = scangt.OpenScan(ih, GT_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scangt.GetNextEntry(rid))) {
+            i++;
+        }
+        if (rc != IX_EOF)
+            return (rc);
+
+        printf("Found %d entries in > %d\n", i, value);
+
+        // Scan >=
+        IX_IndexScan scange;
+        if ((rc = scange.OpenScan(ih, GE_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scange.GetNextEntry(rid))) {
+            i++;
+        }
+        if (rc != IX_EOF)
+            return (rc);
+
+        printf("Found %d entries in >= %d\n", i, value);
+
+        // Scan !=
+        IX_IndexScan scanne;
+        if ((rc = scanne.OpenScan(ih, NE_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scanne.GetNextEntry(rid))) {
+            i++;
+        }
+        if (rc != IX_EOF)
+            return (rc);
+
+        printf("Found %d entries in != %d\n", i, value);
     }
 
-    i = 0;
-    while (!(rc = scanlt.GetNextEntry(rid))) {
-        i++;
-    }
-
-    if (rc != IX_EOF)
-        return (rc);
-
-    printf("Found %d entries in <-scan.", i);
-
-    // Scan <=
-    IX_IndexScan scanle;
-    if ((rc = scanle.OpenScan(ih, LE_OP, &value))) {
-        printf("Scan error: opening scan\n");
-        return (rc);
-    }
-
-    i = 0;
-    while (!(rc = scanle.GetNextEntry(rid))) {
-        i++;
-    }
-    if (rc != IX_EOF)
-        return (rc);
-
-    printf("Found %d entries in <=-scan.\n", i);
-
-    // Scan >
-    IX_IndexScan scangt;
-    if ((rc = scangt.OpenScan(ih, GT_OP, &value))) {
-        printf("Scan error: opening scan\n");
-        return (rc);
-    }
-
-    i = 0;
-    while (!(rc = scangt.GetNextEntry(rid))) {
-        i++;
-    }
-    if (rc != IX_EOF)
-        return (rc);
-
-    printf("Found %d entries in >-scan.\n", i);
-
-    // Scan >=
-    IX_IndexScan scange;
-    if ((rc = scange.OpenScan(ih, GE_OP, &value))) {
-        printf("Scan error: opening scan\n");
-        return (rc);
-    }
-
-    i = 0;
-    while (!(rc = scange.GetNextEntry(rid))) {
-        i++;
-    }
-    if (rc != IX_EOF)
-        return (rc);
-
-    printf("Found %d entries in >=-scan.\n", i);
 
     if ((rc = ixm.CloseIndex(ih)))
         return (rc);

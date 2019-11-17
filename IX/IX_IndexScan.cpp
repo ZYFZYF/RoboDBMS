@@ -64,18 +64,22 @@ RC IX_IndexScan::GetNextEntry(RM_RID &rid) {
                 myCurrentKey = *(int *) currentKey;
                 break;
             case GT_OP:
-                TRY(ixIndexHandle->Find(compareKey, &maxRID, false, currentLeaf, currentIndex));
+                TRY(ixIndexHandle->Find(compareKey, &maxRID, false, currentLeaf, currentIndex, currentKey));
+                myCurrentKey = *(int *) currentKey;
                 if (!Utils::Compare(currentKey, compareKey, ixIndexHandle->ixFileHeader.attrType,
                                     ixIndexHandle->ixFileHeader.attrLength, GT_OP)) {
                     TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
                 }
+                myCurrentKey = *(int *) currentKey;
                 break;
             case GE_OP:
-                TRY(ixIndexHandle->Find(compareKey, &minRID, false, currentLeaf, currentIndex));
+                TRY(ixIndexHandle->Find(compareKey, &minRID, false, currentLeaf, currentIndex, currentKey));
+                myCurrentKey = *(int *) currentKey;
                 if (!Utils::Compare(currentKey, compareKey, ixIndexHandle->ixFileHeader.attrType,
                                     ixIndexHandle->ixFileHeader.attrLength, GE_OP)) {
                     TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
                 }
+                myCurrentKey = *(int *) currentKey;
                 break;
         }
     } else {
