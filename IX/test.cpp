@@ -36,7 +36,8 @@ using namespace std;
 #define STRLEN       39               // length of strings to index
 #define FEW_ENTRIES  20
 #define MANY_ENTRIES 1000
-#define NENTRIES     5000             // Size of values array
+#define LARGE_ENTRIES 100000
+#define NENTRIES     500000             // Size of values array
 #define PROG_UNIT    200              // how frequently to give progress
 // reports when adding lots of entries
 
@@ -65,6 +66,8 @@ RC Test4(void);
 
 RC Test5(void);
 
+RC Test6(void);
+
 
 void LsFiles(char *fileName);
 
@@ -91,13 +94,14 @@ RC PrintIndex(IX_IndexHandle &ih);
 //
 // Array of pointers to the test functions
 //
-#define NUM_TESTS       3               // number of tests
+#define NUM_TESTS       6               // number of tests
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
                 // Test1,
                 Test2,
                 Test5,
+                Test6,
                 Test3,
                 Test4
         };
@@ -562,6 +566,39 @@ RC Test5(void) {
         return (rc);
 
     printf("Passed Test 5\n\n");
+    return OK_RC;
+}
+
+//
+// Test6 tests inserting large number of integer entries into the index.
+//
+RC Test6(void) {
+    RC rc;
+    IX_IndexHandle ih;
+    int index = 0;
+
+    printf("Test6: Insert large number of integer entries into an index... \n");
+
+    if ((rc = ixm.CreateIndex(FILENAME, index, INT, sizeof(int))) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertIntEntries(ih, LARGE_ENTRIES)) ||
+        (rc = ixm.CloseIndex(ih)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+
+        // ensure inserted entries are all there
+        (rc = VerifyIntIndex(ih, 0, LARGE_ENTRIES, TRUE)) ||
+
+        // ensure an entry not inserted is not there
+        (rc = VerifyIntIndex(ih, LARGE_ENTRIES, 1, FALSE)) ||
+        (rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+
+    printf("Passed Test 6\n\n");
     return OK_RC;
 }
 
