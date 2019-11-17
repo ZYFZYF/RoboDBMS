@@ -10,15 +10,6 @@
 #include "IX_IndexHandle.h"
 
 #define IX_FILE_HEADER_SIZE sizeof(IX_FileHeader)
-struct IX_FileHeader {
-    AttrType attrType;
-    int attrLength;
-    int maxKeyNum;
-    PageNum rootPageNum;
-    int firstKeyOffset;
-    int firstValueOffset;
-    int firstChildOffset;
-};
 
 class IX_Manager {
 

@@ -9,12 +9,20 @@
 #include "../def.h"
 #include "../RM/RM_RID.h"
 #include "../PF/PF_FileHandle.h"
-#include "IX_Manager.h"
 
 #define IX_BPLUS_TREE_NODE_SIZE sizeof(IX_BPlusTreeNode)
 
-typedef PageNum BPlusTreeNodePointer
-typedef PageNum ChildType
+typedef PageNum BPlusTreeNodePointer;
+
+struct IX_FileHeader {
+    AttrType attrType;
+    int attrLength;
+    int maxKeyNum;
+    PageNum rootPageNum;
+    int firstKeyOffset;
+    int firstValueOffset;
+    int firstChildOffset;
+};
 
 struct IX_BPlusTreeNode {
     bool isLeaf;

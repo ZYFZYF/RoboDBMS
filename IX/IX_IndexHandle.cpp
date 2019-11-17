@@ -16,7 +16,20 @@ IX_IndexHandle::~IX_IndexHandle() {
 }
 
 RC IX_IndexHandle::InsertEntry(void *key, const RM_RID &value) {
-    return PF_NOBUF;
+    BPlusTreeNodePointer leaf;
+    void *temp = const_cast<RM_RID *>(&value);
+    Find(key, temp, true, leaf);
+    int index;
+    BinarySearch(leaf, key, temp, index);
+    char *leafPageStart;
+    TRY(pfFileHandle.GetThisPageData(leaf, leafPageStart));
+    auto leafTreeNode = (IX_BPlusTreeNode *) leafPageStart;
+    if (Campare(EQ_OP, key, temp, GetKeyAt(leafPageStart, index), GetValueAt(leafPageStart, index))) {
+        return IX_ALREADY_IN_BTREE;
+    }
+    TRY(pfFileHandle.UnpinPage(leaf));
+    TRY(Insert(leaf, key, temp, NULL_NODE));
+    return OK_RC;
 }
 
 RC IX_IndexHandle::DeleteEntry(void *key, const RM_RID &value) {
@@ -28,7 +41,33 @@ RC IX_IndexHandle::ForcePages() {
 }
 
 RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer) {
-    return PF_NOBUF;
+    BPlusTreeNodePointer cur = ixFileHeader.rootPageNum;
+    while (true) {
+        BPlusTreeNodePointer temp = cur;
+        char *curPageStart;
+        TRY(pfFileHandle.GetThisPageData(cur, curPageStart));
+        auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
+        if (curTreeNode->isLeaf) {
+            break;
+        }
+        if (Campare(LT_OP, key, value, GetKeyAt(curPageStart, 0), GetValueAt(curPageStart, 0))) {
+            if (modify) {
+                SetKeyAt(curPageStart, 0, key);
+                SetValueAt(curPageStart, 0, value);
+                TRY(pfFileHandle.MarkDirty(temp));
+            }
+            cur = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, 0);
+            TRY(pfFileHandle.UnpinPage(temp));
+        } else {
+            int index;
+            BinarySearch(cur, key, value, index);
+            cur = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, index);
+            TRY(pfFileHandle.UnpinPage(temp));
+        }
+    }
+    bPlusTreeNodePointer = cur;
+    TRY(pfFileHandle.UnpinPage(cur));
+    return OK_RC;
 }
 
 //记住，只要调用过GetThisPage或者AllocatePage或者GetThisPageData，就一定要unpin掉
@@ -112,6 +151,8 @@ RC IX_IndexHandle::Split(BPlusTreeNodePointer cur) {
             curTreeNode->next = temp;
             tempTreeNode->prev = cur;
         }
+        //修改文件头中存储的根页
+        ixFileHeader.rootPageNum = root;
         TRY(pfFileHandle.MarkDirty(root));
         TRY(pfFileHandle.MarkDirty(temp));
         TRY(pfFileHandle.MarkDirty(cur));
@@ -119,6 +160,7 @@ RC IX_IndexHandle::Split(BPlusTreeNodePointer cur) {
         TRY(pfFileHandle.UnpinPage(temp));
         TRY(pfFileHandle.UnpinPage(cur));
     } else {
+        //否则给个新爸爸，并且递归插入到爸爸节点里
         tempTreeNode->father = curTreeNode->father;
         TRY(pfFileHandle.MarkDirty(temp));
         TRY(pfFileHandle.MarkDirty(cur));
@@ -126,10 +168,73 @@ RC IX_IndexHandle::Split(BPlusTreeNodePointer cur) {
         TRY(pfFileHandle.UnpinPage(cur));
         Insert(curTreeNode->father, GetKeyAt(curPageStart, mid), GetValueAt(curPageStart, mid), temp);
     }
+    return OK_RC;
 }
 
 RC IX_IndexHandle::Insert(BPlusTreeNodePointer cur, void *key, void *value, BPlusTreeNodePointer child) {
-    return PF_NOBUF;
+    //先拿当前用到的指针什么的
+    char *curPageStart;
+    TRY(pfFileHandle.GetThisPageData(cur, curPageStart));
+    auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
+    //找到插入的位置
+    int index = 0;
+    if (Campare(GE_OP, key, value, GetKeyAt(curPageStart, 0), GetValueAt(curPageStart, 0))) {
+        BinarySearch(cur, key, value, index);
+    }
+    //把后面的都往前挪
+    for (int i = curTreeNode->keyNum; i > index; i--) {
+        SetKeyAt(curPageStart, i, GetKeyAt(curPageStart, i - 1));
+        SetValueAt(curPageStart, i, GetValueAt(curPageStart, i - 1));
+        SetChildAt(curPageStart, i, GetChildAt(curPageStart, i - 1));
+    }
+    //把child放进来，如果是叶节点child可以是-1
+    curTreeNode->keyNum++;
+    SetKeyAt(curPageStart, index, key);
+    SetValueAt(curPageStart, index, value);
+    SetChildAt(curPageStart, index, &child);
+    if (!curTreeNode->isLeaf) {
+        //拿到要插入的child的相关指针
+        char *childPageStart;
+        TRY(pfFileHandle.GetThisPageData(child, childPageStart));
+        auto childTreeNode = (IX_BPlusTreeNode *) childPageStart;
+        //用第一个儿子判断插入的节点是不是叶子
+        BPlusTreeNodePointer firstChild = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, 0);
+        char *firstChildPageStart;
+        TRY(pfFileHandle.GetThisPageData(firstChild, firstChildPageStart));
+        auto firstChildTreeNode = (IX_BPlusTreeNode *) firstChildPageStart;
+        if (firstChildTreeNode->isLeaf) {
+            if (index > 0) {
+                auto prevChild = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, index - 1);
+                char *prevChildPageStart;
+                TRY(pfFileHandle.GetThisPageData(prevChild, prevChildPageStart));
+                auto prevChildTreeNode = (IX_BPlusTreeNode *) prevChildPageStart;
+                auto nextChild = prevChildTreeNode->next;
+                prevChildTreeNode->next = child;
+                childTreeNode->prev = prevChild;
+                childTreeNode->next = nextChild;
+                if (nextChild != NULL_NODE) {
+                    char *nextChildPageStart;
+                    TRY(pfFileHandle.GetThisPageData(nextChild, nextChildPageStart));
+                    auto nextChildTreeNode = (IX_BPlusTreeNode *) nextChildPageStart;
+                    nextChildTreeNode->prev = child;
+                    TRY(pfFileHandle.MarkDirty(nextChild));
+                    TRY(pfFileHandle.UnpinPage(nextChild));
+                }
+                TRY(pfFileHandle.MarkDirty(prevChild));
+                TRY(pfFileHandle.UnpinPage(prevChild));
+            } else {
+                childTreeNode->next = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, 1);
+            }
+            TRY(pfFileHandle.MarkDirty(child));
+            TRY(pfFileHandle.UnpinPage(child));
+        }
+        if (curTreeNode->keyNum == ixFileHeader.maxKeyNum) {
+            Split(cur);
+        }
+    }
+    TRY(pfFileHandle.MarkDirty(cur));
+    TRY(pfFileHandle.UnpinPage(cur));
+    return OK_RC;
 }
 
 RC IX_IndexHandle::Resort(BPlusTreeNodePointer left, BPlusTreeNodePointer right) {
