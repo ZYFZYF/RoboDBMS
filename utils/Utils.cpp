@@ -71,3 +71,9 @@ bool Utils::Compare(void *value1, void *value2, AttrType attrType, int attrLengt
         }
     }
 }
+
+void Utils::GetMinimumValue(void *value, AttrType attrType) {
+}
+
+void Utils::GetMaximumValue(void *value, AttrType attrType) {
+}

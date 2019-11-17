@@ -11,6 +11,10 @@
 class Utils {
 public:
     static bool Compare(void *value1, void *value2, AttrType attrType, int attrLength, CompOp compOp);
+
+    static void GetMinimumValue(void *value, AttrType attrType);
+
+    static void GetMaximumValue(void *value, AttrType attrType);
 };
 
 

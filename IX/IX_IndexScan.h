@@ -20,6 +20,14 @@ public:
 
     RC GetNextEntry(RM_RID &rid);                         // Get next matching entry
     RC CloseScan();                                 // Terminate index scan
+private:
+    CompOp compareOp;
+    IX_IndexHandle *ixIndexHandle;
+    void *compareKey;
+    BPlusTreeNodePointer currentLeaf;
+    int currentIndex;
+    void *currentKey;
+    bool isFirst;
 };
 
 

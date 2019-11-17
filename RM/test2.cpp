@@ -53,5 +53,9 @@ int main() {
     cout << "(1,2) < (3,2) is " << (rid3 < rid4) << endl;
     cout << "(3,2) >= (2,2) is " << (rid4 >= rid2) << endl;
     cout << "(2,2) > (2,2) is " << (rid1 > rid2) << endl;
+
+    int *z = new int[10];
+    void *temp = z;
+    cout << z << ' ' << z + 1 << endl;
     return 0;
 }

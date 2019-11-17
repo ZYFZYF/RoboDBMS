@@ -34,6 +34,8 @@ struct IX_BPlusTreeNode {
 class IX_IndexHandle {
     friend class IX_Manager;
 
+    friend class IX_IndexScan;
+
 public:
     IX_IndexHandle();                             // Constructor
     ~IX_IndexHandle();                             // Destructor
@@ -44,7 +46,10 @@ private:
     PF_FileHandle pfFileHandle;
     IX_FileHeader ixFileHeader;
 
-    RC Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer);
+    RC Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer, int &index,
+            void *actualKey = nullptr);
+
+    RC FindFirstEntry(BPlusTreeNodePointer &bPlusTreeNodePointer, int &index, void *actualKey);
 
     RC BinarySearch(BPlusTreeNodePointer cur, void *key, void *value, int &index);
 
@@ -71,6 +76,10 @@ private:
     void SetValueAt(char *pageStart, int index, void *value);
 
     void SetChildAt(char *pageStart, int index, void *child);
+
+    RC GetNextEntry(BPlusTreeNodePointer &cur, int &index, void *actualKey);
+
+    RC GetEntryValue(BPlusTreeNodePointer cur, int index, void *value);
 };
 
 

@@ -18,9 +18,8 @@ IX_IndexHandle::~IX_IndexHandle() {
 RC IX_IndexHandle::InsertEntry(void *key, const RM_RID &value) {
     BPlusTreeNodePointer leaf;
     void *temp = const_cast<RM_RID *>(&value);
-    Find(key, temp, true, leaf);
     int index;
-    BinarySearch(leaf, key, temp, index);
+    Find(key, temp, true, leaf, index);
     char *leafPageStart;
     TRY(pfFileHandle.GetThisPageData(leaf, leafPageStart));
     auto leafTreeNode = (IX_BPlusTreeNode *) leafPageStart;
@@ -40,11 +39,34 @@ RC IX_IndexHandle::ForcePages() {
     return PF_NOBUF;
 }
 
-RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer) {
+
+RC IX_IndexHandle::FindFirstEntry(BPlusTreeNodePointer &bPlusTreeNodePointer, int &index, void *actualKey) {
+    BPlusTreeNodePointer cur = ixFileHeader.rootPageNum;
+    char *curPageStart;
+    while (true) {
+        BPlusTreeNodePointer temp = cur;
+        TRY(pfFileHandle.GetThisPageData(cur, curPageStart));
+        auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
+        if (curTreeNode->isLeaf) {
+            break;
+        }
+        cur = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, 0);
+        TRY(pfFileHandle.UnpinPage(temp));
+    }
+    bPlusTreeNodePointer = cur;
+    index = 0;
+    memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
+    TRY(pfFileHandle.UnpinPage(cur));
+    return OK_RC;
+}
+
+
+RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer, int &index,
+                        void *actualKey) {
+    char *curPageStart;
     BPlusTreeNodePointer cur = ixFileHeader.rootPageNum;
     while (true) {
         BPlusTreeNodePointer temp = cur;
-        char *curPageStart;
         TRY(pfFileHandle.GetThisPageData(cur, curPageStart));
         auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
         if (curTreeNode->isLeaf) {
@@ -59,13 +81,16 @@ RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointe
             cur = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, 0);
             TRY(pfFileHandle.UnpinPage(temp));
         } else {
-            int index;
             BinarySearch(cur, key, value, index);
             cur = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, index);
             TRY(pfFileHandle.UnpinPage(temp));
         }
     }
     bPlusTreeNodePointer = cur;
+    BinarySearch(cur, key, value, index);
+    if (actualKey != nullptr) {
+        memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
+    }
     TRY(pfFileHandle.UnpinPage(cur));
     return OK_RC;
 }
@@ -297,3 +322,37 @@ void IX_IndexHandle::SetChildAt(char *pageStart, int index, void *child) {
     memcpy(GetChildAt(pageStart, index), child, CHILD_LENGTH);
 }
 
+RC IX_IndexHandle::GetNextEntry(BPlusTreeNodePointer &cur, int &index, void *actualKey) {
+    //先拿当前用到的指针什么的
+    char *curPageStart;
+    TRY(pfFileHandle.GetThisPageData(cur, curPageStart));
+    auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
+    //如果当前已经是最后一个那么要跳到下一个叶子节点
+    if (++index == curTreeNode->keyNum) {
+        BPlusTreeNodePointer temp = cur;
+        cur = curTreeNode->next;
+        pfFileHandle.UnpinPage(temp);
+        if (cur == NULL_NODE) {
+            return IX_EOF;
+        } else {
+            index = 0;
+            memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
+            return OK_RC;
+        }
+    } else {
+        memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
+        TRY(pfFileHandle.UnpinPage(cur));
+        return OK_RC;
+    }
+}
+
+RC IX_IndexHandle::GetEntryValue(BPlusTreeNodePointer cur, int index, void *value) {
+    //先拿当前用到的指针什么的
+    char *curPageStart;
+    TRY(pfFileHandle.GetThisPageData(cur, curPageStart));
+    auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
+    //如果当前已经是最后一个那么要跳到下一个叶子节点
+    memcpy(value, GetValueAt(curPageStart, index), VALUE_LENGTH);
+    TRY(pfFileHandle.UnpinPage(cur));
+    return OK_RC;
+}
