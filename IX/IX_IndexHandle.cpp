@@ -25,6 +25,7 @@ RC IX_IndexHandle::InsertEntry(void *key, const RM_RID &value) {
     TRY(pfFileHandle.GetThisPageData(leaf, leafPageStart));
     auto leafTreeNode = (IX_BPlusTreeNode *) leafPageStart;
     if (Compare(EQ_OP, key, temp, GetKeyAt(leafPageStart, index), GetValueAt(leafPageStart, index))) {
+        TRY(pfFileHandle.UnpinPage(leaf));
         return IX_ALREADY_IN_BTREE;
     }
     TRY(Insert(leaf, key, temp, NULL_NODE));
@@ -50,6 +51,7 @@ RC IX_IndexHandle::DeleteEntry(void *key, const RM_RID &value) {
     TRY(pfFileHandle.GetThisPageData(leaf, leafPageStart));
     auto leafTreeNode = (IX_BPlusTreeNode *) leafPageStart;
     if (Compare(NE_OP, key, temp, GetKeyAt(leafPageStart, index), GetValueAt(leafPageStart, index))) {
+        TRY(pfFileHandle.UnpinPage(leaf));
         return IX_ALREADY_NOT_IN_BTREE;
     }
     TRY(Delete(leaf, key, temp));

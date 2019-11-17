@@ -68,6 +68,8 @@ RC Test5(void);
 
 RC Test6(void);
 
+RC Test7(void);
+
 
 void LsFiles(char *fileName);
 
@@ -94,17 +96,17 @@ RC PrintIndex(IX_IndexHandle &ih);
 //
 // Array of pointers to the test functions
 //
-#define NUM_TESTS       6               // number of tests
+#define NUM_TESTS       7               // number of tests
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
                 Test1,
                 Test2,
+                Test3,
+                Test4,
                 Test5,
                 Test6,
-                Test4,
-                Test3
-
+                Test7
         };
 
 //
@@ -437,10 +439,10 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
         rc = scan.GetNextEntry(rid);
         if (!bExists && rc == 0) {
             printf("Verify error: found non-existent entry %d\n", value);
-            return (IX_EOF);  // What should be returned here?
+            return IX_FIND_NON_EXIST;  // What should be returned here?
         } else if (bExists && rc == IX_EOF) {
             printf("Verify error: %dth entry %d not found\n", i - nStart + 1, value);
-            return (IX_EOF);  // What should be returned here?
+            return IX_NOT_FIND;  // What should be returned here?
         } else if (rc != 0 && rc != IX_EOF)
             return (rc);
         else {
@@ -753,4 +755,37 @@ RC Test4(void) {
 }
 
 //TODO  插入已经插入的和删除已经删除的测试
+RC Test7(void) {
+    RC rc;
+    int index = 1;
+    IX_IndexHandle ih;
+    printf("Test7: Some special insert and delete... \n");
+    if ((rc = ixm.CreateIndex(FILENAME, index, INT, sizeof(int))) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertIntEntries(ih, FEW_ENTRIES)))
+        return (rc);
+    int key = values[0] + 1;
+    RM_RID rmRid(key, key * 2);
+    if (ih.InsertEntry(&key, rmRid) != IX_ALREADY_IN_BTREE) {
+        return IX_INSERT_TWICE;
+    }
+    TRY(ih.DeleteEntry(&key, rmRid));
+    if (ih.DeleteEntry(&key, rmRid) != IX_ALREADY_NOT_IN_BTREE) {
+        return IX_DELETE_TWICE;
+    };
+    key++;
+    if (ih.DeleteEntry(&key, rmRid) != IX_ALREADY_NOT_IN_BTREE) {
+        return IX_DELETE_NON_EXIST;
+    }
+    if ((rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+
+    printf("Passed Test 7\n\n");
+    return OK_RC;
+}
 //TODO  其他类型的测试

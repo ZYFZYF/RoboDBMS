@@ -64,6 +64,11 @@ map<RC, string> msg = {
         {IX_ALREADY_IN_BTREE, "IX WARNING: entry already in b+ tree"},
         {IX_INDEX_SCAN_CLOSE, "IX WARNING: index scan is closed cannot get next entry"},
         {IX_ALREADY_NOT_IN_BTREE, "IX WARNING: entry already not in b+ tree"},
+        {IX_FIND_NON_EXIST, "IX ERROR: found non-existent entry"},
+        {IX_NOT_FIND, "IX ERROR: not found entry"},
+        {IX_INSERT_TWICE, "IX ERROR: insert one entry twice"},
+        {IX_DELETE_TWICE, "IX ERROR: delete one entry twice"},
+        {IX_DELETE_NON_EXIST, "IX ERROR: delete non exist entry"},
 
         {STAT_INVALID_ARGS, "STAT ERROR: invalid args"},
         {STAT_UNKNOWN_KEY, "STAT ERROR: unknown key"},
