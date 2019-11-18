@@ -29,66 +29,17 @@ RC IX_IndexHandle::InsertEntry(void *key, const RM_RID &value) {
         return IX_ALREADY_IN_BTREE;
     }
     TRY(Insert(leaf, key, temp, NULL_NODE));
-    int keyNum = leafTreeNode->keyNum;
-    int myKeys[keyNum];
-    RM_RID myValues[keyNum];
-    BPlusTreeNodePointer myChilds[keyNum];
-    for (int i = 0; i < leafTreeNode->keyNum; i++) {
-        myKeys[i] = *(int *) GetKeyAt(leafPageStart, i);
-        myValues[i] = *(RM_RID *) GetValueAt(leafPageStart, i);
-        myChilds[i] = *(BPlusTreeNodePointer *) GetChildAt(leafPageStart, i);
-    }
     TRY(pfFileHandle.UnpinPage(leaf));
     return OK_RC;
 }
 
 RC IX_IndexHandle::DeleteEntry(void *key, const RM_RID &value) {
-
-    char *tempdata;
-//    TRY(pfFileHandle.GetThisPageData(507, tempdata));
-//    auto tempTreeNode = (IX_BPlusTreeNode *) tempdata;
-//    printf("507's size is %d\n", tempTreeNode->keyNum);
-//    TRY(pfFileHandle.UnpinPage(507));
-    if (*(int *) key == 77469) {
-        int x = 0;
-    }
-    int tat = *(int *) key;
-    if (tat != 697 && tat != 176 && tat != 58 && tat != 75 && tat != 178 && tat != 363 && tat != 259) {
-        //TRY(pfFileHandle.DisposePage(7));
-    }
     BPlusTreeNodePointer leaf;
     void *temp = const_cast<RM_RID *>(&value);
     int index;
     TRY(Find(key, temp, false, leaf, index));
     char *leafPageStart;
     TRY(pfFileHandle.GetThisPageData(leaf, leafPageStart));
-    auto leafTreeNode = (IX_BPlusTreeNode *) leafPageStart;
-    int actualKey = *(int *) GetKeyAt(leafPageStart, index);
-//    if (leafTreeNode->prev != NULL_NODE) {
-//        BPlusTreeNodePointer prev = leafTreeNode->prev;
-//        char *prevPageStart;
-//        TRY(pfFileHandle.GetThisPageData(prev, prevPageStart));
-//        auto prevTreeNode = (IX_BPlusTreeNode *) prevPageStart;
-//        int hhhKey = *(int *) GetKeyAt(prevPageStart, prevTreeNode->keyNum - 1);
-//        int hhHhKey = *(int *) GetKeyAt(prevPageStart, prevTreeNode->keyNum - 2);
-//        int hhHhWKey = *(int *) GetKeyAt(leafPageStart, 1);
-//        RM_RID rmRid = *(RM_RID *) GetValueAt(prevPageStart, prevTreeNode->keyNum - 1);
-//        RM_RID rmRid2 = *(RM_RID *) GetValueAt(prevPageStart, prevTreeNode->keyNum - 2);
-//        TRY(pfFileHandle.UnpinPage(prev));
-    //if (*(int *) key == 529 or *(int *) key == 522) {
-//        for (int page = 1; page < 8; page++) {
-//            char *pageStart;
-//            TRY(pfFileHandle.GetThisPageData(page, pageStart));
-//            auto treeNode = (IX_BPlusTreeNode *) pageStart;
-//            printf("page %d prev is %d, next is %d, keyNum is %d, minKey is %d and maxKey is %d\n", page,
-//                   treeNode->prev,
-//                   treeNode->next, treeNode->keyNum, *(int *) GetKeyAt(pageStart, 0),
-//                   *(int *) GetKeyAt(pageStart, treeNode->keyNum - 1));
-//            TRY(pfFileHandle.UnpinPage(page));
-//        }
-    // }
-
-    //   }
     if (Compare(NE_OP, key, temp, GetKeyAt(leafPageStart, index), GetValueAt(leafPageStart, index))) {
         TRY(pfFileHandle.UnpinPage(leaf));
         return IX_ALREADY_NOT_IN_BTREE;
@@ -174,7 +125,6 @@ RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointe
 //记住，只要调用过GetThisPage或者AllocatePage或者GetThisPageData，就一定要unpin掉
 //返回的是最后一个<=key的index的下标
 RC IX_IndexHandle::BinarySearch(BPlusTreeNodePointer cur, void *key, void *value, int &index) {
-    int actualKey, queryKey, compareKey;
     char *data;
     TRY(pfFileHandle.GetThisPageData(cur, data));
     auto ixBPlusTreeNode = (IX_BPlusTreeNode *) data;
@@ -188,10 +138,8 @@ RC IX_IndexHandle::BinarySearch(BPlusTreeNodePointer cur, void *key, void *value
         index = r - 1;
         goto CLEAN_UP;
     }
-    queryKey = *(int *) key;
     while (l < r - 1) {
         int mid = (l + r) >> 1;
-        compareKey = *(int *) GetKeyAt(data, mid);
         if (Compare(LT_OP, key, value, GetKeyAt(data, mid), GetValueAt(data, mid))) {
             r = mid;
         } else {
@@ -294,7 +242,6 @@ RC IX_IndexHandle::Insert(BPlusTreeNodePointer cur, void *key, void *value, BPlu
         BinarySearch(cur, key, value, index);
         index++;
     }
-    int actualKey = *(int *) key;
     //把后面的都往前挪
     for (int i = curTreeNode->keyNum; i > index; i--) {
         SetKeyAt(curPageStart, i, GetKeyAt(curPageStart, i - 1));
@@ -649,8 +596,6 @@ RC IX_IndexHandle::Delete(BPlusTreeNodePointer cur, void *key, void *value) {
     if (curTreeNode->keyNum * 2 < ixFileHeader.maxKeyNum) {
         TRY(Redistribute(cur));
     }
-
-
     return OK_RC;
 }
 

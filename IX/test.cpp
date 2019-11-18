@@ -110,13 +110,10 @@ RC PrintIndex(IX_IndexHandle &ih);
 //
 // Array of pointers to the test functions
 //
-#define NUM_TESTS       10               // number of tests
+#define NUM_TESTS       12               // number of tests
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
-                Test12,
-                Test11,
-                Test10,
                 Test1,
                 Test2,
                 Test3,
@@ -126,7 +123,9 @@ RC (*tests[])() =                      // RC doesn't work on some compilers
                 Test7,
                 Test8,
                 Test9,
-                Test10
+                Test10,
+                Test11,
+                Test12
         };
 
 //
@@ -1101,7 +1100,7 @@ RC Test12(void) {
     int nDelete = LARGE_ENTRIES * 8 / 10;
     IX_IndexHandle ih;
 
-    printf("Test12: Delete large number of integer entries from an index... \n");
+    printf("Test12: test string index insert and delete... \n");
 
     if ((rc = ixm.CreateIndex(FILENAME, index, STRING, STRLEN)) ||
         (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
