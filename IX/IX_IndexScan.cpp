@@ -83,6 +83,9 @@ RC IX_IndexScan::GetNextEntry(RM_RID &rid) {
                 break;
         }
     } else {
+        if (*(int *) currentKey == 100000) {
+            int x = 0;
+        }
         TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
     }
     //如果是不等于，可能需要多跳几次

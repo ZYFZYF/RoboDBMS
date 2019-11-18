@@ -20,7 +20,7 @@ RC IX_IndexHandle::InsertEntry(void *key, const RM_RID &value) {
     BPlusTreeNodePointer leaf;
     void *temp = const_cast<RM_RID *>(&value);
     int index;
-    Find(key, temp, true, leaf, index);
+    TRY(Find(key, temp, true, leaf, index));
     char *leafPageStart;
     TRY(pfFileHandle.GetThisPageData(leaf, leafPageStart));
     auto leafTreeNode = (IX_BPlusTreeNode *) leafPageStart;
@@ -49,7 +49,7 @@ RC IX_IndexHandle::DeleteEntry(void *key, const RM_RID &value) {
 //    auto tempTreeNode = (IX_BPlusTreeNode *) tempdata;
 //    printf("507's size is %d\n", tempTreeNode->keyNum);
 //    TRY(pfFileHandle.UnpinPage(507));
-    if (*(int *) key == 76353) {
+    if (*(int *) key == 77469) {
         int x = 0;
     }
     int tat = *(int *) key;
@@ -59,7 +59,7 @@ RC IX_IndexHandle::DeleteEntry(void *key, const RM_RID &value) {
     BPlusTreeNodePointer leaf;
     void *temp = const_cast<RM_RID *>(&value);
     int index;
-    Find(key, temp, false, leaf, index);
+    TRY(Find(key, temp, false, leaf, index));
     char *leafPageStart;
     TRY(pfFileHandle.GetThisPageData(leaf, leafPageStart));
     auto leafTreeNode = (IX_BPlusTreeNode *) leafPageStart;
@@ -106,10 +106,11 @@ RC IX_IndexHandle::ForcePages() {
 RC IX_IndexHandle::FindFirstEntry(BPlusTreeNodePointer &bPlusTreeNodePointer, int &index, void *actualKey) {
     BPlusTreeNodePointer cur = ixFileHeader.rootPageNum;
     char *curPageStart;
+    IX_BPlusTreeNode *curTreeNode;
     while (true) {
         BPlusTreeNodePointer temp = cur;
         TRY(pfFileHandle.GetThisPageData(cur, curPageStart));
-        auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
+        curTreeNode = (IX_BPlusTreeNode *) curPageStart;
         if (curTreeNode->isLeaf) {
             break;
         }
@@ -118,10 +119,15 @@ RC IX_IndexHandle::FindFirstEntry(BPlusTreeNodePointer &bPlusTreeNodePointer, in
     }
     bPlusTreeNodePointer = cur;
     index = 0;
-    memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
-    int mykey = *(int *) actualKey;
-    TRY(pfFileHandle.UnpinPage(cur));
-    return OK_RC;
+    //有可能已经空了，这时候要返回IX_EOF
+    if (index < curTreeNode->keyNum) {
+        memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
+        TRY(pfFileHandle.UnpinPage(cur));
+        return OK_RC;
+    } else {
+        TRY(pfFileHandle.UnpinPage(cur));
+        return IX_EOF;
+    }
 }
 
 RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer, int &index,
@@ -151,21 +157,18 @@ RC IX_IndexHandle::Find(void *key, void *value, bool modify, BPlusTreeNodePointe
     }
     bPlusTreeNodePointer = cur;
     BinarySearch(cur, key, value, index);
-    if (actualKey != nullptr) {
-        memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
-    }
     auto curTreeNode = (IX_BPlusTreeNode *) curPageStart;
-    int keyNum = curTreeNode->keyNum;
-    int myKeys[keyNum];
-    RM_RID myValues[keyNum];
-    BPlusTreeNodePointer myChilds[keyNum];
-    for (int i = 0; i < curTreeNode->keyNum; i++) {
-        myKeys[i] = *(int *) GetKeyAt(curPageStart, i);
-        myValues[i] = *(RM_RID *) GetValueAt(curPageStart, i);
-        myChilds[i] = *(BPlusTreeNodePointer *) GetChildAt(curPageStart, i);
+    //判断找到的是不是合法的,如果是插入的话可以是不存在的index
+    if (modify || index < curTreeNode->keyNum) {
+        if (actualKey != nullptr) {
+            memcpy(actualKey, GetKeyAt(curPageStart, index), ixFileHeader.attrLength);
+        }
+        TRY(pfFileHandle.UnpinPage(cur));
+        return OK_RC;
+    } else {
+        TRY(pfFileHandle.UnpinPage(cur));
+        return IX_EOF;
     }
-    TRY(pfFileHandle.UnpinPage(cur));
-    return OK_RC;
 }
 
 //记住，只要调用过GetThisPage或者AllocatePage或者GetThisPageData，就一定要unpin掉
@@ -198,7 +201,6 @@ RC IX_IndexHandle::BinarySearch(BPlusTreeNodePointer cur, void *key, void *value
     index = l;
 
     CLEAN_UP:
-    actualKey = *(int *) key;
     TRY(pfFileHandle.UnpinPage(cur));
     return OK_RC;
 }
@@ -220,6 +222,7 @@ RC IX_IndexHandle::Split(BPlusTreeNodePointer cur) {
     int mid = ixFileHeader.maxKeyNum >> 1;
     tempTreeNode->isLeaf = curTreeNode->isLeaf;
     tempTreeNode->keyNum = ixFileHeader.maxKeyNum - mid;
+    tempTreeNode->prev = tempTreeNode->next = NULL_NODE;
     for (int i = mid; i < ixFileHeader.maxKeyNum; i++) {
         SetChildAt(tempPageStart, i - mid, GetChildAt(curPageStart, i));
         SetKeyAt(tempPageStart, i - mid, GetKeyAt(curPageStart, i));
@@ -359,13 +362,6 @@ RC IX_IndexHandle::Resort(BPlusTreeNodePointer left, BPlusTreeNodePointer right)
     TRY(pfFileHandle.GetThisPageData(right, rightPageStart));
     auto leftTreeNode = (IX_BPlusTreeNode *) leftPageStart;
     auto rightTreeNode = (IX_BPlusTreeNode *) rightPageStart;
-    printf("before resort left size is %d right size is %d left->min key is %d left->max key is %d right->min key is %d right->max key is %d\n",
-           leftTreeNode->keyNum,
-           rightTreeNode->keyNum,
-           *(int *) GetKeyAt(leftPageStart, 0),
-           *(int *) GetKeyAt(leftPageStart, leftTreeNode->keyNum - 1),
-           *(int *) GetKeyAt(rightPageStart, 0),
-           *(int *) GetKeyAt(rightPageStart, rightTreeNode->keyNum - 1));
     int totalKeyNum = leftTreeNode->keyNum + rightTreeNode->keyNum;
     //左边比较少的话就从右边往左边挪
     if (leftTreeNode->keyNum < rightTreeNode->keyNum) {
@@ -420,13 +416,6 @@ RC IX_IndexHandle::Resort(BPlusTreeNodePointer left, BPlusTreeNodePointer right)
         rightTreeNode->keyNum = rightSize;
         leftTreeNode->keyNum = totalKeyNum - rightSize;
     }
-    printf("after resort left size is %d right size is %d left->min key is %d left->max key is %d right->min key is %d right->max key is %d\n",
-           leftTreeNode->keyNum,
-           rightTreeNode->keyNum,
-           *(int *) GetKeyAt(leftPageStart, 0),
-           *(int *) GetKeyAt(leftPageStart, leftTreeNode->keyNum - 1),
-           *(int *) GetKeyAt(rightPageStart, 0),
-           *(int *) GetKeyAt(rightPageStart, rightTreeNode->keyNum - 1));
     TRY(pfFileHandle.MarkDirty(left));
     TRY(pfFileHandle.MarkDirty(right));
     TRY(pfFileHandle.UnpinPage(left));

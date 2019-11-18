@@ -19,6 +19,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <ctime>
+#include <cassert>
 
 #include "IX_Manager.h"
 #include "../RM/RM_FileHandle.h"
@@ -74,6 +75,10 @@ RC Test8(void);
 
 RC Test9(void);
 
+RC Test10(void);
+
+RC Test11(void);
+
 
 void LsFiles(char *fileName);
 
@@ -100,11 +105,12 @@ RC PrintIndex(IX_IndexHandle &ih);
 //
 // Array of pointers to the test functions
 //
-#define NUM_TESTS       9               // number of tests
+#define NUM_TESTS       10               // number of tests
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
-                Test9,
+                Test11,
+                Test10,
                 Test1,
                 Test2,
                 Test3,
@@ -113,7 +119,8 @@ RC (*tests[])() =                      // RC doesn't work on some compilers
                 Test6,
                 Test7,
                 Test8,
-                Test9
+                Test9,
+                Test10
         };
 
 //
@@ -347,7 +354,7 @@ RC DeleteIntEntries(IX_IndexHandle &ih, int nEntries) {
     for (i = 0; i < nEntries; i++) {
         value = values[i] + 1;
         RM_RID rid(value, value * 2);
-        cout << "Delete " << i + 1 << "th key = " << value << " value = (" << value << ',' << value * 2 << ')' << endl;
+        //cout << "Delete " << i + 1 << "th key = " << value << " value = (" << value << ',' << value * 2 << ')' << endl;
         if ((rc = ih.DeleteEntry((void *) &value, rid)))
             return (rc);
 
@@ -445,7 +452,7 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
 
         rc = scan.GetNextEntry(rid);
         if (!bExists && rc == 0) {
-            printf("Verify error: found non-existent entry %d\n", value);
+            printf("Verify error: found non-existent %dth entry %d\n", i - nStart + 1, value);
             return IX_FIND_NON_EXIST;  // What should be returned here?
         } else if (bExists && rc == IX_EOF) {
             printf("Verify error: %dth entry %d not found\n", i - nStart + 1, value);
@@ -453,7 +460,7 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
         } else if (rc != 0 && rc != IX_EOF)
             return (rc);
         else {
-            // printf("Verify %dth entry %d\n", i - nStart + 1, value);
+            //printf("Verify %dth entry %d\n", i - nStart + 1, value);
         }
 
         if (bExists && rc == 0) {
@@ -772,15 +779,15 @@ RC Test7(void) {
         return (rc);
     int key = values[0] + 1;
     RM_RID rmRid(key, key * 2);
-    if (ih.InsertEntry(&key, rmRid) != IX_ALREADY_IN_BTREE) {
+    if (ih.InsertEntry(&key, rmRid) == 0) {
         return IX_INSERT_TWICE;
     }
-    TRY(ih.DeleteEntry(&key, rmRid));
-    if (ih.DeleteEntry(&key, rmRid) != IX_ALREADY_NOT_IN_BTREE) {
+    TRY(DeleteIntEntries(ih, FEW_ENTRIES));
+    if (ih.DeleteEntry(&key, rmRid) == 0) {
         return IX_DELETE_TWICE;
     };
     key++;
-    if (ih.DeleteEntry(&key, rmRid) != IX_ALREADY_NOT_IN_BTREE) {
+    if (ih.DeleteEntry(&key, rmRid) == 0) {
         return IX_DELETE_NON_EXIST;
     }
     if ((rc = ixm.CloseIndex(ih)))
@@ -837,7 +844,7 @@ RC Test9(void) {
     int nDelete = LARGE_ENTRIES * 8 / 10;
     IX_IndexHandle ih;
 
-    printf("Test8: Delete many integer entries from an index... \n");
+    printf("Test9: Delete large number of integer entries from an index... \n");
 
     if ((rc = ixm.CreateIndex(FILENAME, index, INT, sizeof(int))) ||
         (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
@@ -860,4 +867,155 @@ RC Test9(void) {
     printf("Passed Test 9\n\n");
     return OK_RC;
 }
+
+//
+// Test10 tests delete B+ tree to empty
+//
+RC Test10(void) {
+    RC rc;
+    int index = 0;
+    int nDelete = LARGE_ENTRIES;
+    IX_IndexHandle ih;
+
+    printf("Test10: delete B+ tree to empty... \n");
+
+    if ((rc = ixm.CreateIndex(FILENAME, index, INT, sizeof(int))) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertIntEntries(ih, LARGE_ENTRIES)) ||
+        (rc = DeleteIntEntries(ih, nDelete)) ||
+        (rc = ixm.CloseIndex(ih)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        // ensure deleted entries are gone
+        (rc = VerifyIntIndex(ih, 0, nDelete, FALSE)) ||
+        // ensure non-deleted entries still exist
+        (rc = VerifyIntIndex(ih, nDelete, LARGE_ENTRIES - nDelete, TRUE)) ||
+        (rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+
+    printf("Passed Test 10fD\n\n");
+    return OK_RC;
+}
 //TODO  其他类型的测试
+
+//
+// Test 11 tests a few inequality scans on large Btree indices
+//
+RC Test11(void) {
+    RC rc;
+    IX_IndexHandle ih;
+    int total_entry = LARGE_ENTRIES;
+    int index = 0;
+    if ((rc = ixm.CreateIndex(FILENAME, index, INT, sizeof(int))) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertIntEntries(ih, total_entry)))
+        return (rc);
+    int i;
+    int valueList[] = {0, 1, -1, total_entry / 4, total_entry / 2, total_entry - 1, total_entry, total_entry + 1};
+    printf("Test11: a few inequality scans on large Btree indices... \n");
+    for (int value : valueList) {
+        RM_RID rid;
+        // Scan <
+        IX_IndexScan scanlt;
+        if ((rc = scanlt.OpenScan(ih, LT_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scanlt.GetNextEntry(rid))) {
+            int pageNum, slotNum;
+            rid.GetPageNumAndSlotNum(pageNum, slotNum);
+            //printf("scan %d %d\n", pageNum, slotNum);
+            i++;
+        }
+
+        if (rc != IX_EOF)
+            return (rc);
+        printf("Found %d entries in < %d\n", i, value);
+        assert(i == (value <= 0 ? 0 : value > total_entry ? total_entry : value - 1));
+
+        // Scan <=
+        IX_IndexScan scanle;
+        if ((rc = scanle.OpenScan(ih, LE_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scanle.GetNextEntry(rid))) {
+            i++;
+        }
+        if (rc != IX_EOF)
+            return (rc);
+        printf("Found %d entries in <= %d\n", i, value);
+        assert(i == (value <= 0 ? 0 : value > total_entry ? total_entry : value));
+
+        // Scan >
+        IX_IndexScan scangt;
+        if ((rc = scangt.OpenScan(ih, GT_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scangt.GetNextEntry(rid))) {
+            i++;
+            int pageNum, slotNum;
+            rid.GetPageNumAndSlotNum(pageNum, slotNum);
+            //printf("scan %dth %d %d\n", i, pageNum, slotNum);
+        }
+        if (rc != IX_EOF)
+            return (rc);
+        printf("Found %d entries in > %d\n", i, value);
+        assert(i == (value <= 0 ? total_entry : value > total_entry ? 0 : total_entry - value));
+
+        // Scan >=
+        IX_IndexScan scange;
+        if ((rc = scange.OpenScan(ih, GE_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scange.GetNextEntry(rid))) {
+            i++;
+        }
+        if (rc != IX_EOF)
+            return (rc);
+        printf("Found %d entries in >= %d\n", i, value);
+        assert(i == (value <= 0 ? total_entry : value > total_entry ? 0 : total_entry - value + 1));
+
+        // Scan !=
+        IX_IndexScan scanne;
+        if ((rc = scanne.OpenScan(ih, NE_OP, &value))) {
+            printf("Scan error: opening scan\n");
+            return (rc);
+        }
+
+        i = 0;
+        while (!(rc = scanne.GetNextEntry(rid))) {
+            i++;
+        }
+        if (rc != IX_EOF)
+            return (rc);
+        printf("Found %d entries in != %d\n", i, value);
+        assert(i == (value > 0 && value <= total_entry) ? total_entry - 1 : total_entry);
+    }
+
+
+    if ((rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+
+    printf("Passed Test 11\n\n");
+    return OK_RC;
+}
