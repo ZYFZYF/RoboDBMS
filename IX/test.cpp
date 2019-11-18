@@ -79,6 +79,8 @@ RC Test10(void);
 
 RC Test11(void);
 
+RC Test12(void);
+
 
 void LsFiles(char *fileName);
 
@@ -100,6 +102,9 @@ RC DeleteStringEntries(IX_IndexHandle &ih, int nEntries);
 
 RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists);
 
+RC VerifyStringIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists);
+
+
 RC PrintIndex(IX_IndexHandle &ih);
 
 //
@@ -109,6 +114,7 @@ RC PrintIndex(IX_IndexHandle &ih);
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
+                Test12,
                 Test11,
                 Test10,
                 Test1,
@@ -440,7 +446,7 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
 
     // Assume values still contains the array of values inserted/deleted
 
-    printf("Verifying index contents\n");
+    printf("Verifying string index contents\n");
 
     for (i = nStart; i < nStart + nEntries; i++) {
         int value = values[i] + 1;
@@ -453,10 +459,10 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
         rc = scan.GetNextEntry(rid);
         if (!bExists && rc == 0) {
             printf("Verify error: found non-existent %dth entry %d\n", i - nStart + 1, value);
-            return IX_FIND_NON_EXIST;  // What should be returned here?
+            return IX_FIND_NON_EXIST;
         } else if (bExists && rc == IX_EOF) {
             printf("Verify error: %dth entry %d not found\n", i - nStart + 1, value);
-            return IX_NOT_FIND;  // What should be returned here?
+            return IX_NOT_FIND;
         } else if (rc != 0 && rc != IX_EOF)
             return (rc);
         else {
@@ -492,6 +498,72 @@ RC VerifyIntIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
 
     return OK_RC;
 }
+
+RC VerifyStringIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
+    RC rc;
+    int i;
+    RM_RID rid;
+    IX_IndexScan scan;
+    PageNum pageNum;
+    SlotNum slotNum;
+
+    // Assume values still contains the array of values inserted/deleted
+
+    printf("Verifying index contents\n");
+    char value[STRLEN + 1];
+
+    for (i = nStart; i < nStart + nEntries; i++) {
+        sprintf(value, "number %d", values[i] + 1);
+
+        if ((rc = scan.OpenScan(ih, EQ_OP, value))) {
+            printf("Verify error: opening scan\n");
+            return (rc);
+        }
+
+        rc = scan.GetNextEntry(rid);
+        if (!bExists && rc == 0) {
+            printf("Verify error: found non-existent %dth entry %s\n", i - nStart + 1, value);
+            return IX_FIND_NON_EXIST;  // What should be returned here?
+        } else if (bExists && rc == IX_EOF) {
+            printf("Verify error: %dth entry %s not found\n", i - nStart + 1, value);
+            return IX_NOT_FIND;  // What should be returned here?
+        } else if (rc != 0 && rc != IX_EOF)
+            return (rc);
+        else {
+            //printf("Verify %dth entry %d\n", i - nStart + 1, value);
+        }
+
+        if (bExists && rc == 0) {
+            // Did we get the right entry?
+            if ((rc = rid.GetPageNum(pageNum)) ||
+                (rc = rid.GetSlotNum(slotNum)))
+                return (rc);
+
+            if (pageNum != (values[i] + 1) || slotNum != ((values[i] + 1) * 2)) {
+                printf("Verify error: incorrect rid (%d,%d) found for entry %s\n",
+                       pageNum, slotNum, value);
+                return (IX_EOF);  // What should be returned here?
+            }
+
+            // Is there another entry?
+            rc = scan.GetNextEntry(rid);
+            if (rc == 0) {
+                printf("Verify error: found two entries with same value %d\n", value);
+                return (IX_EOF);  // What should be returned here?
+            } else if (rc != IX_EOF)
+                return (rc);
+        }
+
+        if ((rc = scan.CloseScan())) {
+            printf("Verify error: closing scan\n");
+            return (rc);
+        }
+    }
+
+    return OK_RC;
+}
+
+
 
 /////////////////////////////////////////////////////////////////////
 // Sample test functions follow.                                   //
@@ -1017,5 +1089,39 @@ RC Test11(void) {
         return (rc);
 
     printf("Passed Test 11\n\n");
+    return OK_RC;
+}
+
+//
+// Test12 tests string.
+//
+RC Test12(void) {
+    RC rc;
+    int index = 0;
+    int nDelete = LARGE_ENTRIES * 8 / 10;
+    IX_IndexHandle ih;
+
+    printf("Test12: Delete large number of integer entries from an index... \n");
+
+    if ((rc = ixm.CreateIndex(FILENAME, index, STRING, STRLEN)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertStringEntries(ih, LARGE_ENTRIES)) ||
+        (rc = VerifyStringIndex(ih, 0, LARGE_ENTRIES, TRUE)) ||
+        (rc = DeleteStringEntries(ih, nDelete)) ||
+        (rc = ixm.CloseIndex(ih)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        // ensure deleted entries are gone
+        (rc = VerifyStringIndex(ih, 0, nDelete, FALSE)) ||
+        // ensure non-deleted entries still exist
+        (rc = VerifyStringIndex(ih, nDelete, LARGE_ENTRIES - nDelete, TRUE)) ||
+        (rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+
+    printf("Passed Test 9\n\n");
     return OK_RC;
 }

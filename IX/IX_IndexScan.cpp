@@ -28,7 +28,7 @@ RC IX_IndexScan::OpenScan(const IX_IndexHandle &indexHandle, CompOp compOp, void
 }
 
 RC IX_IndexScan::GetNextEntry(RM_RID &rid) {
-    int myCurrentKey;
+    char *myCurrentKey;
     if (!isOpen) {
         return IX_INDEX_SCAN_CLOSE;
     }
@@ -56,36 +56,43 @@ RC IX_IndexScan::GetNextEntry(RM_RID &rid) {
                 }
                 TRY(ixIndexHandle->Find(compareKey, &minRID, false, currentLeaf, currentIndex, currentKey));
                 //上面返回的一定是小于的最后一个或者是全局的第一个
-                myCurrentKey = *(int *) currentKey;
+                myCurrentKey = (char *) currentKey;
                 if (!Utils::Compare(currentKey, compareKey, ixIndexHandle->ixFileHeader.attrType,
                                     ixIndexHandle->ixFileHeader.attrLength, EQ_OP)) {
                     TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
                 }
-                myCurrentKey = *(int *) currentKey;
+                myCurrentKey = (char *) currentKey;
                 break;
             case GT_OP:
                 TRY(ixIndexHandle->Find(compareKey, &maxRID, false, currentLeaf, currentIndex, currentKey));
-                myCurrentKey = *(int *) currentKey;
+                myCurrentKey = (char *) currentKey;
                 if (!Utils::Compare(currentKey, compareKey, ixIndexHandle->ixFileHeader.attrType,
                                     ixIndexHandle->ixFileHeader.attrLength, GT_OP)) {
                     TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
                 }
-                myCurrentKey = *(int *) currentKey;
+                myCurrentKey = (char *) currentKey;
                 break;
             case GE_OP:
                 TRY(ixIndexHandle->Find(compareKey, &minRID, false, currentLeaf, currentIndex, currentKey));
-                myCurrentKey = *(int *) currentKey;
+                myCurrentKey = (char *) currentKey;
                 if (!Utils::Compare(currentKey, compareKey, ixIndexHandle->ixFileHeader.attrType,
                                     ixIndexHandle->ixFileHeader.attrLength, GE_OP)) {
                     TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
                 }
-                myCurrentKey = *(int *) currentKey;
+                myCurrentKey = (char *) currentKey;
                 break;
         }
     } else {
-        if (*(int *) currentKey == 100000) {
+        char qaq[40];
+        qaq[0] = '3';
+        qaq[1] = '4';
+        qaq[2] = '7';
+        qaq[3] = '7';
+        qaq[4] = '2';
+        if (strncmp((char *) currentKey, const_cast<char *>(qaq), ixIndexHandle->ixFileHeader.attrLength) == 0) {
             int x = 0;
         }
+        myCurrentKey = (char *) currentKey;
         TRY(ixIndexHandle->GetNextEntry(currentLeaf, currentIndex, currentKey));
     }
     //如果是不等于，可能需要多跳几次
