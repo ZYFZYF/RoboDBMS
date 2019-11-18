@@ -70,6 +70,10 @@ RC Test6(void);
 
 RC Test7(void);
 
+RC Test8(void);
+
+RC Test9(void);
+
 
 void LsFiles(char *fileName);
 
@@ -96,17 +100,20 @@ RC PrintIndex(IX_IndexHandle &ih);
 //
 // Array of pointers to the test functions
 //
-#define NUM_TESTS       7               // number of tests
+#define NUM_TESTS       9               // number of tests
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
+                Test9,
                 Test1,
                 Test2,
                 Test3,
                 Test4,
                 Test5,
                 Test6,
-                Test7
+                Test7,
+                Test8,
+                Test9
         };
 
 //
@@ -754,7 +761,6 @@ RC Test4(void) {
     return OK_RC;
 }
 
-//TODO  插入已经插入的和删除已经删除的测试
 RC Test7(void) {
     RC rc;
     int index = 1;
@@ -786,6 +792,72 @@ RC Test7(void) {
         return (rc);
 
     printf("Passed Test 7\n\n");
+    return OK_RC;
+}
+
+//
+// Test8 tests delete many integer entries into the index.
+//
+RC Test8(void) {
+    RC rc;
+    int index = 0;
+    int nDelete = MANY_ENTRIES * 8 / 10;
+    IX_IndexHandle ih;
+
+    printf("Test8: Delete many integer entries from an index... \n");
+
+    if ((rc = ixm.CreateIndex(FILENAME, index, INT, sizeof(int))) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertIntEntries(ih, MANY_ENTRIES)) ||
+        (rc = DeleteIntEntries(ih, nDelete)) ||
+        (rc = ixm.CloseIndex(ih)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        // ensure deleted entries are gone
+        (rc = VerifyIntIndex(ih, 0, nDelete, FALSE)) ||
+        // ensure non-deleted entries still exist
+        (rc = VerifyIntIndex(ih, nDelete, MANY_ENTRIES - nDelete, TRUE)) ||
+        (rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+
+    printf("Passed Test 8\n\n");
+    return OK_RC;
+}
+
+//
+// Test9 tests delete large number of integer entries into the index.
+//
+RC Test9(void) {
+    RC rc;
+    int index = 0;
+    int nDelete = LARGE_ENTRIES * 8 / 10;
+    IX_IndexHandle ih;
+
+    printf("Test8: Delete many integer entries from an index... \n");
+
+    if ((rc = ixm.CreateIndex(FILENAME, index, INT, sizeof(int))) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertIntEntries(ih, LARGE_ENTRIES)) ||
+        (rc = DeleteIntEntries(ih, nDelete)) ||
+        (rc = ixm.CloseIndex(ih)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        // ensure deleted entries are gone
+        (rc = VerifyIntIndex(ih, 0, nDelete, FALSE)) ||
+        // ensure non-deleted entries still exist
+        (rc = VerifyIntIndex(ih, nDelete, LARGE_ENTRIES - nDelete, TRUE)) ||
+        (rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+
+    printf("Passed Test 9\n\n");
     return OK_RC;
 }
 //TODO  其他类型的测试
