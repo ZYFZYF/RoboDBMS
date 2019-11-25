@@ -9,8 +9,11 @@
     - 索引建立 √
     - 变长字符串做索引 × (不打算支持)
     - 支持日期类型并支持日期类型做索引 ×
+ - SM
+    - 系统管理 ×
  - 修改比较器的获取方式 √
  - 在比较器中方便地加入范围查找 ×
+ - 支持字符串的like表达式 ×
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase
