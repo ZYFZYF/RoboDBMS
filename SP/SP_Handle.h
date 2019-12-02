@@ -5,7 +5,7 @@
 #ifndef ROBODBMS_SP_HANDLE_H
 #define ROBODBMS_SP_HANDLE_H
 
-#include "../def.h"
+#include "../Constant.h"
 
 #define SP_SPACE_HEADER_SIZE sizeof(struct SP_SpaceHeader)
 
@@ -32,6 +32,8 @@ public:
     RC UpdateString(const char *string, int length, int &offset, int old_length);
 
     RC GetStringData(char *data, int offset, int length);
+
+    RC UpdateStringLocally(const char *string, int length, int offset);
 
     int fd;
 

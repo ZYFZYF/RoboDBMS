@@ -3,7 +3,7 @@
 //
 
 #include "cstdio"
-#include "../def.h"
+#include "../Constant.h"
 #include "LinkList.h"
 //
 // SetNull

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(RoboDBMS)
 set(HEADER
         ${HEADER}
-        ${CMAKE_CURRENT_SOURCE_DIR}/def.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/Constant.h
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/LinkList.h
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/PrintError.h
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/Statistics.h

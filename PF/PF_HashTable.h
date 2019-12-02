@@ -5,8 +5,8 @@
 #ifndef ROBOSQL_PF_HASHTABLE_H
 #define ROBOSQL_PF_HASHTABLE_H
 
-#include "def.h"
-#include "../def.h"
+#include "PF_Constant.h"
+#include "../Constant.h"
 
 //
 // HashEntry - Hash table bucket entries

@@ -5,7 +5,7 @@
 #include <string>
 #include <cstring>
 #include "IX_Manager.h"
-#include "def.h"
+#include "IX_Constant.h"
 
 IX_Manager::IX_Manager(PF_Manager &pfm) {
     pfManager = pfm;

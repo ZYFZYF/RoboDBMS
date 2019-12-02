@@ -34,6 +34,8 @@ const int ALL_PAGES = -1;
 #define MAX_TB_NUM 31 //数据库中表的个数上限
 #define RELEASE 1
 
+#define MAX_CHAR_LENGTH 255
+
 
 // Return Code
 enum RC {
@@ -103,16 +105,29 @@ enum RC {
     IX_DELETE_TWICE,
     IX_DELETE_NON_EXIST,
 
+    //return code for SM
+            SM_INVALID_NAME,
+    SM_TABLE_ALREADY_IN,
+    SM_TABLE_IS_FULL,
+    SM_COLUMN_ALREADY_IN,
+    SM_COLUMN_IS_FULL,
+
     STAT_INVALID_ARGS,
     STAT_UNKNOWN_KEY,
 
     UNKNOWN_RC
 };
 
+struct Date {
+    int year;
+    short month;
+    short day;
+};
+struct Varchar {
+    int offset;
+    int length;
+};
 
-//
-// Attribute types
-//
 enum AttrType {
     INT,
     FLOAT,
@@ -120,6 +135,15 @@ enum AttrType {
     DATE,
     VARCHAR
 };
+
+union AttrValue {
+    int intVersion;
+    float floatVersion;
+    Date dateVersion;
+    Varchar varcharVersion;
+    char stringValue[MAX_CHAR_LENGTH + 1];
+};
+
 
 //
 // Comparison operators

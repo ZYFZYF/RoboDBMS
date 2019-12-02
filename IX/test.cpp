@@ -1121,6 +1121,6 @@ RC Test12(void) {
     if ((rc = ixm.DestroyIndex(FILENAME, index)))
         return (rc);
 
-    printf("Passed Test 9\n\n");
+    printf("Passed Test 12\n\n");
     return OK_RC;
 }

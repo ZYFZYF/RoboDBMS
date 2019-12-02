@@ -6,7 +6,7 @@
 #define ROBODBMS_IX_INDEXHANDLE_H
 
 
-#include "../def.h"
+#include "../Constant.h"
 #include "../RM/RM_RID.h"
 #include "../PF/PF_FileHandle.h"
 

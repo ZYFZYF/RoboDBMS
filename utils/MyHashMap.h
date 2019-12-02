@@ -1,6 +1,6 @@
 #ifndef MY_HASH_MAP
 #define MY_HASH_MAP
-#include "../def.h"
+#include "../Constant.h"
 #include "MyLinkList.h"
 /*
  * hash表的键

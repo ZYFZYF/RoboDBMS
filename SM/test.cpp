@@ -3,11 +3,12 @@
 //
 
 #include <iostream>
-#include "SM_Manager.h"
+#include "SM_Constant.h"
 
 using namespace std;
 
 int main() {
     cout << "Hello world!" << endl;
+    cout << sizeof(TableMeta) << endl;
     return 0;
 }

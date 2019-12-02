@@ -1,6 +1,6 @@
 set(HEADER
         ${HEADER}
-        ${CMAKE_CURRENT_SOURCE_DIR}/def.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/SP_Constant.h
         ${CMAKE_CURRENT_SOURCE_DIR}/SP_Handle.h
         ${CMAKE_CURRENT_SOURCE_DIR}/SP_Manager.h)
 set(SOURCE

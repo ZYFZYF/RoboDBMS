@@ -5,8 +5,8 @@
 #ifndef ROBOSQL_PF_BUFFERMANAGER_H
 #define ROBOSQL_PF_BUFFERMANAGER_H
 
-#include "../def.h"
-#include "def.h"
+#include "../Constant.h"
+#include "PF_Constant.h"
 #include "PF_HashTable.h"
 
 #define INVALID_SLOT  (-1)

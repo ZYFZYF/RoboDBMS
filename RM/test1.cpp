@@ -26,7 +26,7 @@
 #include <unistd.h>
 #include "RM_Manager.h"
 #include "RM_FileScan.h"
-#include "../utils/printError.h"
+#include "../utils/PrintError.h"
 
 using namespace std;
 

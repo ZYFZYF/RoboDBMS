@@ -3,7 +3,7 @@
 //
 
 #include "SP_Handle.h"
-#include "def.h"
+#include "SP_Constant.h"
 
 SP_Handle::SP_Handle() {
 
@@ -156,5 +156,10 @@ RC SP_Handle::WriteBuf(const char *data, int length, int offset) {
     if (write(fd, data, length) < 0) {
         return SP_UNIX;
     }
+    return OK_RC;
+}
+
+RC SP_Handle::UpdateStringLocally(const char *string, int length, int offset) {
+    TRY(WriteBuf(string, length, offset));
     return OK_RC;
 }

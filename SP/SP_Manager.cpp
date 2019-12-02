@@ -5,8 +5,8 @@
 #include <fcntl.h>
 #include <cstring>
 #include "SP_Manager.h"
-#include "../PF/def.h"
-#include "def.h"
+#include "../PF/PF_Constant.h"
+#include "SP_Constant.h"
 
 RC SP_Manager::CreateStringPool(const char *fileName) {
     //空文件名

@@ -6,7 +6,7 @@
 #include <vector>
 #include "IX_IndexHandle.h"
 #include "../utils/Utils.h"
-#include "def.h"
+#include "IX_Constant.h"
 
 IX_IndexHandle::IX_IndexHandle() {
 

@@ -3,7 +3,7 @@
 //
 #include <iostream>
 #include <cassert>
-#include "def.h"
+#include "RM_Constant.h"
 #include "RM_FileHandle.h"
 
 using namespace std;

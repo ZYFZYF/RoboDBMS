@@ -5,7 +5,7 @@
 #ifndef ROBOSQL_LINKLIST_H
 #define ROBOSQL_LINKLIST_H
 
-#include "../def.h"
+#include "../Constant.h"
 
 template<class T>
 class LinkList {

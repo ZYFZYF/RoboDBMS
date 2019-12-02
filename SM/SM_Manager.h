@@ -8,6 +8,7 @@
 
 #include "../RM/RM_Manager.h"
 #include "../IX/IX_Manager.h"
+#include "SM_Constant.h"
 
 
 struct AttrInfo {
@@ -21,6 +22,7 @@ public:
     ~SM_Manager();                             // Destructor
 
     RC OpenDb(const char *dbName);           // Open the database
+
     RC CloseDb();                             // close the database
 
     RC CreateTable(const char *relName,           // create relation relName
@@ -43,6 +45,16 @@ public:
 
     RC Set(const char *paramName,         // set parameter to
            const char *value);            //   value
+
+    //课程中额外要求的操作
+    RC CreateDb(const char *dbName);
+
+    RC DropDb(const char *dbName);
+
+    RC UseDb(const char *dbName);
+
+    //RC AddColumn(const char *dbName, ColumnDesc columnDesc);
+
 };
 
 

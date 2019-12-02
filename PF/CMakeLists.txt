@@ -1,6 +1,6 @@
 set(HEADER
         ${HEADER}
-        ${CMAKE_CURRENT_SOURCE_DIR}/def.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/PF_Constant.h
         ${CMAKE_CURRENT_SOURCE_DIR}/PF_BufferManager.h
         ${CMAKE_CURRENT_SOURCE_DIR}/PF_FileHandle.h
         ${CMAKE_CURRENT_SOURCE_DIR}/PF_HashTable.h

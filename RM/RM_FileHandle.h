@@ -6,10 +6,10 @@
 #define ROBODBMS_RM_FILEHANDLE_H
 
 
-#include "../def.h"
+#include "../Constant.h"
 #include "RM_Record.h"
 #include "../PF/PF_FileHandle.h"
-#include "def.h"
+#include "RM_Constant.h"
 
 class RM_FileHandle {
     friend class RM_Manager;

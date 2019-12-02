@@ -5,7 +5,7 @@
 #ifndef ROBODBMS_RM_RID_H
 #define ROBODBMS_RM_RID_H
 
-#include "../def.h"
+#include "../Constant.h"
 
 //
 // PageNum: uniquely identifies a page in a file

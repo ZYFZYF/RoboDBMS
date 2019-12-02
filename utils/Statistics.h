@@ -22,7 +22,7 @@
 
 // This include must come after the common defines
 #include "LinkList.h"    // Template class for the link list
-#include "../def.h"
+#include "../Constant.h"
 
 // A single statistic will be tracked by a Statistic class
 class Statistic {

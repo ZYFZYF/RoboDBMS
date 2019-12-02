@@ -55,3 +55,15 @@ RC SM_Manager::Print(const char *relName) {
 RC SM_Manager::Set(const char *paramName, const char *value) {
     return PF_NOBUF;
 }
+
+RC SM_Manager::CreateDb(const char *dbName) {
+    return PF_NOBUF;
+}
+
+RC SM_Manager::DropDb(const char *dbName) {
+    return PF_NOBUF;
+}
+
+RC SM_Manager::UseDb(const char *dbName) {
+    return PF_NOBUF;
+}

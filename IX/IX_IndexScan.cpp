@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "IX_IndexScan.h"
-#include "def.h"
+#include "IX_Constant.h"
 #include "../utils/Utils.h"
 
 IX_IndexScan::IX_IndexScan() {

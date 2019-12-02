@@ -6,7 +6,7 @@
 #define ROBODBMS_IX_INDEXSCAN_H
 
 
-#include "../def.h"
+#include "../Constant.h"
 #include "IX_IndexHandle.h"
 
 class IX_IndexScan {

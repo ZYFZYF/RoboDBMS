@@ -2,8 +2,8 @@
 // Created by 赵鋆峰 on 2019/10/26.
 //
 
-#ifndef ROBOSQL_DEF_H
-#define ROBOSQL_DEF_H
+#ifndef ROBOSQL_PF_CONSTANT_H
+#define ROBOSQL_PF_CONSTANT_H
 typedef int PageNum;
 //
 // Constants and defines
@@ -35,4 +35,4 @@ struct PF_PageHdr {
 
 // Justify the file header to the length of one page
 const int PF_FILE_HDR_SIZE = PF_PAGE_SIZE + sizeof(PF_PageHdr);
-#endif //ROBOSQL_DEF_H
+#endif //ROBOSQL_PF_CONSTANT_H
