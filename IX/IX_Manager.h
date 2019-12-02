@@ -6,6 +6,7 @@
 #define ROBODBMS_IX_MANAGER_H
 
 
+#include <string>
 #include "../PF/PF_Manager.h"
 #include "IX_IndexHandle.h"
 
