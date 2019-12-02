@@ -53,8 +53,14 @@ public:
 
     RC UseDb(const char *dbName);
 
-    //RC AddColumn(const char *dbName, ColumnDesc columnDesc);
+    RC AddColumn(const char *dbName, ColumnDesc columnDesc);
 
+    RC DropColumn(const char *dbName, const char *columnName);
+
+private:
+    IX_Manager ixManager;
+    RM_Manager rmManager;
+    bool isUsingDb;
 };
 
 
