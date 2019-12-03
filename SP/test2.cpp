@@ -4,6 +4,7 @@
 
 #include "SP_Manager.h"
 #include "../Attr.h"
+#include "../utils/Utils.h"
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -36,12 +37,18 @@ int main() {
             char x[100];
             vars[i].getData(x);
             cout << ind[i] << " get data is " << x << endl;
-            cout << ind[i] << " == " << ind[j] << ' ' << (vars[i] == vars[j]) << endl;
-            cout << ind[i] << " != " << ind[j] << ' ' << (vars[i] != vars[j]) << endl;
-            cout << ind[i] << " < " << ind[j] << ' ' << (vars[i] < vars[j]) << endl;
-            cout << ind[i] << " <= " << ind[j] << ' ' << (vars[i] <= vars[j]) << endl;
-            cout << ind[i] << " > " << ind[j] << ' ' << (vars[i] > vars[j]) << endl;
-            cout << ind[i] << " >= " << ind[j] << ' ' << (vars[i] >= vars[j]) << endl;
+            cout << ind[i] << " == " << ind[j] << ' '
+                 << Utils::Compare(&vars[i], &vars[j], VARCHAR, sizeof(Varchar), EQ_OP) << endl;
+            cout << ind[i] << " != " << ind[j] << ' '
+                 << Utils::Compare(&vars[i], &vars[j], VARCHAR, sizeof(Varchar), NE_OP) << endl;
+            cout << ind[i] << " < " << ind[j] << ' '
+                 << Utils::Compare(&vars[i], &vars[j], VARCHAR, sizeof(Varchar), LT_OP) << endl;
+            cout << ind[i] << " <= " << ind[j] << ' '
+                 << Utils::Compare(&vars[i], &vars[j], VARCHAR, sizeof(Varchar), LE_OP) << endl;
+            cout << ind[i] << " > " << ind[j] << ' '
+                 << Utils::Compare(&vars[i], &vars[j], VARCHAR, sizeof(Varchar), GT_OP) << endl;
+            cout << ind[i] << " >= " << ind[j] << ' '
+                 << Utils::Compare(&vars[i], &vars[j], VARCHAR, sizeof(Varchar), GE_OP) << endl;
         }
 
 
