@@ -38,9 +38,8 @@ struct ColumnDesc {
     bool hasDefaultValue;
     AttrType attrType;
     AttrValue defaultValue;
-    //只有在是小数类型时用
-    int totalLength;
-    int decimalLength;
+    int maxLength;//定长字符串或者小数类型时用
+    int decimalLength;//只有在是小数类型时用
 };
 
 //描述一个外键约束，注意有可能一列当了多个外键，或者联合外键这种东西

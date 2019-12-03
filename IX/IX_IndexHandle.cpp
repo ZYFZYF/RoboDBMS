@@ -606,21 +606,22 @@ bool IX_IndexHandle::Compare(CompOp compOp, void *keyLeft, void *valueLeft, void
         case NO_OP:
             return true;
         case EQ_OP:
-            return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, EQ_OP) &&
-                   left == right;
+            return keyEqual && left == right;
         case LT_OP:
             if (keyEqual)return left < right;
             else return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, LT_OP);
         case LE_OP:
             if (keyEqual)return left <= right;
             else return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, LE_OP);
-            //以下操作会使得比较次数+1
         case NE_OP:
-            return !Compare(EQ_OP, keyLeft, valueLeft, keyRight, valueRight);
+            if (keyEqual) return left != right;
+            else return true;
         case GT_OP:
-            return !Compare(LE_OP, keyLeft, valueLeft, keyRight, valueRight);
+            if (keyEqual) return left > right;
+            return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, GT_OP);
         case GE_OP:
-            return !Compare(LT_OP, keyLeft, valueLeft, keyRight, valueRight);
+            if (keyEqual) return left >= right;
+            else return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, GE_OP);
     }
 }
 

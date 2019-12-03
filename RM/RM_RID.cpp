@@ -35,8 +35,7 @@ bool RM_RID::operator==(const RM_RID &rhs) const {
 }
 
 bool RM_RID::operator!=(const RM_RID &rhs) const {
-    return pageNum != rhs.pageNum ||
-           slotNum != rhs.pageNum;
+    return !(*this == rhs);
 }
 
 RM_RID::RM_RID(const RM_RID &rmRid) {

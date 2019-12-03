@@ -97,6 +97,8 @@ bool Utils::Compare(void *value1, void *value2, AttrType attrType, int attrLengt
                     return *(Varchar *) value1 >= *(Varchar *) value2;
             }
         }
+        case ATTRARRAY:
+            break;
     }
 }
 
