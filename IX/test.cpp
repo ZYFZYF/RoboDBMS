@@ -51,6 +51,10 @@ int values[NENTRIES];
 Varchar vars[NENTRIES];
 int varValues[NENTRIES];
 
+
+int value1[NENTRIES];
+int value2[NENTRIES];
+
 //
 // Global component manager variables
 //
@@ -87,6 +91,8 @@ RC Test12(void);
 
 RC Test13(void);
 
+RC Test14(void);
+
 
 void LsFiles(char *fileName);
 
@@ -116,7 +122,7 @@ RC PrintIndex(IX_IndexHandle &ih);
 //
 // Array of pointers to the test functions
 //
-#define NUM_TESTS       13               // number of tests
+#define NUM_TESTS       14               // number of tests
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
@@ -132,7 +138,8 @@ RC (*tests[])() =                      // RC doesn't work on some compilers
                 Test10,
                 Test11,
                 Test12,
-                Test13
+                Test13,
+                Test14
         };
 
 //
@@ -349,6 +356,44 @@ RC InsertVarcharEntries(IX_IndexHandle &ih, int nEntries) {
 }
 
 //
+// Desc: Add a number of union entries to the index
+//
+RC InsertUnionEntries(IX_IndexHandle &ih, int nEntries) {
+    RC rc;
+    int i;
+
+
+    printf("             Adding %d union entries\n", nEntries);
+    ran(nEntries);
+    for (i = 0; i < nEntries; i++) {
+        char temp[STRLEN * 2];
+        memset(temp, ' ', STRLEN);
+        sprintf(temp, "number %d", value2[i] + 1);
+
+        char value[STRLEN * 2];
+        *(AttrType *) value = INT;
+        *(int *) (value + ATTR_TYPE_LENGTH) = 4;
+        *(int *) (value + ATTR_TYPE_LENGTH + 4) = value1[i];
+        *(AttrType *) (value + ATTR_TYPE_LENGTH + 8) = STRING;
+        *(int *) (value + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH) = STRLEN;
+        memcpy(value + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH + 4, temp, STRLEN);
+
+        RM_RID rid(value2[i] + 1, (value2[i] + 1) * 2);
+        if ((rc = ih.InsertEntry(value, rid)))
+            return (rc);
+
+        if ((i + 1) % PROG_UNIT == 0) {
+            printf("\r\t%d%%    ", (int) ((i + 1) * 100L / nEntries));
+            fflush(stdout);
+        }
+    }
+    printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
+
+    // Return ok
+    return OK_RC;
+}
+
+//
 // DeleteIntEntries: delete a number of integer entries from an index
 //
 RC DeleteIntEntries(IX_IndexHandle &ih, int nEntries) {
@@ -440,6 +485,44 @@ RC DeleteVarcharEntries(IX_IndexHandle &ih, int nEntries) {
     for (i = 0; i < nEntries; i++) {
         RM_RID rid(varValues[i] + 1, (varValues[i] + 1) * 2);
         if ((rc = ih.DeleteEntry(&vars[i], rid)))
+            return (rc);
+
+        if ((i + 1) % PROG_UNIT == 0) {
+            printf("\r\t%d%%    ", (int) ((i + 1) * 100L / nEntries));
+            fflush(stdout);
+        }
+    }
+    printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
+
+    // Return ok
+    return OK_RC;
+}
+
+//
+// Desc: Delete a number of union entries from an index
+//
+RC DeleteUnionEntries(IX_IndexHandle &ih, int nEntries) {
+    RC rc;
+    int i;
+    char value[STRLEN + 1];
+
+    printf("             Deleting %d float entries\n", nEntries);
+    ran(nEntries);
+    for (i = 0; i < nEntries; i++) {
+        char temp[STRLEN * 2];
+        memset(temp, ' ', STRLEN);
+        sprintf(temp, "number %d", value2[i] + 1);
+
+        char value[STRLEN * 2];
+        *(AttrType *) value = INT;
+        *(int *) (value + ATTR_TYPE_LENGTH) = 4;
+        *(int *) (value + ATTR_TYPE_LENGTH + 4) = value1[i];
+        *(AttrType *) (value + ATTR_TYPE_LENGTH + 8) = STRING;
+        *(int *) (value + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH) = STRLEN;
+        memcpy(value + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH + 4, temp, STRLEN);
+
+        RM_RID rid(value2[i] + 1, (value2[i] + 1) * 2);
+        if ((rc = ih.DeleteEntry(value, rid)))
             return (rc);
 
         if ((i + 1) % PROG_UNIT == 0) {
@@ -652,6 +735,79 @@ RC VerifyVarcharIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists)
 
     return OK_RC;
 }
+
+RC VerifyUnionIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
+    RC rc;
+    int i;
+    RM_RID rid;
+    IX_IndexScan scan;
+    PageNum pageNum;
+    SlotNum slotNum;
+
+    // Assume values still contains the array of values inserted/deleted
+
+    printf("Verifying index contents\n");
+
+    for (i = nStart; i < nStart + nEntries; i++) {
+        char temp[STRLEN * 2];
+        memset(temp, ' ', STRLEN);
+        sprintf(temp, "number %d", value2[i] + 1);
+        char value[STRLEN * 2];
+        *(AttrType *) value = INT;
+        *(int *) (value + ATTR_TYPE_LENGTH) = 4;
+        *(int *) (value + ATTR_TYPE_LENGTH + 4) = value1[i];
+        *(AttrType *) (value + ATTR_TYPE_LENGTH + 8) = STRING;
+        *(int *) (value + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH) = STRLEN;
+        memcpy(value + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH + 4, temp, STRLEN);
+
+        if ((rc = scan.OpenScan(ih, EQ_OP, value))) {
+            printf("Verify error: opening scan\n");
+            return (rc);
+        }
+
+        rc = scan.GetNextEntry(rid);
+        if (!bExists && rc == 0) {
+            printf("Verify error: found non-existent %dth entry %s\n", i - nStart + 1, value);
+            return IX_FIND_NON_EXIST;  // What should be returned here?
+        } else if (bExists && rc == IX_EOF) {
+            printf("Verify error: %dth entry %s not found\n", i - nStart + 1, value);
+            return IX_NOT_FIND;  // What should be returned here?
+        } else if (rc != 0 && rc != IX_EOF)
+            return (rc);
+        else {
+            //printf("Verify %dth entry %d\n", i - nStart + 1, value);
+        }
+
+        if (bExists && rc == 0) {
+            // Did we get the right entry?
+            if ((rc = rid.GetPageNum(pageNum)) ||
+                (rc = rid.GetSlotNum(slotNum)))
+                return (rc);
+
+            if (pageNum != (value2[i] + 1) || slotNum != ((value2[i] + 1) * 2)) {
+                printf("Verify error: incorrect rid (%d,%d) found for entry %s\n",
+                       pageNum, slotNum, value);
+                return (IX_EOF);  // What should be returned here?
+            }
+
+            // Is there another entry?
+            rc = scan.GetNextEntry(rid);
+            if (rc == 0) {
+                printf("Verify error: found two entries with same value %d\n", value);
+                return (IX_EOF);  // What should be returned here?
+            } else if (rc != IX_EOF)
+                return (rc);
+        }
+
+        if ((rc = scan.CloseScan())) {
+            printf("Verify error: closing scan\n");
+            return (rc);
+        }
+    }
+
+    return OK_RC;
+}
+
 
 
 
@@ -1282,5 +1438,76 @@ RC Test13(void) {
     SP_Manager::DestroyStringPool(STRING_POOL);
 
     printf("Passed Test 13\n\n");
+    return OK_RC;
+}
+
+//
+// Test14 test union index
+//
+RC Test14(void) {
+    cout << ATTR_TYPE_LENGTH << endl;
+    RC rc;
+    int index = 0;
+    int nInsert = MANY_ENTRIES;
+    int nDelete = nInsert * 8 / 10;
+    IX_IndexHandle ih;
+
+    printf("Test14: test union index... \n");
+
+    for (int i = 0; i < nInsert; i++)value1[i] = rand() % 100;
+    for (int i = 0; i < nInsert; i++)value2[i] = i;
+
+
+    if ((rc = ixm.CreateIndex(FILENAME, index, ATTRARRAY, ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH + 4 + STRLEN)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertUnionEntries(ih, nInsert)) ||
+        (rc = VerifyUnionIndex(ih, 0, nInsert, TRUE)) ||
+        (rc = DeleteUnionEntries(ih, nDelete)) ||
+        (rc = ixm.CloseIndex(ih)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        // ensure deleted entries are gone
+        (rc = VerifyUnionIndex(ih, 0, nDelete, FALSE)) ||
+        // ensure non-deleted entries still exist
+        (rc = VerifyUnionIndex(ih, nDelete, nInsert - nDelete, TRUE)) ||
+        (rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    TRY(ixm.OpenIndex(FILENAME, index, ih));
+
+    char temp[STRLEN * 2];
+    memset(temp, ' ', STRLEN);
+    sprintf(temp, "number %d", value2[88] + 1);
+
+    char value[STRLEN * 2];
+    *(AttrType *) value = INT;
+    *(int *) (value + ATTR_TYPE_LENGTH) = 4;
+    *(int *) (value + ATTR_TYPE_LENGTH + 4) = value1[88];
+    *(AttrType *) (value + ATTR_TYPE_LENGTH + 8) = STRING;
+    *(int *) (value + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH) = STRLEN;
+    memcpy(value + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH + 4, temp, STRLEN);
+
+    cout << "scan < " << value2[88] << endl;
+    IX_IndexScan scanlt;
+    if ((rc = scanlt.OpenScan(ih, LT_OP, value))) {
+        printf("Scan error: opening scan\n");
+        return (rc);
+    }
+    RM_RID rid;
+    int i = 0;
+    while (!(rc = scanlt.GetNextEntry(rid))) {
+        int pageNum, slotNum;
+        rid.GetPageNumAndSlotNum(pageNum, slotNum);
+        printf("scan found value1 = %d and value2 = %s and pageNum = %d and slotNum = %d\n",
+               *(int *) ((char *) scanlt.getCurrentKey() + ATTR_TYPE_LENGTH + 4),
+               (char *) scanlt.getCurrentKey() + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH + 4, pageNum, slotNum);
+        i++;
+    }
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+
+    printf("Passed Test 14\n\n");
     return OK_RC;
 }

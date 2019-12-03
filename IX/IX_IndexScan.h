@@ -20,6 +20,8 @@ public:
 
     RC GetNextEntry(RM_RID &rid);                         // Get next matching entry
     RC CloseScan();                                 // Terminate index scan
+    void *getCurrentKey();
+
 private:
     CompOp compareOp;
     IX_IndexHandle *ixIndexHandle;

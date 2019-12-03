@@ -82,6 +82,19 @@ int Utils::Cmp(void *value1, void *value2, AttrType attrType, int attrLength) {
             }
         }
         case ATTRARRAY:
-            break;
+//            printf("%d %s %d %s ", *(int *) ((char *) value1 + ATTR_TYPE_LENGTH + 4),
+//                   (char *) value1 + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH + 4,
+//                   *(int *) ((char *) value2 + ATTR_TYPE_LENGTH + 4),
+//                   (char *) value2 + ATTR_TYPE_LENGTH + 8 + ATTR_TYPE_LENGTH + 4);
+            for (int i = 0, length; i < attrLength; i += ATTR_TYPE_LENGTH + 4 + length) {
+                AttrType type = *(AttrType *) ((char *) value1 + i);
+                length = *(int *) ((char *) value1 + i + ATTR_TYPE_LENGTH);
+                int cmp = Cmp((char *) value1 + i + ATTR_TYPE_LENGTH + 4, (char *) value2 + i + ATTR_TYPE_LENGTH + 4,
+                              type, length);
+                if (cmp != 0) {
+                    return cmp;
+                }
+            }
+            return 0;
     }
 }

@@ -96,3 +96,7 @@ RC IX_IndexScan::CloseScan() {
     isOpen = false;
     return OK_RC;
 }
+
+void *IX_IndexScan::getCurrentKey() {
+    return currentKey;
+}
