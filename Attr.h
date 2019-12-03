@@ -61,15 +61,11 @@ struct Varchar {
     char spName[MAX_NAME_LENGTH];
 
     bool operator==(Varchar &varchar) {
-        SP_Handle spHandleLeft;
         char valueLeft[length];
-        SP_Manager::OpenStringPool(spName, spHandleLeft);
-        spHandleLeft.GetStringData(valueLeft, offset, length);
+        getData(valueLeft);
 
-        SP_Handle spHandleRight;
         char valueRight[varchar.length];
-        SP_Manager::OpenStringPool(varchar.spName, spHandleRight);
-        spHandleRight.GetStringData(valueRight, varchar.offset, varchar.length);
+        varchar.getData(valueRight);
 
         bool ret;
         if (length != varchar.length) {
@@ -77,22 +73,15 @@ struct Varchar {
         } else {
             ret = (memcmp(valueLeft, valueRight, length) == 0);
         }
-
-        SP_Manager::CloseStringPool(spHandleLeft);
-        SP_Manager::CloseStringPool(spHandleRight);
         return ret;
     }
 
     bool operator<(Varchar &varchar) {
-        SP_Handle spHandleLeft;
         char valueLeft[length];
-        SP_Manager::OpenStringPool(spName, spHandleLeft);
-        spHandleLeft.GetStringData(valueLeft, offset, length);
+        getData(valueLeft);
 
-        SP_Handle spHandleRight;
         char valueRight[varchar.length];
-        SP_Manager::OpenStringPool(varchar.spName, spHandleRight);
-        spHandleRight.GetStringData(valueRight, varchar.offset, varchar.length);
+        varchar.getData(valueRight);
 
         bool ret;
         int cmp = memcmp(valueLeft, valueRight, std::min(length, varchar.length));
@@ -103,22 +92,15 @@ struct Varchar {
         } else {
             ret = false;
         }
-
-        SP_Manager::CloseStringPool(spHandleLeft);
-        SP_Manager::CloseStringPool(spHandleRight);
         return ret;
     }
 
     bool operator<=(Varchar &varchar) {
-        SP_Handle spHandleLeft;
         char valueLeft[length];
-        SP_Manager::OpenStringPool(spName, spHandleLeft);
-        spHandleLeft.GetStringData(valueLeft, offset, length);
+        getData(valueLeft);
 
-        SP_Handle spHandleRight;
         char valueRight[varchar.length];
-        SP_Manager::OpenStringPool(varchar.spName, spHandleRight);
-        spHandleRight.GetStringData(valueRight, varchar.offset, varchar.length);
+        varchar.getData(valueRight);
 
         bool ret;
         int cmp = memcmp(valueLeft, valueRight, std::min(length, varchar.length));
@@ -129,9 +111,6 @@ struct Varchar {
         } else {
             ret = false;
         }
-
-        SP_Manager::CloseStringPool(spHandleLeft);
-        SP_Manager::CloseStringPool(spHandleRight);
         return ret;
     }
 
@@ -147,7 +126,13 @@ struct Varchar {
         return !((*this) <= varchar);
     }
 
-
+    void getData(char *pData) {
+        SP_Handle spHandle;
+        SP_Manager::OpenStringPool(spName, spHandle);
+        spHandle.GetStringData(pData, offset, length);
+        pData[length] = 0;
+        SP_Manager::CloseStringPool(spHandle);
+    }
 };
 
 enum AttrType {

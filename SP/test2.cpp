@@ -33,6 +33,9 @@ int main() {
     SP_Manager::CloseStringPool(spHandle);
     for (int i = 0; i < n; i++)
         for (int j = 0; j < n; j++) {
+            char x[100];
+            vars[i].getData(x);
+            cout << ind[i] << " get data is " << x << endl;
             cout << ind[i] << " == " << ind[j] << ' ' << (vars[i] == vars[j]) << endl;
             cout << ind[i] << " != " << ind[j] << ' ' << (vars[i] != vars[j]) << endl;
             cout << ind[i] << " < " << ind[j] << ' ' << (vars[i] < vars[j]) << endl;
