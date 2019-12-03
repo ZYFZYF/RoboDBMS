@@ -9,6 +9,7 @@
 #include "../Constant.h"
 #include "../RM/RM_RID.h"
 #include "../PF/PF_FileHandle.h"
+#include "../Attr.h"
 
 #define IX_BPLUS_TREE_NODE_SIZE sizeof(IX_BPlusTreeNode)
 
@@ -45,7 +46,7 @@ public:
 private:
     PF_FileHandle pfFileHandle;
     IX_FileHeader ixFileHeader;
-    SP_Handle spHandle;
+    //SP_Handle spHandle;
     bool headerChanged;
 
     RC Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer, int &index,

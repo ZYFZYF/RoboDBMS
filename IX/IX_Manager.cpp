@@ -86,7 +86,7 @@ RC IX_Manager::OpenIndex(const char *fileName, int indexNo, IX_IndexHandle &inde
     memcpy(&(indexHandle.ixFileHeader), pageData, IX_FILE_HEADER_SIZE);
     indexHandle.headerChanged = false;
     //把sp拿到,记得结束的时候要放掉
-    SP_Manager::OpenStringPool(Utils::getStringPoolFileName(fileName).c_str(), indexHandle.spHandle);
+    //SP_Manager::OpenStringPool(Utils::getStringPoolFileName(fileName).c_str(), indexHandle.spHandle);
     //把首页放回去
     TRY(pfFileHandle.UnpinPage(pageNum));
     return OK_RC;
@@ -107,6 +107,6 @@ RC IX_Manager::CloseIndex(IX_IndexHandle &indexHandle) {
     }
     TRY(pfManager.CloseFile(indexHandle.pfFileHandle));
     //关掉index的时候要把stringPool的文件也关掉
-    TRY(SP_Manager::CloseStringPool(indexHandle.spHandle));
+    //TRY(SP_Manager::CloseStringPool(indexHandle.spHandle));
     return OK_RC;
 }

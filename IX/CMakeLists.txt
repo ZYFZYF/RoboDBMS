@@ -14,5 +14,5 @@ message(STATUS ${SOURCE})
 add_library(IX ${HEADER} ${SOURCE})
 add_executable(IX_TEST test.cpp ${HEADER} ${SOURCE})
 
-target_link_libraries(IX_TEST PF RM)
+target_link_libraries(IX_TEST PF RM SP)
 

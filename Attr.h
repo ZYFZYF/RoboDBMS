@@ -6,6 +6,7 @@
 #define ROBODBMS_TYPE_H
 
 #include <algorithm>
+#include <iostream>
 #include "SP/SP_Manager.h"
 #include "cstring"
 
@@ -73,6 +74,9 @@ struct Varchar {
         } else {
             ret = (memcmp(valueLeft, valueRight, length) == 0);
         }
+//        if (length != varchar.length) {
+//            std::cout << valueLeft << " == " << valueRight << ' ' << ret << std::endl;
+//        }
         return ret;
     }
 
@@ -92,6 +96,9 @@ struct Varchar {
         } else {
             ret = false;
         }
+//        if (length != varchar.length) {
+//            std::cout << valueLeft << "  < " << valueRight << ' ' << ret << std::endl;
+//        }
         return ret;
     }
 
@@ -111,6 +118,9 @@ struct Varchar {
         } else {
             ret = false;
         }
+//        if (length != varchar.length) {
+//            std::cout << valueLeft << " <= " << valueRight << ' ' << ret << std::endl;
+//        }
         return ret;
     }
 

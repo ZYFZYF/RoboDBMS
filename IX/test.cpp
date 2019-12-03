@@ -26,6 +26,7 @@
 #include "IX_IndexScan.h"
 #include "../RM/RM_Manager.h"
 #include "../utils/PrintError.h"
+#include "../Attr.h"
 
 using namespace std;
 
@@ -40,12 +41,15 @@ using namespace std;
 #define LARGE_ENTRIES 100000
 #define NENTRIES     500000             // Size of values array
 #define PROG_UNIT    200              // how frequently to give progress
+#define STRING_POOL "test.sp"
 // reports when adding lots of entries
 
 //
 // Values array we will be using for our tests
 //
 int values[NENTRIES];
+Varchar vars[NENTRIES];
+int varValues[NENTRIES];
 
 //
 // Global component manager variables
@@ -81,6 +85,8 @@ RC Test11(void);
 
 RC Test12(void);
 
+RC Test13(void);
+
 
 void LsFiles(char *fileName);
 
@@ -110,7 +116,7 @@ RC PrintIndex(IX_IndexHandle &ih);
 //
 // Array of pointers to the test functions
 //
-#define NUM_TESTS       12               // number of tests
+#define NUM_TESTS       13               // number of tests
 
 RC (*tests[])() =                      // RC doesn't work on some compilers
         {
@@ -125,7 +131,8 @@ RC (*tests[])() =                      // RC doesn't work on some compilers
                 Test9,
                 Test10,
                 Test11,
-                Test12
+                Test12,
+                Test13
         };
 
 //
@@ -225,6 +232,7 @@ void ran(int n) {
         values[m] = values[r];
         values[r] = t;
     }
+
 }
 
 //
@@ -314,33 +322,27 @@ RC InsertStringEntries(IX_IndexHandle &ih, int nEntries) {
 }
 
 //
-// AddRecs
+// InsertVarcharEntries
 //
-// Desc: Add a number of integer records to an RM file
+// Desc: Add a number of varchar entries to the index
 //
-RC AddRecs(RM_FileHandle &fh, int nRecs) {
+RC InsertVarcharEntries(IX_IndexHandle &ih, int nEntries) {
     RC rc;
     int i;
-    int value;
-    RM_RID rid;
-    PageNum pageNum;
-    SlotNum slotNum;
 
-    printf("           Adding %d int records to RM file\n", nRecs);
-    ran(nRecs);
-    for (i = 0; i < nRecs; i++) {
-        value = values[i] + 1;
-        if ((rc = fh.InsertRec((char *) &value, rid)) ||
-            (rc = rid.GetPageNum(pageNum)) ||
-            (rc = rid.GetSlotNum(slotNum)))
+    printf("             Adding %d varchar entries\n", nEntries);
+    ran(nEntries);
+    for (i = 0; i < nEntries; i++) {
+        RM_RID rid(varValues[i] + 1, (varValues[i] + 1) * 2);
+        if ((rc = ih.InsertEntry(&vars[i], rid)))
             return (rc);
 
         if ((i + 1) % PROG_UNIT == 0) {
-            printf("\r\t%d%%      ", (int) ((i + 1) * 100L / nRecs));
+            printf("\r\t%d%%    ", (int) ((i + 1) * 100L / nEntries));
             fflush(stdout);
         }
     }
-    printf("\r\t%d%%      \n", (int) (i * 100L / nRecs));
+    printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
 
     // Return ok
     return OK_RC;
@@ -413,6 +415,31 @@ RC DeleteStringEntries(IX_IndexHandle &ih, int nEntries) {
         sprintf(value, "number %d", values[i] + 1);
         RM_RID rid(values[i] + 1, (values[i] + 1) * 2);
         if ((rc = ih.DeleteEntry(value, rid)))
+            return (rc);
+
+        if ((i + 1) % PROG_UNIT == 0) {
+            printf("\r\t%d%%    ", (int) ((i + 1) * 100L / nEntries));
+            fflush(stdout);
+        }
+    }
+    printf("\r\t%d%%      \n", (int) (i * 100L / nEntries));
+
+    // Return ok
+    return OK_RC;
+}
+
+//
+// DeleteVarcharEntries: delete a number of varchar entries from an index
+//
+RC DeleteVarcharEntries(IX_IndexHandle &ih, int nEntries) {
+    RC rc;
+    int i;
+
+    printf("             Deleting %d float entries\n", nEntries);
+    ran(nEntries);
+    for (i = 0; i < nEntries; i++) {
+        RM_RID rid(varValues[i] + 1, (varValues[i] + 1) * 2);
+        if ((rc = ih.DeleteEntry(&vars[i], rid)))
             return (rc);
 
         if ((i + 1) % PROG_UNIT == 0) {
@@ -548,6 +575,70 @@ RC VerifyStringIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) 
             rc = scan.GetNextEntry(rid);
             if (rc == 0) {
                 printf("Verify error: found two entries with same value %d\n", value);
+                return (IX_EOF);  // What should be returned here?
+            } else if (rc != IX_EOF)
+                return (rc);
+        }
+
+        if ((rc = scan.CloseScan())) {
+            printf("Verify error: closing scan\n");
+            return (rc);
+        }
+    }
+
+    return OK_RC;
+}
+
+RC VerifyVarcharIndex(IX_IndexHandle &ih, int nStart, int nEntries, int bExists) {
+    RC rc;
+    int i;
+    RM_RID rid;
+    IX_IndexScan scan;
+    PageNum pageNum;
+    SlotNum slotNum;
+
+    // Assume values still contains the array of values inserted/deleted
+
+    printf("Verifying index contents\n");
+
+    for (i = nStart; i < nStart + nEntries; i++) {
+
+        if ((rc = scan.OpenScan(ih, EQ_OP, &vars[i]))) {
+            printf("Verify error: opening scan\n");
+            return (rc);
+        }
+
+        rc = scan.GetNextEntry(rid);
+        if (!bExists && rc == 0) {
+            printf("Verify error: found non-existent %dth entry %s\n", i - nStart + 1, vars[i]);
+            return IX_FIND_NON_EXIST;  // What should be returned here?
+        } else if (bExists && rc == IX_EOF) {
+            printf("Verify error: %dth entry %s not found\n", i - nStart + 1, vars[i]);
+            return IX_NOT_FIND;  // What should be returned here?
+        } else if (rc != 0 && rc != IX_EOF)
+            return (rc);
+        else {
+            //printf("Verify %dth entry %d\n", i - nStart + 1, value);
+        }
+
+        if (bExists && rc == 0) {
+            // Did we get the right entry?
+            if ((rc = rid.GetPageNum(pageNum)) ||
+                (rc = rid.GetSlotNum(slotNum)))
+                return (rc);
+            if (pageNum != (varValues[i] + 1) || slotNum != ((varValues[i] + 1) * 2)) {
+                printf("Verify error: incorrect rid (%d,%d) found for entry %s\n",
+                       pageNum, slotNum, vars[i]);
+                return (IX_EOF);  // What should be returned here?
+            }
+            char value[100];
+            vars[i].getData(value);
+            //printf("%d %s\n", varValues[i], value);
+
+            // Is there another entry?
+            rc = scan.GetNextEntry(rid);
+            if (rc == 0) {
+                printf("Verify error: found two entries with same value %d\n", vars[i]);
                 return (IX_EOF);  // What should be returned here?
             } else if (rc != IX_EOF)
                 return (rc);
@@ -1122,5 +1213,74 @@ RC Test12(void) {
         return (rc);
 
     printf("Passed Test 12\n\n");
+    return OK_RC;
+}
+
+//
+// Test13 test index for Varchar
+//
+RC Test13(void) {
+    RC rc;
+    int index = 0;
+    int nInsert = MANY_ENTRIES;
+    int nDelete = nInsert * 8 / 10;
+    IX_IndexHandle ih;
+
+    printf("Test13: test varchar index insert and delete... \n");
+
+    ran(nInsert);
+    SP_Handle spHandle;
+    if (access(STRING_POOL, F_OK) == 0) {
+        remove(STRING_POOL);
+    }
+    SP_Manager::CreateStringPool(STRING_POOL);
+    SP_Manager::OpenStringPool(STRING_POOL, spHandle);
+    char value[STRLEN + 1];
+    for (int i = 0; i < nInsert; i++) {
+        varValues[i] = values[i];
+        sprintf(value, "number %d", values[i] + 1);
+        vars[i].length = strlen(value);
+        strcpy(vars[i].spName, STRING_POOL);
+        spHandle.InsertString(value, vars[i].length, vars[i].offset);
+    }
+    SP_Manager::CloseStringPool(spHandle);
+
+    if ((rc = ixm.CreateIndex(FILENAME, index, VARCHAR, sizeof(Varchar))) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        (rc = InsertVarcharEntries(ih, nInsert)) ||
+        (rc = VerifyVarcharIndex(ih, 0, nInsert, TRUE)) ||
+        (rc = DeleteVarcharEntries(ih, nDelete)) ||
+        (rc = ixm.CloseIndex(ih)) ||
+        (rc = ixm.OpenIndex(FILENAME, index, ih)) ||
+        // ensure deleted entries are gone
+        (rc = VerifyVarcharIndex(ih, 0, nDelete, FALSE)) ||
+        // ensure non-deleted entries still exist
+        (rc = VerifyVarcharIndex(ih, nDelete, nInsert - nDelete, TRUE)) ||
+        (rc = ixm.CloseIndex(ih)))
+        return (rc);
+
+    TRY(ixm.OpenIndex(FILENAME, index, ih));
+    cout << "scan < " << varValues[0] << endl;
+    IX_IndexScan scanlt;
+    if ((rc = scanlt.OpenScan(ih, LT_OP, &vars[0]))) {
+        printf("Scan error: opening scan\n");
+        return (rc);
+    }
+    RM_RID rid;
+    int i = 0;
+    while (!(rc = scanlt.GetNextEntry(rid))) {
+        int pageNum, slotNum;
+        rid.GetPageNumAndSlotNum(pageNum, slotNum);
+        printf("scan found %d\n", pageNum);
+        i++;
+    }
+
+    LsFiles(FILENAME);
+
+    if ((rc = ixm.DestroyIndex(FILENAME, index)))
+        return (rc);
+    SP_Manager::DestroyStringPool(STRING_POOL);
+
+    printf("Passed Test 13\n\n");
     return OK_RC;
 }

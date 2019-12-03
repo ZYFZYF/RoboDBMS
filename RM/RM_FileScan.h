@@ -7,6 +7,7 @@
 
 
 #include "RM_FileHandle.h"
+#include "../Attr.h"
 
 #define BEGIN_SCAN  -1 //default slot number before scan begins
 
