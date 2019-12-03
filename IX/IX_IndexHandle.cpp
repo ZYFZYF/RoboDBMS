@@ -601,27 +601,27 @@ RC IX_IndexHandle::Delete(BPlusTreeNodePointer cur, void *key, void *value) {
 
 bool IX_IndexHandle::Compare(CompOp compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight) {
     RM_RID left = *(RM_RID *) valueLeft, right = *(RM_RID *) valueRight;
-    bool keyEqual = Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, EQ_OP);
+    int cmp = Utils::Cmp(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength);
     switch (compOp) {
         case NO_OP:
             return true;
         case EQ_OP:
-            return keyEqual && left == right;
+            return cmp == 0 && left == right;
         case LT_OP:
-            if (keyEqual)return left < right;
-            else return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, LT_OP);
+            if (cmp == 0)return left < right;
+            else return cmp < 0;
         case LE_OP:
-            if (keyEqual)return left <= right;
-            else return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, LE_OP);
+            if (cmp == 0)return left <= right;
+            else return cmp <= 0;
         case NE_OP:
-            if (keyEqual) return left != right;
+            if (cmp == 0) return left != right;
             else return true;
         case GT_OP:
-            if (keyEqual) return left > right;
-            return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, GT_OP);
+            if (cmp == 0) return left > right;
+            else return cmp > 0;
         case GE_OP:
-            if (keyEqual) return left >= right;
-            else return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, GE_OP);
+            if (cmp == 0) return left >= right;
+            else return cmp >= 0;
     }
 }
 
