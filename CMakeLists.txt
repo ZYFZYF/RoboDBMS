@@ -3,6 +3,7 @@ project(RoboDBMS)
 set(HEADER
         ${HEADER}
         ${CMAKE_CURRENT_SOURCE_DIR}/Constant.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/Attr.h
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/LinkList.h
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/PrintError.h
         ${CMAKE_CURRENT_SOURCE_DIR}/utils/Statistics.h

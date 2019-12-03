@@ -20,8 +20,6 @@ SP_Handle spHandle;
 RC test1() {
     TRY(SP_Manager::CreateStringPool(TEST_FILE_NAME));
     TRY(SP_Manager::OpenStringPool(TEST_FILE_NAME, spHandle));
-
-
 }
 
 struct varchar {

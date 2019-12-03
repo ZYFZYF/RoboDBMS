@@ -78,11 +78,24 @@ bool Utils::Compare(void *value1, void *value2, AttrType attrType, int attrLengt
                 case GE_OP:
                     return *(Date *) value1 >= *(Date *) value2;
             }
-            return true;
         }
         case VARCHAR: {
-            //TODO  实现Varchar类型的比较函数，可能需要把SP的Handle传进来
-            return true;
+            switch (compOp) {
+                case NO_OP:
+                    return true;
+                case EQ_OP:
+                    return *(Varchar *) value1 == *(Varchar *) value2;
+                case NE_OP:
+                    return *(Varchar *) value1 != *(Varchar *) value2;
+                case LT_OP:
+                    return *(Varchar *) value1 < *(Varchar *) value2;
+                case LE_OP:
+                    return *(Varchar *) value1 <= *(Varchar *) value2;
+                case GT_OP:
+                    return *(Varchar *) value1 > *(Varchar *) value2;
+                case GE_OP:
+                    return *(Varchar *) value1 >= *(Varchar *) value2;
+            }
         }
     }
 }

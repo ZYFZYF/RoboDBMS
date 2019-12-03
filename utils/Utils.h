@@ -8,6 +8,7 @@
 
 #include <string>
 #include "../Constant.h"
+#include "../Attr.h"
 
 class Utils {
 public:

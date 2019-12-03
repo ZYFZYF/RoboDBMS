@@ -7,7 +7,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include "SP/SP_Handle.h"
 
 #define MAXNAME       24                // maximum length of a relation
 // or attribute name
@@ -122,89 +121,6 @@ enum RC {
     STAT_UNKNOWN_KEY,
 
     UNKNOWN_RC
-};
-
-struct Date {
-    int year;
-    short month;
-    short day;
-
-    bool operator==(Date &date) {
-        return year == date.year && month == date.month && day == date.day;
-    }
-
-    bool operator<(Date &date) {
-        if (year == date.year) {
-            if (month == date.month) {
-                return day < date.day;
-            } else {
-                return month < date.month;
-            }
-        } else {
-            return year < date.year;
-        }
-    }
-
-    bool operator<=(Date &date) {
-        if (year == date.year) {
-            if (month == date.month) {
-                return day <= date.day;
-            } else {
-                return month < date.month;
-            }
-        } else {
-            return year < date.year;
-        }
-    }
-
-    bool operator!=(Date &date) {
-        return !((*this) == date);
-    }
-
-    bool operator>(Date &date) {
-        return !((*this) <= date);
-    }
-
-    bool operator>=(Date &date) {
-        return !((*this) < date);
-    }
-};
-
-struct Varchar {
-    int offset;
-    int length;
-    char spName[MAX_NAME_LENGTH];
-
-    bool operator==(Varchar &varchar) {
-        SP_Handle spHandle;
-        char value
-    }
-};
-
-enum AttrType {
-    INT,
-    FLOAT,
-    STRING,
-    DATE,
-    VARCHAR,
-    ATTRARRAY
-};
-
-union AttrValue {
-    int intVersion;
-    float floatVersion;
-    char stringValue[MAX_CHAR_LENGTH + 1];
-    Date dateVersion;
-    Varchar varcharVersion;
-};
-
-
-//
-// Comparison operators
-//
-enum CompOp {
-    NO_OP,                                      // no comparison
-    EQ_OP, NE_OP, LT_OP, GT_OP, LE_OP, GE_OP    // binary atomic operators
 };
 
 //

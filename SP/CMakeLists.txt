@@ -10,4 +10,5 @@ set(SOURCE
 message(STATUS ${HEADER})
 message(STATUS ${SOURCE})
 add_library(SP ${HEADER} ${SOURCE})
-add_executable(SP_TEST test.cpp ${HEADERR} ${SOURCE})
+add_executable(SP_TEST_1 test1.cpp ${HEADERR} ${SOURCE})
+add_executable(SP_TEST_2 test2.cpp ${HEADERR} ${SOURCE})
