@@ -35,6 +35,7 @@ const int ALL_PAGES = -1;
 #define RELEASE 1
 
 #define MAX_CHAR_LENGTH 255
+#define MAX_VARCHAR_LENGTH 65536
 #define MAX_NAME_LENGTH 30  //一切名字的最长长度
 #define ATTR_TYPE_LENGTH (sizeof(AttrType))
 #define ATTR_ITEM_LENGTH (sizeof(AttrType) + sizeof(AttrValue))

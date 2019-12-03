@@ -2,103 +2,30 @@
 // Created by 赵鋆峰 on 2019/11/16.
 //
 
+#include <cmath>
 #include <cstring>
+#include <cmath>
 #include "Utils.h"
 
+char dataL[MAX_VARCHAR_LENGTH];
+char dataR[MAX_VARCHAR_LENGTH];
+
 bool Utils::Compare(void *value1, void *value2, AttrType attrType, int attrLength, CompOp compOp) {
-    switch (attrType) {
-        case INT: {
-            switch (compOp) {
-                case NO_OP:
-                    return true;
-                case EQ_OP:
-                    return *(int *) value1 == *(int *) value2;
-                case NE_OP:
-                    return *(int *) value1 != *(int *) value2;
-                case LT_OP:
-                    return *(int *) value1 < *(int *) value2;
-                case LE_OP:
-                    return *(int *) value1 <= *(int *) value2;
-                case GT_OP:
-                    return *(int *) value1 > *(int *) value2;
-                case GE_OP:
-                    return *(int *) value1 >= *(int *) value2;
-            }
-        }
-        case FLOAT: {
-            switch (compOp) {
-                case NO_OP:
-                    return true;
-                case EQ_OP:
-                    return *(float *) value1 == *(float *) value2;
-                case NE_OP:
-                    return *(float *) value1 != *(float *) value2;
-                case LT_OP:
-                    return *(float *) value1 < *(float *) value2;
-                case LE_OP:
-                    return *(float *) value1 <= *(float *) value2;
-                case GT_OP:
-                    return *(float *) value1 > *(float *) value2;
-                case GE_OP:
-                    return *(float *) value1 >= *(float *) value2;
-            }
-        }
-        case STRING: {
-            switch (compOp) {
-                case NO_OP:
-                    return true;
-                case EQ_OP:
-                    return strncmp((char *) value1, (char *) value2, attrLength) == 0;
-                case NE_OP:
-                    return strncmp((char *) value1, (char *) value2, attrLength) != 0;
-                case LT_OP:
-                    return strncmp((char *) value1, (char *) value2, attrLength) < 0;
-                case LE_OP:
-                    return strncmp((char *) value1, (char *) value2, attrLength) <= 0;
-                case GT_OP:
-                    return strncmp((char *) value1, (char *) value2, attrLength) > 0;
-                case GE_OP:
-                    return strncmp((char *) value1, (char *) value2, attrLength) >= 0;
-            }
-        }
-        case DATE: {
-            switch (compOp) {
-                case NO_OP:
-                    return true;
-                case EQ_OP:
-                    return *(Date *) value1 == *(Date *) value2;
-                case NE_OP:
-                    return *(Date *) value1 != *(Date *) value2;
-                case LT_OP:
-                    return *(Date *) value1 < *(Date *) value2;
-                case LE_OP:
-                    return *(Date *) value1 <= *(Date *) value2;
-                case GT_OP:
-                    return *(Date *) value1 > *(Date *) value2;
-                case GE_OP:
-                    return *(Date *) value1 >= *(Date *) value2;
-            }
-        }
-        case VARCHAR: {
-            switch (compOp) {
-                case NO_OP:
-                    return true;
-                case EQ_OP:
-                    return *(Varchar *) value1 == *(Varchar *) value2;
-                case NE_OP:
-                    return *(Varchar *) value1 != *(Varchar *) value2;
-                case LT_OP:
-                    return *(Varchar *) value1 < *(Varchar *) value2;
-                case LE_OP:
-                    return *(Varchar *) value1 <= *(Varchar *) value2;
-                case GT_OP:
-                    return *(Varchar *) value1 > *(Varchar *) value2;
-                case GE_OP:
-                    return *(Varchar *) value1 >= *(Varchar *) value2;
-            }
-        }
-        case ATTRARRAY:
-            break;
+    switch (compOp) {
+        case NO_OP:
+            return true;
+        case EQ_OP:
+            return Cmp(value1, value2, attrType, attrLength) == 0;
+        case NE_OP:
+            return Cmp(value1, value2, attrType, attrLength) != 0;
+        case LT_OP:
+            return Cmp(value1, value2, attrType, attrLength) < 0;
+        case GT_OP:
+            return Cmp(value1, value2, attrType, attrLength) > 0;
+        case LE_OP:
+            return Cmp(value1, value2, attrType, attrLength) <= 0;
+        case GE_OP:
+            return Cmp(value1, value2, attrType, attrLength) >= 0;
     }
 }
 
@@ -114,4 +41,47 @@ std::string Utils::getIndexFileName(const char *fileName, int indexNo) {
 
 std::string Utils::getStringPoolFileName(const char *fileName) {
     return std::string(fileName) + ".stringpool";
+}
+
+int Utils::Cmp(void *value1, void *value2, AttrType attrType, int attrLength) {
+    switch (attrType) {
+
+        case INT:
+            return *(int *) value1 - *(int *) value2;
+        case FLOAT: {
+            float gap = *(float *) value1 - *(float *) value2;
+            if (std::fabs(gap) < 1e-5) {
+                return 0;
+            } else if (gap < 0) {
+                return -1;
+            } else {
+                return 1;
+            }
+        }
+        case STRING:
+            return strncmp((char *) value1, (char *) value2, attrLength);
+        case DATE: {
+            auto date1 = (Date *) value1, date2 = (Date *) value2;
+            if (date1->year != date2->year) {
+                return date1->year - date2->year;
+            } else {
+                if (date1->month != date2->month) {
+                    return date1->month - date2->month;
+                } else return date1->day < date2->day;
+            }
+        }
+        case VARCHAR: {
+            auto varchar1 = (Varchar *) value1, varchar2 = (Varchar *) value2;
+            varchar1->getData(dataL);
+            varchar2->getData(dataR);
+            int cmp = memcmp(dataL, dataR, std::min(varchar1->length, varchar2->length));
+            if (cmp == 0) {
+                return varchar1->length - varchar2->length;
+            } else {
+                return cmp;
+            }
+        }
+        case ATTRARRAY:
+            break;
+    }
 }
