@@ -9,7 +9,6 @@
 #include <cassert>
 #include "../Constant.h"
 
-#define MAX_NAME_LENGTH 30  //一切名字的最长长度
 #define MAX_TABLE_NUM 30 //一个数据库中最多的表的树木
 #define MAX_COLUMN_NUM 30 //一个表中最多的列的个数
 #define MAX_FOREIGN_KEY_NUM 30 //一个表中最多有多少组外键

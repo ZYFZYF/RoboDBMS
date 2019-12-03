@@ -62,7 +62,22 @@ bool Utils::Compare(void *value1, void *value2, AttrType attrType, int attrLengt
             }
         }
         case DATE: {
-            //TODO  实现Date类型的支持
+            switch (compOp) {
+                case NO_OP:
+                    return true;
+                case EQ_OP:
+                    return *(Date *) value1 == *(Date *) value2;
+                case NE_OP:
+                    return *(Date *) value1 != *(Date *) value2;
+                case LT_OP:
+                    return *(Date *) value1 < *(Date *) value2;
+                case LE_OP:
+                    return *(Date *) value1 <= *(Date *) value2;
+                case GT_OP:
+                    return *(Date *) value1 > *(Date *) value2;
+                case GE_OP:
+                    return *(Date *) value1 >= *(Date *) value2;
+            }
             return true;
         }
         case VARCHAR: {
@@ -76,4 +91,12 @@ void Utils::GetMinimumValue(void *value, AttrType attrType) {
 }
 
 void Utils::GetMaximumValue(void *value, AttrType attrType) {
+}
+
+std::string Utils::getIndexFileName(const char *fileName, int indexNo) {
+    return std::string(fileName) + "_" + std::to_string(indexNo) + ".index";
+}
+
+std::string Utils::getStringPoolFileName(const char *fileName) {
+    return std::string(fileName) + ".stringpool";
 }

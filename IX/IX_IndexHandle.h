@@ -45,6 +45,7 @@ public:
 private:
     PF_FileHandle pfFileHandle;
     IX_FileHeader ixFileHeader;
+    SP_Handle spHandle;
     bool headerChanged;
 
     RC Find(void *key, void *value, bool modify, BPlusTreeNodePointer &bPlusTreeNodePointer, int &index,

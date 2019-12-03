@@ -6,10 +6,16 @@
 #define ROBODBMS_UTILS_H
 
 
+#include <string>
 #include "../Constant.h"
 
 class Utils {
 public:
+
+    static std::string getIndexFileName(const char *fileName, int indexNo);
+
+    static std::string getStringPoolFileName(const char *fileName);
+
     static bool Compare(void *value1, void *value2, AttrType attrType, int attrLength, CompOp compOp);
 
     static void GetMinimumValue(void *value, AttrType attrType);

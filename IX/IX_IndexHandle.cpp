@@ -614,6 +614,7 @@ bool IX_IndexHandle::Compare(CompOp compOp, void *keyLeft, void *valueLeft, void
         case LE_OP:
             if (keyEqual)return left <= right;
             else return Utils::Compare(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength, LE_OP);
+            //以下操作会使得比较次数+1
         case NE_OP:
             return !Compare(EQ_OP, keyLeft, valueLeft, keyRight, valueRight);
         case GT_OP:

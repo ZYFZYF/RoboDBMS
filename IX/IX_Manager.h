@@ -32,8 +32,6 @@ public:
     RC CloseIndex(IX_IndexHandle &indexHandle);  // Close index
 private:
     PF_Manager pfManager;
-
-    std::string getIndexFileName(const char *fileName, int indexNo) const;
 };
 
 

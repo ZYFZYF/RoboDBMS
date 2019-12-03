@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include "SP/SP_Handle.h"
 
 #define MAXNAME       24                // maximum length of a relation
 // or attribute name
@@ -35,6 +36,9 @@ const int ALL_PAGES = -1;
 #define RELEASE 1
 
 #define MAX_CHAR_LENGTH 255
+#define MAX_NAME_LENGTH 30  //一切名字的最长长度
+#define ATTR_TYPE_LENGTH (sizeof(AttrType))
+#define ATTR_ITEM_LENGTH (sizeof(AttrType) + sizeof(AttrValue))
 
 
 // Return Code
@@ -124,10 +128,57 @@ struct Date {
     int year;
     short month;
     short day;
+
+    bool operator==(Date &date) {
+        return year == date.year && month == date.month && day == date.day;
+    }
+
+    bool operator<(Date &date) {
+        if (year == date.year) {
+            if (month == date.month) {
+                return day < date.day;
+            } else {
+                return month < date.month;
+            }
+        } else {
+            return year < date.year;
+        }
+    }
+
+    bool operator<=(Date &date) {
+        if (year == date.year) {
+            if (month == date.month) {
+                return day <= date.day;
+            } else {
+                return month < date.month;
+            }
+        } else {
+            return year < date.year;
+        }
+    }
+
+    bool operator!=(Date &date) {
+        return !((*this) == date);
+    }
+
+    bool operator>(Date &date) {
+        return !((*this) <= date);
+    }
+
+    bool operator>=(Date &date) {
+        return !((*this) < date);
+    }
 };
+
 struct Varchar {
     int offset;
     int length;
+    char spName[MAX_NAME_LENGTH];
+
+    bool operator==(Varchar &varchar) {
+        SP_Handle spHandle;
+        char value
+    }
 };
 
 enum AttrType {
@@ -135,15 +186,16 @@ enum AttrType {
     FLOAT,
     STRING,
     DATE,
-    VARCHAR
+    VARCHAR,
+    ATTRARRAY
 };
 
 union AttrValue {
     int intVersion;
     float floatVersion;
+    char stringValue[MAX_CHAR_LENGTH + 1];
     Date dateVersion;
     Varchar varcharVersion;
-    char stringValue[MAX_CHAR_LENGTH + 1];
 };
 
 
