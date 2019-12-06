@@ -41,7 +41,7 @@ extern void PF_Statistics();
 #define FILE1    "file1"
 
 RC TestPF() {
-    PF_Manager pfm;
+    PF_Manager pfm = PF_Manager::Instance();
     PF_FileHandle fh;
     PF_PageHandle ph;
     RC rc;

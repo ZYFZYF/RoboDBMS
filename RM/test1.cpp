@@ -59,8 +59,7 @@ struct TestRec {
 //
 // Global PF_Manager and RM_Manager variables
 //
-PF_Manager pfm;
-RM_Manager rmm(pfm);
+RM_Manager rmm= RM_Manager::Instance();
 
 //
 // Function declarations

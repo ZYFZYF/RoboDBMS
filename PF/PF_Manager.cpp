@@ -273,3 +273,8 @@ RC PF_Manager::AllocateBlock(char *&buffer) {
 RC PF_Manager::DisposeBlock(char *buffer) {
     return pBufferManager->DisposeBlock(buffer);
 }
+
+PF_Manager &PF_Manager::Instance() {
+    static PF_Manager instance;
+    return instance;
+}

@@ -11,7 +11,7 @@
 
 class RM_Manager {
 public:
-    RM_Manager(PF_Manager &pfManager);
+    static RM_Manager &Instance();
 
     ~RM_Manager();
 
@@ -24,6 +24,8 @@ public:
     RC CloseFile(RM_FileHandle &rmFileHandle);
 
 private:
+    RM_Manager();
+
     PF_Manager pfManager;
 };
 

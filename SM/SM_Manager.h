@@ -17,7 +17,7 @@ struct AttrInfo {
 
 class SM_Manager {
 public:
-    SM_Manager(IX_Manager &ixm_, RM_Manager &rmm_);
+    static SM_Manager &Instance();
 
     ~SM_Manager();                             // Destructor
 
@@ -58,6 +58,8 @@ public:
     RC DropColumn(const char *dbName, const char *columnName);
 
 private:
+    SM_Manager();
+
     IX_Manager ixManager;
     RM_Manager rmManager;
     bool isUsingDb;

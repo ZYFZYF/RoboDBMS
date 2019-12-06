@@ -58,9 +58,8 @@ int value2[NENTRIES];
 //
 // Global component manager variables
 //
-PF_Manager pfm;
-RM_Manager rmm(pfm);
-IX_Manager ixm(pfm);
+RM_Manager rmm = RM_Manager::Instance();
+IX_Manager ixm = IX_Manager::Instance();
 
 //
 // Function declarations

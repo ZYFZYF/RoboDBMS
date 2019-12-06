@@ -9,8 +9,7 @@
 #include "../utils/Utils.h"
 #include "../SP/SP_Manager.h"
 
-IX_Manager::IX_Manager(PF_Manager &pfm) {
-    pfManager = pfm;
+IX_Manager::IX_Manager() : pfManager(PF_Manager::Instance()) {
 }
 
 IX_Manager::~IX_Manager() {
@@ -109,4 +108,9 @@ RC IX_Manager::CloseIndex(IX_IndexHandle &indexHandle) {
     //关掉index的时候要把stringPool的文件也关掉
     //TRY(SP_Manager::CloseStringPool(indexHandle.spHandle));
     return OK_RC;
+}
+
+IX_Manager &IX_Manager::Instance() {
+    static IX_Manager instance;
+    return instance;
 }

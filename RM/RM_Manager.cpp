@@ -6,8 +6,7 @@
 #include <iostream>
 #include "RM_Manager.h"
 
-RM_Manager::RM_Manager(PF_Manager &pfManager) {
-    this->pfManager = pfManager;
+RM_Manager::RM_Manager() : pfManager(PF_Manager::Instance()) {
 }
 
 RM_Manager::~RM_Manager() {
@@ -125,4 +124,9 @@ RC RM_Manager::CloseFile(RM_FileHandle &rmFileHandle) {
     }
     rmFileHandle.isFileOpen = false;
     return OK_RC;
+}
+
+RM_Manager &RM_Manager::Instance() {
+    static RM_Manager instance;
+    return instance;
 }

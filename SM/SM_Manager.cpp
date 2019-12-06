@@ -4,7 +4,7 @@
 
 #include "SM_Manager.h"
 
-SM_Manager::SM_Manager(IX_Manager &ixm_, RM_Manager &rmm_) : ixManager(ixm_), rmManager(rmm_), isUsingDb(false) {
+SM_Manager::SM_Manager() : ixManager(IX_Manager::Instance()), rmManager(RM_Manager::Instance()), isUsingDb(false) {
 
 }
 
@@ -88,4 +88,9 @@ RC SM_Manager::AddColumn(const char *dbName, ColumnDesc columnDesc) {
 
 RC SM_Manager::DropColumn(const char *dbName, const char *columnName) {
     return PF_NOBUF;
+}
+
+SM_Manager &SM_Manager::Instance() {
+    static SM_Manager instance;
+    return instance;
 }

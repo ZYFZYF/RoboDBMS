@@ -4,7 +4,6 @@
 
 #include <cmath>
 #include <cstring>
-#include <cmath>
 #include "Utils.h"
 
 char dataL[MAX_VARCHAR_LENGTH];

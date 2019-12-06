@@ -222,7 +222,7 @@ RC ReadFile(PF_Manager &pfm, char *fname) {
 }
 
 RC TestPF() {
-    PF_Manager pfm;
+    PF_Manager pfm = PF_Manager::Instance();
     PF_FileHandle fh1, fh2;
     PF_PageHandle ph;
     RC rc;

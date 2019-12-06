@@ -15,7 +15,8 @@
 class IX_Manager {
 
 public:
-    IX_Manager(PF_Manager &pfm);              // Constructor
+    static IX_Manager &Instance();
+
     ~IX_Manager();                             // Destructor
     RC CreateIndex(const char *fileName,          // Create new index
                    int indexNo,
@@ -31,6 +32,7 @@ public:
 
     RC CloseIndex(IX_IndexHandle &indexHandle);  // Close index
 private:
+    IX_Manager();              // Constructor
     PF_Manager pfManager;
 };
 

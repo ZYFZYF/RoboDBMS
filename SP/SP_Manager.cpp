@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <cstring>
 #include "SP_Manager.h"
-#include "../PF/PF_Constant.h"
 #include "SP_Constant.h"
 
 RC SP_Manager::CreateStringPool(const char *fileName) {
@@ -15,7 +14,7 @@ RC SP_Manager::CreateStringPool(const char *fileName) {
     }
     //创建文件
     int fd;
-    if ((fd = open(fileName, O_CREAT | O_EXCL | O_WRONLY, CREATION_MASK)) < 0)
+    if ((fd = open(fileName, O_CREAT | O_EXCL | O_WRONLY, 0600)) < 0)
         return SP_UNIX;
     //初始化两个空白header，一个长度为0，另一个长度为无穷
     char spaceHeader[SP_SPACE_HEADER_SIZE * 2];

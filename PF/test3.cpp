@@ -99,7 +99,7 @@ RC DisposeChunk(PF_Manager &pfm, int iBlocks, char *ptr[]) {
 
 
 RC TestChunk() {
-    PF_Manager pfm;
+    PF_Manager pfm = PF_Manager::Instance();
     RC rc;
     char *ptr[10];
 
