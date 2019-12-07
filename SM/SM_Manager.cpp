@@ -84,7 +84,7 @@ RC SM_Manager::CreateDb(const char *dbName) {
             return OK_RC;
         }
     }
-    return SM_DB_NUM_OVER;
+    return SM_DB_IS_FULL;
 }
 
 RC SM_Manager::DropDb(const char *dbName) {
@@ -123,7 +123,6 @@ SM_Manager &SM_Manager::Instance() {
 }
 
 RC SM_Manager::ShowDatabases() {
-    printf("this is me!!!!\n");
     int cnt = 0;
     for (auto &db : dbmsMeta.databaseName)
         if (strlen(db) > 0) {

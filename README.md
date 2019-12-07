@@ -25,9 +25,11 @@
     - 支持联合外键 x
  - PS
     - 命令解析 ×
- - 修改比较器的获取方式 √
- - 在比较器中方便地加入范围查找 ×
- - 支持字符串的like表达式 ×
+ - 其他
+    - 修改比较器的获取方式 √
+    - 在比较器中方便地加入范围查找 ×
+    - 支持字符串的like表达式 ×
+    - 修改项目结构 ×
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase

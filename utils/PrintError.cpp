@@ -73,6 +73,18 @@ map<RC, string> msg = {
         {STAT_INVALID_ARGS, "STAT ERROR: invalid args"},
         {STAT_UNKNOWN_KEY, "STAT ERROR: unknown key"},
 
+        {SM_INVALID_NAME, "SM WARNING: INVALID NAME"},
+        {SM_TABLE_ALREADY_IN, "SM WARNING: TABLE ALREADY IN DATABASER"},
+        {SM_TABLE_IS_FULL, "SM WARNING: TABLE IS FULL"},
+        {SM_COLUMN_ALREADY_IN, "SM WARNING: COLUMN ALREADY IN TABLE"},
+        {SM_COLUMN_IS_FULL, "SM WARNING: COLUMN IS FULL"},
+        {SM_DB_ALREADY_IN, "SM WARNING: DATABASE ALREADY IN DBMS"},
+        {SM_DB_NOT_EXIST, "SM WARNING: DATABASE NOT EXIST"},
+        {SM_DB_IS_FULL, "SM WARNING: DATRABASE IS FULL"},
+
+        {SM_UNIX, " SM ERROR: UNIX ERROR"},
+
+
         {UNKNOWN_RC, "Sorry: we haven't name this warning or error"}
 };
 

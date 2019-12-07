@@ -20,6 +20,7 @@ UPDATE                  return UPDATE;
 INSERT                  return INSERT;
 ALTER                   return ALTER;
 SELECT                  return SELECT;
+QUIT                    return QUIT;
 
 DATABASES               return DATABASES;
 DATABASE                return DATABASE;
@@ -42,4 +43,7 @@ INTO                    return INTO;
 "<="                    yylval.comparator = LE_OP; return OP;
 ">"                     yylval.comparator = GT_OP; return OP;
 ">="                    yylval.comparator = GE_OP; return OP;
+
+[*/+\-=<>':;,.|&()]  {return yytext[0];}
+
 %%

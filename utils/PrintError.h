@@ -7,6 +7,8 @@
 
 #include "../Constant.h"
 
+#define DO(_something) if (RC __rc = (_something)) printError(__rc);
+
 void printError(RC rc);
 
 #endif //ROBODBMS_PRINTERROR_H
