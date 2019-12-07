@@ -52,6 +52,14 @@ public:
     // Dispose of a memory chunk managed by the buffer manager.
     RC DisposeBlock(char *buffer);
 
+    // 新增函数
+    // 新建一个带有meta信息的文件，需要保证meta信息的长度不能超过页大小
+    RC CreateFileWithMeta(const char *fileName, void *meta, int length);
+
+    RC GetMeta(const char *fileName, void *meta, int length);
+
+    RC UpdateMeta(const char *fileName, void *meta, int length);
+
 private:
     PF_Manager();                              // Constructor
 

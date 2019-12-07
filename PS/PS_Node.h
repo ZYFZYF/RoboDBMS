@@ -7,7 +7,8 @@
 
 
 class PS_Node {
-
+public:
+    virtual void run() = 0;
 };
 
 

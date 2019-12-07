@@ -26,6 +26,8 @@ public:
     static void GetMinimumValue(void *value, AttrType attrType);
 
     static void GetMaximumValue(void *value, AttrType attrType);
+
+    static std::string getAbsolutePath(const char *filename);
 };
 
 

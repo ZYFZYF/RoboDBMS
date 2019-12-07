@@ -6,8 +6,11 @@
 #include <cstring>
 #include "Utils.h"
 
+#define MAX_ROOT_PATH_LENGTH 100
+
 char dataL[MAX_VARCHAR_LENGTH];
 char dataR[MAX_VARCHAR_LENGTH];
+char rootPath[MAX_ROOT_PATH_LENGTH];
 
 bool Utils::Compare(void *value1, void *value2, AttrType attrType, int attrLength, CompOp compOp) {
     switch (compOp) {
@@ -96,4 +99,9 @@ int Utils::Cmp(void *value1, void *value2, AttrType attrType, int attrLength) {
             }
             return 0;
     }
+}
+
+std::string Utils::getAbsolutePath(const char *filename) {
+    static char *root = getcwd(rootPath, MAX_ROOT_PATH_LENGTH);
+    return std::string(root) + "/" + std::string(filename);
 }

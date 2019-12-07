@@ -9,7 +9,8 @@
 #include <cassert>
 #include "../Constant.h"
 
-#define MAX_TABLE_NUM 30 //一个数据库中最多的表的树木
+#define MAX_DATABASE_NUM 100//一个数据库管理系统中最多的数据库个数
+#define MAX_TABLE_NUM 30 //一个数据库中最多的表的数目
 #define MAX_COLUMN_NUM 30 //一个表中最多的列的个数
 #define MAX_FOREIGN_KEY_NUM 30 //一个表中最多有多少组外键
 #define MAX_INDEX_NUM 30 //一个表最多建多少个索引
@@ -18,6 +19,10 @@
 #define DB_META_LENGTH sizeof(struct DbMeta)
 
 typedef int ColumnId;
+
+struct DbmsMeta {
+    char databaseName[MAX_DATABASE_NUM][MAX_NAME_LENGTH]{};
+};
 
 struct DbMeta {
     char tableName[MAX_TABLE_NUM][MAX_NAME_LENGTH]{};

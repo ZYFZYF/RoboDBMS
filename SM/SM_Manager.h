@@ -57,12 +57,28 @@ public:
 
     RC DropColumn(const char *dbName, const char *columnName);
 
+    //SHOW 相关操作
+
+    RC ShowDatabases();
+
+    RC DescDatabase(const char &dbName);
+
+    RC ShowTables();
+
+    RC DescTable(const char *tbName);
+
 private:
     SM_Manager();
 
-    IX_Manager ixManager;
+    PF_Manager pfManager;
     RM_Manager rmManager;
+    IX_Manager ixManager;
     bool isUsingDb;
+
+    PF_FileHandle dbmsMetaFileHandle;
+    DbmsMeta dbmsMeta;
+    std::string dbmsMetaFile;
+
 };
 
 

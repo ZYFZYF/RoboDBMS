@@ -22,5 +22,17 @@ int main() {
     if (PF_HASHNOTFOUND) {
         cout << "Other is ture" << endl;
     }
+    char *buffer;
+    //也可以将buffer作为输出参数
+    if((buffer = getcwd(NULL, 0)) == NULL)
+    {
+        perror("getcwd error");
+    }
+    else
+    {
+        printf("%s\n", buffer);
+        free(buffer);
+    }
+
     return 0;
 }

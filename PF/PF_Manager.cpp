@@ -278,3 +278,52 @@ PF_Manager &PF_Manager::Instance() {
     static PF_Manager instance;
     return instance;
 }
+
+RC PF_Manager::CreateFileWithMeta(const char *fileName, void *meta, int length) {
+    PF_FileHandle pfFileHandle;
+    PF_PageHandle pfPageHandle;
+    PageNum pageNum;
+    char *pData;
+    TRY(CreateFile(fileName));
+    TRY(OpenFile(fileName, pfFileHandle));
+    TRY(pfFileHandle.AllocatePage(pfPageHandle));
+    TRY(pfPageHandle.GetPageNum(pageNum));
+    TRY(pfPageHandle.GetData(pData));
+    memcpy(pData, meta, length);
+    TRY(pfFileHandle.MarkDirty(pageNum));
+    TRY(pfFileHandle.UnpinPage(pageNum));
+    TRY(CloseFile(pfFileHandle));
+    return OK_RC;
+}
+
+RC PF_Manager::GetMeta(const char *fileName, void *meta, int length) {
+    PF_FileHandle pfFileHandle;
+    PF_PageHandle pfPageHandle;
+    PageNum pageNum;
+    char *pData;
+    TRY(OpenFile(fileName, pfFileHandle));
+    TRY(pfFileHandle.GetFirstPage(pfPageHandle));
+    TRY(pfPageHandle.GetPageNum(pageNum));
+    TRY(pfPageHandle.GetData(pData));
+    memcpy(meta, pData, length);
+    TRY(pfFileHandle.MarkDirty(pageNum));
+    TRY(pfFileHandle.UnpinPage(pageNum));
+    TRY(CloseFile(pfFileHandle));
+    return OK_RC;
+}
+
+RC PF_Manager::UpdateMeta(const char *fileName, void *meta, int length) {
+    PF_FileHandle pfFileHandle;
+    PF_PageHandle pfPageHandle;
+    PageNum pageNum;
+    char *pData;
+    TRY(OpenFile(fileName, pfFileHandle));
+    TRY(pfFileHandle.GetFirstPage(pfPageHandle));
+    TRY(pfPageHandle.GetPageNum(pageNum));
+    TRY(pfPageHandle.GetData(pData));
+    memcpy(pData, meta, length);
+    TRY(pfFileHandle.MarkDirty(pageNum));
+    TRY(pfFileHandle.UnpinPage(pageNum));
+    TRY(CloseFile(pfFileHandle));
+    return OK_RC;
+}

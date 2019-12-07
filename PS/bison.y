@@ -1,9 +1,10 @@
 %{
 #include<cstdio>
 #include "../Attr.h"
+#include "../PS/PS_Node.h"
+#include "../PS/PS_ShowDatabases.h"
 extern int yylex (void);
 void yyerror(const char *s, ...);
-
 %}
 //让yylval不仅返回int数据
 %union{
@@ -11,6 +12,7 @@ void yyerror(const char *s, ...);
   float real;
   char * str;
   enum CompOp comparator;
+  PS_Node *node;
 }
 
 //定义标识符
@@ -19,12 +21,17 @@ void yyerror(const char *s, ...);
 %token <string> IDENTIFIER STR
 %token <comparator> OP
 
-%token TAT QAQ PAP;
+%token SHOW USE CREATE DROP UPDATE INSERT ALTER SELECT ADD
+%token DATABASES DATABASE TABLES TABLE INDEX
+%token ON SET WHERE INTO
+
 //定义语法
 %%
-pap: OP {if ($1==EQ_OP)printf("tat\n");else printf("qaq\n");};
-qaq: REAL {printf("%f\n", $1);};
-tat: INTEGER REAL {printf("%d %f\n", $1, $2);};
+sql:SHOW DATABASES ';'{
+	auto x = new PS_ShowDatabases();
+	x->run();
+	YYACCEPT;
+};
 %%
 
 
