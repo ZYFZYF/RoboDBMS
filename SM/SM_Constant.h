@@ -39,12 +39,18 @@ struct PrimaryKeyDesc {
 //描述一个列
 struct ColumnDesc {
     char name[MAX_NAME_LENGTH];
+    AttrType attrType;
+    int attrLength;
+    int stringMaxLength;
+    int integerLength;
+    int decimalLength;//只有在是小数类型时用
     bool allowNull;
     bool hasDefaultValue;
-    AttrType attrType;
     AttrValue defaultValue;
-    int maxLength;//定长字符串或者小数类型时用
-    int decimalLength;//只有在是小数类型时用
+    bool isPrimaryKey;
+    bool hasForeignKey;
+    char foreignKeyTable[MAX_NAME_LENGTH];
+    char foreignKeyColumn[MAX_NAME_LENGTH];
 };
 
 //描述一个外键约束，注意有可能一列当了多个外键，或者联合外键这种东西

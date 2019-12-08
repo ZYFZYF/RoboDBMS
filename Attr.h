@@ -40,11 +40,11 @@ enum AttrType {
 };
 
 union AttrValue {
-    int intVersion;
-    float floatVersion;
+    int intValue;
+    float floatValue;
     char stringValue[MAX_CHAR_LENGTH + 1];
-    Date dateVersion;
-    Varchar varcharVersion;
+    Date dateValue;
+    Varchar varcharValue;
 };
 
 

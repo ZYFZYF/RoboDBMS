@@ -30,6 +30,7 @@
     - 在比较器中方便地加入范围查找 ×
     - 支持字符串的like表达式 ×
     - 修改项目结构 ×
+    - 可能存在的内存泄漏问题（lex） ×
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase
