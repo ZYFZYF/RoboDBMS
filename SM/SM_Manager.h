@@ -9,11 +9,8 @@
 #include "../RM/RM_Manager.h"
 #include "../IX/IX_Manager.h"
 #include "SM_Constant.h"
+#include<vector>
 
-
-struct AttrInfo {
-    int x;
-};
 
 class SM_Manager {
 public:
@@ -25,9 +22,8 @@ public:
 
     RC CloseDb();                             // close the database
 
-    RC CreateTable(const char *relName,           // create relation relName
-                   int attrCount,          //   number of attributes
-                   AttrInfo *attributes);       //   attribute data
+    RC CreateTable(const char *tbName, std::vector<ColumnDesc> *columnList);
+
     RC DropTable(const char *relName);          // destroy a relation
 
     RC CreateIndex(const char *relName,           // create an index for

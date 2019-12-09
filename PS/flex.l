@@ -1,6 +1,7 @@
 %{
 #include<cstdio>
 #include<iostream>
+#include<vector>
 #include "../Attr.h"
 #include "../PS/PS_Node.h"
 #include "../PS/PS_ShowDatabases.h"

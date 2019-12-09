@@ -1,5 +1,6 @@
 %{
 #include<cstdio>
+#include<vector>
 #include "../Attr.h"
 #include "../PS/PS_Node.h"
 #include "../PS/PS_ShowDatabases.h"
@@ -17,6 +18,7 @@ void yyerror(const char *s, ...);
   PS_Node *node;
   ColumnDesc columnDesc;
   AttrValue attrValue;
+  std::vector<ColumnDesc> *columnList;
 }
 
 //定义标识符
@@ -31,7 +33,8 @@ void yyerror(const char *s, ...);
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL T_NUMERIC
 
 //定义语法中需要的节点的类型
-%type <columnDesc> Field ColumnType NotNull DefaultValue PrimaryKey ForeignKey
+%type <columnDesc> Column ColumnType NotNull DefaultValue PrimaryKey ForeignKey
+%type <columnList> ColumnList
 %type <attrValue> Value
 
 //定义语法
@@ -66,17 +69,21 @@ DropDatabase	:	DROP DATABASE IDENTIFIER ';'{
          			DO(SM_Manager::Instance().DropDb($3));
          		};
 
-CreateTable	:	CREATE TABLE IDENTIFIER '(' FieldList ')' ';'{
-				//printf("tat\n");
+CreateTable	:	CREATE TABLE IDENTIFIER '(' ColumnList ')' ';'{
+				printf("%d\n",$5->size());
+				DO(SM_Manager::Instance().CreateTable($3, $5));
 			};
 
-FieldList	:	FieldList ',' Field{
-
+ColumnList	:	ColumnList ',' Column{
+				$$ = $1;
+				$$->push_back($3);
 			}
-		|	Field{
+		|	Column{
+				$$ = new std::vector<ColumnDesc>;
+				$$->push_back($1);
 			};
 
-Field		:	IDENTIFIER ColumnType NotNull DefaultValue PrimaryKey ForeignKey{
+Column		:	IDENTIFIER ColumnType NotNull DefaultValue PrimaryKey ForeignKey{
 				strcpy($$.name, $1);
 				$$.attrType = $2.attrType;
 				$$.attrLength = $2.attrLength;
@@ -90,7 +97,7 @@ Field		:	IDENTIFIER ColumnType NotNull DefaultValue PrimaryKey ForeignKey{
 				$$.hasForeignKey = $6.hasForeignKey;
 				strcpy($$.foreignKeyTable, $6.foreignKeyTable);
 				strcpy($$.foreignKeyColumn, $6.foreignKeyColumn);
-				printf("name = %s, attrLength = %d, stringMaxLength = %d, integerLength = %d, decimalLength = %d, allowNull = %d, hasDefaultValue = %d, defaultValue = %s, isPrimaryKey = %d, hasForeignKey = %d, foreignKeyTable = %s, foreignKeyColumn = %s",$$.name, $$.attrLength, $$.stringMaxLength, $$.integerLength, $$.decimalLength, $$.allowNull, $$.hasDefaultValue, &$$.defaultValue, $$.isPrimaryKey, $$.hasForeignKey, $$.foreignKeyTable, $$.foreignKeyColumn);
+				//printf("name = %s, attrLength = %d, stringMaxLength = %d, integerLength = %d, decimalLength = %d, allowNull = %d, hasDefaultValue = %d, defaultValue = %s, isPrimaryKey = %d, hasForeignKey = %d, foreignKeyTable = %s, foreignKeyColumn = %s\n",$$.name, $$.attrLength, $$.stringMaxLength, $$.integerLength, $$.decimalLength, $$.allowNull, $$.hasDefaultValue, &$$.defaultValue, $$.isPrimaryKey, $$.hasForeignKey, $$.foreignKeyTable, $$.foreignKeyColumn);
 			};
 
 ColumnType	:	T_INT

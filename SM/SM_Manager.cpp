@@ -31,10 +31,7 @@ RC SM_Manager::OpenDb(const char *dbName) {
 
 RC SM_Manager::CloseDb() {
     chdir("..");
-}
-
-RC SM_Manager::CreateTable(const char *relName, int attrCount, AttrInfo *attributes) {
-    return PF_NOBUF;
+    return OK_RC;
 }
 
 RC SM_Manager::DropTable(const char *relName) {
@@ -146,4 +143,11 @@ RC SM_Manager::ShowTables() {
 
 RC SM_Manager::DescTable(const char *tbName) {
     return PF_EOF;
+}
+
+RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnList) {
+    if (!isUsingDb) {
+        return SM_NOT_IN_DATABASE;
+    }
+    return OK_RC;
 }
