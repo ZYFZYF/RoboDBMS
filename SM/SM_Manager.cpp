@@ -151,3 +151,28 @@ RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnLi
     }
     return OK_RC;
 }
+
+RC SM_Manager::ReadDbMeta() {
+    //不存在的话要新建
+    if (access("DB.Meta", F_OK) < 0) {
+        memset(&dbMeta, 0, sizeof(dbMeta));
+        WriteDbMeta();
+    }
+    FILE *file = fopen("DB.Meta", "w");
+    if (fread(&dbMeta, sizeof(dbMeta), 0, file) != 1) {
+        return SM_UNIX;
+    }
+    fclose(file);
+    return OK_RC;
+}
+
+RC SM_Manager::WriteDbMeta() {
+    FILE *file = fopen("DB.Meta", "w");
+    if (fwrite(&dbMeta, sizeof(dbMeta), 1, file) != 1) {
+        return SM_UNIX;
+    }
+    fclose(file);
+    return OK_RC;
+}
+
+

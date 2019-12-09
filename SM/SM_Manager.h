@@ -66,6 +66,11 @@ public:
 private:
     SM_Manager();
 
+    DbMeta dbMeta;
+
+    RC ReadDbMeta();//读取当前数据库的Meta信息到dbMeta中
+    RC WriteDbMeta();//将dbMeta写回到文件中
+
     PF_Manager pfManager;
     RM_Manager rmManager;
     IX_Manager ixManager;

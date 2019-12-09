@@ -24,10 +24,6 @@ struct DbmsMeta {
     char databaseName[MAX_DATABASE_NUM][MAX_NAME_LENGTH]{};
 };
 
-struct DbMeta {
-    char tableName[MAX_TABLE_NUM][MAX_NAME_LENGTH]{};
-};
-
 //描述唯一主键
 struct PrimaryKeyDesc {
     char name[MAX_NAME_LENGTH];
@@ -72,9 +68,6 @@ struct IndexDesc {
 struct TableMeta {
     //建表的时候的名字，以后改名之后仍然用这个来建索引等等
     char createName[MAX_NAME_LENGTH];
-    //给每个列分配一个独一无二的id，放在桶里
-    int availableColumnIdNum;
-    ColumnId columnIdBucket[MAX_COLUMN_NUM];
     //主键
     PrimaryKeyDesc primaryKey;
     //外键
@@ -85,8 +78,8 @@ struct TableMeta {
     ColumnDesc columns[MAX_COLUMN_NUM];
 
     int getColumnId(const char *columnName) {
-        for (int i = availableColumnIdNum; i < MAX_TABLE_NUM; i++)
-            if (strcmp(columns[columnIdBucket[i]].name, columnName) == 0) {
+        for (int i = 0; i < MAX_TABLE_NUM; i++)
+            if (strcmp(columns[i].name, columnName) == 0) {
                 return i;
             }
         return INVALID_INDEX;
@@ -99,19 +92,14 @@ struct TableMeta {
         if (index != INVALID_INDEX) {
             return SM_COLUMN_ALREADY_IN;
         }
-        if (availableColumnIdNum) {
-            strcpy(columns[columnIdBucket[--availableColumnIdNum]].name, columnName);
-            return OK_RC;
-        } else {
-            return SM_COLUMN_IS_FULL;
-        }
-    }
-
-    RC deleteColumn(ColumnId columnId) {
-        assert(availableColumnIdNum < MAX_TABLE_NUM);
-        columnIdBucket[availableColumnIdNum++] = columnId;
+        //这里需要增加具体的列插入
         return OK_RC;
     }
+};
+
+struct DbMeta {
+    char tableName[MAX_TABLE_NUM][MAX_NAME_LENGTH]{};
+    TableMeta tableMeta[MAX_TABLE_NUM]{};
 };
 
 #endif //ROBODBMS_SM_CONSTANT_H
