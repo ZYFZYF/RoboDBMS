@@ -19,16 +19,10 @@
 #define DB_META_LENGTH sizeof(struct DbMeta)
 
 typedef int ColumnId;
+typedef int TableId;
 
 struct DbmsMeta {
     char databaseName[MAX_DATABASE_NUM][MAX_NAME_LENGTH]{};
-};
-
-//描述唯一主键
-struct PrimaryKeyDesc {
-    char name[MAX_NAME_LENGTH];
-    int keyNum;//因为联合主键的存在
-    ColumnId columnId[MAX_COLUMN_NUM];
 };
 
 
@@ -53,9 +47,19 @@ struct ColumnDesc {
 struct ForeignKeyDesc {
     char name[MAX_NAME_LENGTH];
     int keyNum;
-    ColumnId local[MAX_COLUMN_NUM];
-    char foreignTable[MAX_NAME_LENGTH];
+    TableId foreignTable;
     ColumnId foreign[MAX_COLUMN_NUM];
+    TableId primaryTable;
+    ColumnId primary[MAX_COLUMN_NUM];
+};
+
+//描述唯一主键
+struct PrimaryKeyDesc {
+    char name[MAX_NAME_LENGTH];
+    int keyNum;//因为联合主键的存在
+    ColumnId columnId[MAX_COLUMN_NUM];
+    //因为会有别的外键引用到这个主键，所以要记录下来
+    ForeignKeyDesc reference[MAX_TABLE_NUM];
 };
 
 //描述一个索引

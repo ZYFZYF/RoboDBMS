@@ -27,7 +27,7 @@ void yyerror(const char *s, ...);
 %token <str> IDENTIFIER STR
 %token <comparator> OP
 
-%token SHOW USE CREATE DROP UPDATE INSERT ALTER SELECT ADD QUIT
+%token SHOW DESC USE CREATE DROP UPDATE INSERT ALTER SELECT ADD QUIT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES
 %token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL T_NUMERIC
@@ -59,6 +59,9 @@ HELP 	: 	SHOW DATABASES ';'{
 		};
 	|	SHOW TABLES ';' {
 			DO(SM_Manager::Instance().ShowTables());
+		};
+	|	DESC TABLE IDENTIFIER';' {
+			DO(SM_Manager::Instance().DescTable($3));
 		};
 	|	QUIT ';'{
 			YYACCEPT;

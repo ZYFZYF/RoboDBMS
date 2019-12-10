@@ -14,6 +14,7 @@
 [+-]?[0-9]+\.[0-9]*     yylval.real = atof(yytext); return REAL;
 
 SHOW|show               return SHOW;
+DESC|desc               return DESC;
 USE|use                 return USE;
 CREATE|create           return CREATE;
 ADD|add                 return ADD;
@@ -44,6 +45,7 @@ NULL|null               return P_NULL;
 INT|int                 return T_INT;
 BIGINT|bigint           return T_BIGINT;
 CHAR|char               return T_CHAR;
+CHARACTER|character     return T_CHAR;
 VARCHAR|varchar         return T_VARCHAR;
 DATE|date               return T_DATE;
 NUMERIC|numeric         return T_NUMERIC;

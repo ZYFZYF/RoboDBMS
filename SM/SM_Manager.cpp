@@ -143,7 +143,7 @@ RC SM_Manager::DescDatabase(const char &dbName) {
 
 RC SM_Manager::ShowTables() {
     if (!isUsingDb) {
-        return SM_NOT_IN_DATABASE;
+        return SM_NOT_USING_DATABASE;
     }
     int cnt = 0;
     for (auto &tb : dbMeta.tableNames)
@@ -159,12 +159,80 @@ RC SM_Manager::ShowTables() {
 }
 
 RC SM_Manager::DescTable(const char *tbName) {
-    return PF_EOF;
+    if (!isUsingDb) {
+        return SM_NOT_USING_DATABASE;
+    }
+    for (int i = 0; i < MAX_TABLE_NUM; i++)
+        if (strcmp(tbName, dbMeta.tableNames[i]) == 0) {
+            printf("Column\n");
+            printf("\t%-20s%-20s%-20s%-20s\n", "name", "type", "nullable", "default");
+            printf("\t-----------------------------------------------------------------------------\n");
+            for (auto &column : dbMeta.tableMetas[i].columns)
+                if (strlen(column.name) > 0) {
+                    printf("\t%-20s", column.name);
+                    char typeStr[100];
+                    switch (column.attrType) {
+                        case INT:
+                            sprintf(typeStr, "int");
+                            break;
+                        case FLOAT:
+                            if (column.integerLength || column.decimalLength) {
+                                sprintf(typeStr, "numeric(%d,%d)", column.integerLength, column.decimalLength);
+                            } else {
+                                sprintf(typeStr, "decimal");
+                            }
+                            break;
+                        case STRING:
+                            sprintf(typeStr, "char(%d)", column.attrLength);
+                            break;
+                        case DATE:
+                            sprintf(typeStr, "date");
+                            break;
+                        case VARCHAR:
+                            sprintf(typeStr, "varchar(%d)", column.stringMaxLength);
+                            break;
+                        case ATTRARRAY:
+                            break;
+                    }
+                    printf("%-20s", typeStr);
+                    printf("%-20s", column.allowNull ? "" : "not null");
+                    if (column.hasDefaultValue) {
+                        switch (column.attrType) {
+                            case INT:
+                                printf("%d\n", column.defaultValue.intValue);
+                                break;
+                            case FLOAT:
+                                printf("%f\n", column.defaultValue.floatValue);
+                                break;
+                            case STRING:
+                                printf("%s\n", column.defaultValue.stringValue);
+                                break;
+                            case DATE:
+                                printf("%d-%d-%d\n", column.defaultValue.dateValue.year,
+                                       column.defaultValue.dateValue.month, column.defaultValue.dateValue.day
+                                );
+                                break;
+                            case VARCHAR:
+                                //TODO 这里先把varchar的默认值也放到了定长数组里
+                                printf("%s\n", column.defaultValue.stringValue);
+                                break;
+                            case ATTRARRAY:
+                                break;
+                        }
+                    } else printf("\n");
+                }
+            printf("Index\n");
+            printf("Primary key\n");
+            printf("Foreign key\n");
+            return OK_RC;
+        }
+    return SM_TABLE_NOT_EXIST;
+
 }
 
 RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnList) {
     if (!isUsingDb) {
-        return SM_NOT_IN_DATABASE;
+        return SM_NOT_USING_DATABASE;
     }
     for (int i = 0; i < MAX_TABLE_NUM; i++)
         if (strlen(dbMeta.tableNames[i]) == 0) {
@@ -202,6 +270,14 @@ RC SM_Manager::WriteDbMeta() {
     }
     fclose(file);
     return OK_RC;
+}
+
+const char *SM_Manager::GetTableNameFromTableId(TableId tableId) {
+    return dbMeta.tableNames[tableId];
+}
+
+const char *SM_Manager::GetColumnNameFromId(TableId tableId, ColumnId columnId) {
+    return dbMeta.tableMetas[tableId].columns[columnId].name;
 }
 
 
