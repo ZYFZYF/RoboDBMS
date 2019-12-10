@@ -26,10 +26,14 @@ RC SM_Manager::OpenDb(const char *dbName) {
     if (chdir(dbName) < 0) {
         return SM_DB_NOT_EXIST;
     }
+    //打开的时候读，修改的话立马写，不用等到关的时候再写
+    ReadDbMeta();
     return OK_RC;
 }
 
 RC SM_Manager::CloseDb() {
+    //以防万一关闭的时候还是再写一次
+    WriteDbMeta();
     chdir("..");
     return OK_RC;
 }
@@ -138,7 +142,20 @@ RC SM_Manager::DescDatabase(const char &dbName) {
 }
 
 RC SM_Manager::ShowTables() {
-    return PF_EOF;
+    if (!isUsingDb) {
+        return SM_NOT_IN_DATABASE;
+    }
+    int cnt = 0;
+    for (auto &tb : dbMeta.tableNames)
+        if (strlen(tb) > 0) {
+            cnt++;
+            printf("%20s", tb);
+            if (++cnt % 5 == 0) {
+                printf("\n");
+            }
+        }
+    printf("\n");
+    return OK_RC;
 }
 
 RC SM_Manager::DescTable(const char *tbName) {
@@ -149,7 +166,19 @@ RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnLi
     if (!isUsingDb) {
         return SM_NOT_IN_DATABASE;
     }
-    return OK_RC;
+    for (int i = 0; i < MAX_TABLE_NUM; i++)
+        if (strlen(dbMeta.tableNames[i]) == 0) {
+            strcpy(dbMeta.tableNames[i], tbName);
+            TableMeta tableMeta{};
+            strcpy(tableMeta.createName, tbName);
+            for (int j = 0; j < columnList->size(); j++) {
+                tableMeta.columns[j] = (*columnList)[j];
+            }
+            dbMeta.tableMetas[i] = tableMeta;
+            WriteDbMeta();
+            return OK_RC;
+        }
+    return SM_TABLE_IS_FULL;
 }
 
 RC SM_Manager::ReadDbMeta() {
@@ -158,8 +187,8 @@ RC SM_Manager::ReadDbMeta() {
         memset(&dbMeta, 0, sizeof(dbMeta));
         WriteDbMeta();
     }
-    FILE *file = fopen("DB.Meta", "w");
-    if (fread(&dbMeta, sizeof(dbMeta), 0, file) != 1) {
+    FILE *file = fopen("DB.Meta", "r");
+    if (fread(&dbMeta, sizeof(dbMeta), 1, file) != 1) {
         return SM_UNIX;
     }
     fclose(file);

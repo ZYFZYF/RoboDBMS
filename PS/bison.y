@@ -57,6 +57,9 @@ HELP 	: 	SHOW DATABASES ';'{
 	|	USE DATABASE IDENTIFIER ';' {
 			DO(SM_Manager::Instance().UseDb($3));
 		};
+	|	SHOW TABLES ';' {
+			DO(SM_Manager::Instance().ShowTables());
+		};
 	|	QUIT ';'{
 			YYACCEPT;
 		};
@@ -70,7 +73,7 @@ DropDatabase	:	DROP DATABASE IDENTIFIER ';'{
          		};
 
 CreateTable	:	CREATE TABLE IDENTIFIER '(' ColumnList ')' ';'{
-				printf("%d\n",$5->size());
+				//printf("%d\n",$5->size());
 				DO(SM_Manager::Instance().CreateTable($3, $5));
 			};
 

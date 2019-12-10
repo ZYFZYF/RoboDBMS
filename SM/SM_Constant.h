@@ -98,8 +98,8 @@ struct TableMeta {
 };
 
 struct DbMeta {
-    char tableName[MAX_TABLE_NUM][MAX_NAME_LENGTH]{};
-    TableMeta tableMeta[MAX_TABLE_NUM]{};
+    char tableNames[MAX_TABLE_NUM][MAX_NAME_LENGTH]{};
+    TableMeta tableMetas[MAX_TABLE_NUM]{};
 };
 
 #endif //ROBODBMS_SM_CONSTANT_H
