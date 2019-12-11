@@ -63,17 +63,33 @@ public:
 
     RC DescTable(const char *tbName);
 
+    RC AddPrimaryKey(const char *table, std::vector<const char *> *columns);
+
+    RC
+    AddForeignKey(const char *name, const char *foreignTable, std::vector<const char *> *foreignColumns,
+                  const char *primaryTable,
+                  std::vector<const char *> *primaryColumns);
+
 private:
     SM_Manager();
 
-    DbMeta dbMeta;
+    DbMeta dbMeta, dbMetaBackup;
 
     RC ReadDbMeta();//读取当前数据库的Meta信息到dbMeta中
+
     RC WriteDbMeta();//将dbMeta写回到文件中
+
+    RC RecoverDbMeta();//操作中出现错误，将meta回滚
 
     const char *GetTableNameFromTableId(TableId tableId);
 
     const char *GetColumnNameFromId(TableId tableId, ColumnId columnId);
+
+    TableId GetTableIdFromName(const char *tableName);
+
+    ColumnId GetColumnIdFromName(const char *tableName, const char *columnName);
+
+    ColumnId GetColumnIdFromName(TableId tableId, const char *columnName);
 
     PF_Manager pfManager;
     RM_Manager rmManager;

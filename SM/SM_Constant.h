@@ -13,6 +13,7 @@
 #define MAX_TABLE_NUM 30 //一个数据库中最多的表的数目
 #define MAX_COLUMN_NUM 30 //一个表中最多的列的个数
 #define MAX_FOREIGN_KEY_NUM 30 //一个表中最多有多少组外键
+#define MAX_REFERENCE_NUM 30 //一个主键最多被多少个外键引用
 #define MAX_INDEX_NUM 30 //一个表最多建多少个索引
 #define INVALID_INDEX -1
 #define TABLE_META_LENGTH sizeof(struct TableMeta)
@@ -39,8 +40,8 @@ struct ColumnDesc {
     AttrValue defaultValue;
     bool isPrimaryKey;
     bool hasForeignKey;
-    char foreignKeyTable[MAX_NAME_LENGTH];
-    char foreignKeyColumn[MAX_NAME_LENGTH];
+    char primaryKeyTable[MAX_NAME_LENGTH];
+    char primaryKeyColumn[MAX_NAME_LENGTH];
 };
 
 //描述一个外键约束，注意有可能一列当了多个外键，或者联合外键这种东西
@@ -59,12 +60,13 @@ struct PrimaryKeyDesc {
     int keyNum;//因为联合主键的存在
     ColumnId columnId[MAX_COLUMN_NUM];
     //因为会有别的外键引用到这个主键，所以要记录下来
-    ForeignKeyDesc reference[MAX_TABLE_NUM];
+    ForeignKeyDesc references[MAX_TABLE_NUM];
 };
 
 //描述一个索引
 struct IndexDesc {
     char name[MAX_NAME_LENGTH];
+    int keyNum;
     ColumnId columnId[MAX_COLUMN_NUM];
 };
 
