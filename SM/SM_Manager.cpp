@@ -469,4 +469,34 @@ RC SM_Manager::RecoverDbMeta() {
     dbMeta = dbMetaBackup;
 }
 
+RC SM_Manager::DropPrimaryKey(const char *table) {
+    TableId primaryTableId = GetTableIdFromName(table);
+    if (primaryTableId < 0)return SM_PRIMARY_KEY_NOT_EXIST;
+    //主键先根据引用把外键一条条删除，最后再删除主键
+    for (auto &reference:dbMeta.tableMetas[primaryTableId].primaryKey.references) {
+        TRY(DropForeignKey(GetTableNameFromTableId(reference.foreignTable), reference.name));
+    }
+    //TODO 删除主键的索引
+    memset(&dbMeta.tableMetas[primaryTableId].primaryKey, 0, sizeof(PrimaryKeyDesc));
+    return OK_RC;
+}
+
+RC SM_Manager::DropForeignKey(const char *foreignTable, const char *name) {
+    TableId foreignTableId = GetTableIdFromName(foreignTable);
+    if (foreignTableId < 0)return SM_TABLE_NOT_EXIST;
+    //不仅要删除外键还要删除主键中记录的引用
+    for (auto &foreignKey : dbMeta.tableMetas[foreignTableId].foreignKeys)
+        if (strcmp(foreignKey.name, name) == 0) {
+            for (auto &reference: dbMeta.tableMetas[foreignKey.primaryTable].primaryKey.references)
+                if (strcmp(reference.name, name) == 0) {
+                    memset(&reference, 0, sizeof(reference));
+                    break;
+                }
+            memset(&foreignKey, 0, sizeof(foreignKey));
+            WriteDbMeta();
+            return OK_RC;
+        }
+    return SM_FOREIGN_KEY_NOT_EXIST;
+}
+
 

@@ -70,6 +70,10 @@ public:
                   const char *primaryTable,
                   std::vector<const char *> *primaryColumns);
 
+    RC DropPrimaryKey(const char *table);
+
+    RC DropForeignKey(const char *foreignTable, const char *name);
+
 private:
     SM_Manager();
 

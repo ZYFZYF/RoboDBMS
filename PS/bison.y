@@ -229,14 +229,14 @@ ColumnNameList	:	ColumnNameList ',' IDENTIFIER
 				$$->push_back($1);
 			};
 
-DropPrimaryKey	:	/* empty */
+DropPrimaryKey	:	ALTER TABLE IDENTIFIER DROP PRIMARY KEY ';'
 			{
-
+				DO(SM_Manager::Instance().DropPrimaryKey($3));
 			};
 
-DropForeignKey	:	/* empty */
+DropForeignKey	:	ALTER TABLE IDENTIFIER DROP FOREIGN KEY IDENTIFIER ';'
 			{
-
+				DO(SM_Manager::Instance().DropForeignKey($3,$7));
 			};
 %%
 
