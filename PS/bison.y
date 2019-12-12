@@ -19,6 +19,7 @@ void yyerror(const char *s, ...);
   ColumnDesc columnDesc;
   AttrValue attrValue;
   std::vector<ColumnDesc> *columnList;
+  std::vector<const char *> *identifierList;
 }
 
 //定义标识符
@@ -28,14 +29,15 @@ void yyerror(const char *s, ...);
 %token <comparator> OP
 
 %token SHOW DESC USE CREATE DROP UPDATE INSERT ALTER SELECT ADD QUIT
-%token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES
+%token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
 %token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL T_NUMERIC
 
 //定义语法中需要的节点的类型
 %type <columnDesc> Column ColumnType NotNull DefaultValue PrimaryKey ForeignKey
-%type <columnList> ColumnList
+%type <columnList> ColumnDescList
 %type <attrValue> Value
+%type <identifierList> ColumnNameList
 
 //定义语法
 %%
@@ -47,7 +49,12 @@ Commond	: 	DDL | DML | HELP;
 
 DDL 	: 	CreateDatabase
 	| 	DropDatabase
-	| 	CreateTable;
+	| 	CreateTable
+	|	AddPrimaryKey
+	|	AddForeignKey
+	|	DropPrimaryKey
+	|	DropForeignKey
+	;
 
 DML	: 	P_WHERE;
 
@@ -75,12 +82,12 @@ DropDatabase	:	DROP DATABASE IDENTIFIER ';'{
          			DO(SM_Manager::Instance().DropDb($3));
          		};
 
-CreateTable	:	CREATE TABLE IDENTIFIER '(' ColumnList ')' ';'{
+CreateTable	:	CREATE TABLE IDENTIFIER '(' ColumnDescList ')' ';'{
 				//printf("%d\n",$5->size());
 				DO(SM_Manager::Instance().CreateTable($3, $5));
 			};
 
-ColumnList	:	ColumnList ',' Column{
+ColumnDescList	:	ColumnDescList ',' Column{
 				$$ = $1;
 				$$->push_back($3);
 			}
@@ -101,9 +108,9 @@ Column		:	IDENTIFIER ColumnType NotNull DefaultValue PrimaryKey ForeignKey{
 				$$.defaultValue = $4.defaultValue;
 				$$.isPrimaryKey = $5.isPrimaryKey;
 				$$.hasForeignKey = $6.hasForeignKey;
-				strcpy($$.foreignKeyTable, $6.foreignKeyTable);
-				strcpy($$.foreignKeyColumn, $6.foreignKeyColumn);
-				//printf("name = %s, attrLength = %d, stringMaxLength = %d, integerLength = %d, decimalLength = %d, allowNull = %d, hasDefaultValue = %d, defaultValue = %s, isPrimaryKey = %d, hasForeignKey = %d, foreignKeyTable = %s, foreignKeyColumn = %s\n",$$.name, $$.attrLength, $$.stringMaxLength, $$.integerLength, $$.decimalLength, $$.allowNull, $$.hasDefaultValue, &$$.defaultValue, $$.isPrimaryKey, $$.hasForeignKey, $$.foreignKeyTable, $$.foreignKeyColumn);
+				strcpy($$.primaryKeyTable, $6.primaryKeyTable);
+				strcpy($$.primaryKeyColumn, $6.primaryKeyColumn);
+				//printf("name = %s, attrLength = %d, stringMaxLength = %d, integerLength = %d, decimalLength = %d, allowNull = %d, hasDefaultValue = %d, defaultValue = %s, isPrimaryKey = %d, hasForeignKey = %d, primaryKeyTable = %s, primaryKeyColumn = %s\n",$$.name, $$.attrLength, $$.stringMaxLength, $$.integerLength, $$.decimalLength, $$.allowNull, $$.hasDefaultValue, &$$.defaultValue, $$.isPrimaryKey, $$.hasForeignKey, $$.primaryKeyTable, $$.primaryKeyColumn);
 			};
 
 ColumnType	:	T_INT
@@ -155,7 +162,7 @@ NotNull		:	/* empty */
 				$$.allowNull = false;
 			};
 DefaultValue 	:	/* empty */
-		|	{
+			{
 				$$.hasDefaultValue = false;
 				memset(&$$.defaultValue, 0, sizeof($$.defaultValue));
 			}
@@ -191,14 +198,45 @@ PrimaryKey	:	/* empty */
 ForeignKey	:	/* empty */
 			{
 				$$.hasForeignKey = false;
-				memset($$.foreignKeyTable, 0, sizeof($$.foreignKeyTable));
-				memset($$.foreignKeyColumn, 0, sizeof($$.foreignKeyColumn));
+				memset($$.primaryKeyTable, 0, sizeof($$.primaryKeyTable));
+				memset($$.primaryKeyColumn, 0, sizeof($$.primaryKeyColumn));
 			}
 		|	REFERENCES IDENTIFIER '.' IDENTIFIER
 			{
 				$$.hasForeignKey = true;
-				strcpy($$.foreignKeyTable, $2);
-				strcpy($$.foreignKeyColumn, $4);
+				strcpy($$.primaryKeyTable, $2);
+				strcpy($$.primaryKeyColumn, $4);
+			};
+
+AddPrimaryKey	:	ALTER TABLE IDENTIFIER ADD PRIMARY KEY '(' ColumnNameList ')' ';'
+			{
+				DO(SM_Manager::Instance().AddPrimaryKey($3, $8));
+			};
+
+AddForeignKey	:	ALTER TABLE IDENTIFIER ADD CONSTRAINT IDENTIFIER FOREIGN KEY '(' ColumnNameList ')' REFERENCES IDENTIFIER '(' ColumnNameList ')' ';'
+			{
+				DO(SM_Manager::Instance().AddForeignKey($6, $3, $10, $13, $15));
+			};
+
+ColumnNameList	:	ColumnNameList ',' IDENTIFIER
+			{
+				$$ = $1;
+				$$->push_back($3);
+			}
+		|	IDENTIFIER
+			{
+				$$ = new std::vector<const char *>;
+				$$->push_back($1);
+			};
+
+DropPrimaryKey	:	/* empty */
+			{
+
+			};
+
+DropForeignKey	:	/* empty */
+			{
+
 			};
 %%
 

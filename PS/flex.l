@@ -34,6 +34,8 @@ PRIMARY|primary         return PRIMARY;
 KEY|key                 return KEY;
 DEFAULT|default         return DEFAULT;
 REFERENCES|references   return REFERENCES;
+FOREIGN|foreign         return FOREIGN;
+CONSTRAINT|constraint   return CONSTRAINT;
 
 ON|on                   return P_ON;
 SET|set                 return P_SET;
