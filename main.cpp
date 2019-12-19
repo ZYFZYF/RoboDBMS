@@ -7,11 +7,9 @@ extern int yyparse();
 int main(int argc) {
     const char test_sql[] = "../test/db.sql";
     yyin = fopen(test_sql, "rb");
-    if (NULL == yyin) {
-        printf("Open file failed: %s\n", test_sql);
+    if (yyin == nullptr) {
+        printf("Open file  %s\n failed", test_sql);
         return 0;
-    } else {
-        printf("Open file succeed\n");
     }
 
     while (!feof(yyin)) {
@@ -19,7 +17,7 @@ int main(int argc) {
     }
 
     fclose(yyin);
-    yyin = NULL;
+    yyin = nullptr;
 
     return 0;
 }

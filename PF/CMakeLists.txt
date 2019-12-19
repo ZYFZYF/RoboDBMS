@@ -13,8 +13,6 @@ set(SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/PF_HashTable.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/PF_Manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/PF_PageHandle.cpp)
-message(STATUS ${HEADER})
-message(STATUS ${SOURCE})
 add_library(PF ${HEADER} ${SOURCE})
 add_executable(PF_TEST_1 test1.cpp ${HEADER} ${SOURCE})
 add_executable(PF_TEST_2 test2.cpp ${HEADER} ${SOURCE})

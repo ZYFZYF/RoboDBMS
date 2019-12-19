@@ -9,8 +9,6 @@ set(SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/IX_Manager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/IX_IndexHandle.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/IX_IndexScan.cpp)
-message(STATUS ${HEADER})
-message(STATUS ${SOURCE})
 add_library(IX ${HEADER} ${SOURCE})
 add_executable(IX_TEST test.cpp ${HEADER} ${SOURCE})
 

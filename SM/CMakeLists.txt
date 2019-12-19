@@ -5,8 +5,6 @@ set(HEADER
 set(SOURCE
         ${SOURCE}
         ${CMAKE_CURRENT_SOURCE_DIR}/SM_Manager.cpp)
-message(STATUS ${HEADER})
-message(STATUS ${SOURCE})
 add_library(SM ${HEADER} ${SOURCE})
 add_executable(SM_TEST test.cpp ${HEADER} ${SOURCE})
 target_link_libraries(SM_TEST SP IX RM PF)
