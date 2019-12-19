@@ -6,8 +6,6 @@ flex_target(lexer flex.l ${PROJECT_BINARY_DIR}/flex.cpp COMPILE_FLAGS --noyywrap
 add_flex_bison_dependency(lexer parser)
 
 include_directories(${PROJECT_BINARY_DIR})
-set(MAIN_SRC ${PROJECT_BINARY_DIR}/flex.cpp
-        ${PROJECT_BINARY_DIR}/bison.cpp)
-add_executable(PS_TEST ${MAIN_SRC} PS_Node.h PS_Node.cpp PS_ShowDatabases.h PS_ShowDatabases.cpp)
-target_link_libraries(PS_TEST SM RM PF SP IX)
+set(MAIN_SRC ${PROJECT_BINARY_DIR}/flex.cpp ${PROJECT_BINARY_DIR}/bison.cpp)
+add_library(PS ${MAIN_SRC})
 

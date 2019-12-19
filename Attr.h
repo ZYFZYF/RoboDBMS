@@ -45,6 +45,7 @@ union AttrValue {
     char stringValue[MAX_CHAR_LENGTH + 1];
     Date dateValue;
     Varchar varcharValue;
+    char *charValue;
 };
 
 
