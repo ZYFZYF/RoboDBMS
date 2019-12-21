@@ -6,6 +6,7 @@
 #include "../PS/PS_ShowDatabases.h"
 #include "../SM/SM_Manager.h"
 #include "../utils/PrintError.h"
+#include "../QL/QL_Manager.h"
 extern int yylex (void);
 void yyerror(const char *s, ...);
 %}
@@ -18,6 +19,7 @@ void yyerror(const char *s, ...);
   PS_Node *node;
   ColumnDesc columnDesc;
   AttrValue attrValue;
+  std::vector<AttrValue> *attrValueList;
   std::vector<ColumnDesc> *columnList;
   std::vector<const char *> *identifierList;
 }
@@ -30,13 +32,14 @@ void yyerror(const char *s, ...);
 
 %token SHOW DESC USE CREATE DROP UPDATE INSERT ALTER SELECT ADD QUIT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
-%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL
+%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL T_NUMERIC
 
 //定义语法中需要的节点的类型
 %type <columnDesc> Column ColumnType NotNull DefaultValue PrimaryKey ForeignKey
 %type <columnList> ColumnDescList
-%type <attrValue> Value
+%type <attrValue> ConstValue
+%type <attrValueList> ConstValueList
 %type <identifierList> ColumnNameList
 
 //定义语法
@@ -50,13 +53,14 @@ Commond	: 	DDL | DML | HELP;
 DDL 	: 	CreateDatabase
 	| 	DropDatabase
 	| 	CreateTable
+	|	DropTable
 	|	AddPrimaryKey
 	|	AddForeignKey
 	|	DropPrimaryKey
 	|	DropForeignKey
 	;
 
-DML	: 	P_WHERE;
+DML	: 	InsertRow;
 
 HELP 	: 	SHOW DATABASES ';'{
 			DO(SM_Manager::Instance().ShowDatabases());
@@ -74,29 +78,40 @@ HELP 	: 	SHOW DATABASES ';'{
 			YYACCEPT;
 		};
 
-CreateDatabase	:	CREATE DATABASE IDENTIFIER ';'{
+CreateDatabase	:	CREATE DATABASE IDENTIFIER ';'
+			{
 				DO(SM_Manager::Instance().CreateDb($3));
 			};
 
-DropDatabase	:	DROP DATABASE IDENTIFIER ';'{
+DropDatabase	:	DROP DATABASE IDENTIFIER ';'
+			{
          			DO(SM_Manager::Instance().DropDb($3));
          		};
 
-CreateTable	:	CREATE TABLE IDENTIFIER '(' ColumnDescList ')' ';'{
+CreateTable	:	CREATE TABLE IDENTIFIER '(' ColumnDescList ')' ';'
+			{
 				//printf("%d\n",$5->size());
 				DO(SM_Manager::Instance().CreateTable($3, $5));
 			};
 
-ColumnDescList	:	ColumnDescList ',' Column{
+DropTable	:	DROP TABLE IDENTIFIER ';'
+			{
+				DO(SM_Manager::Instance().DropTable($3));
+			}
+
+ColumnDescList	:	ColumnDescList ',' Column
+			{
 				$$ = $1;
 				$$->push_back($3);
 			}
-		|	Column{
+		|	Column
+			{
 				$$ = new std::vector<ColumnDesc>;
 				$$->push_back($1);
 			};
 
-Column		:	IDENTIFIER ColumnType NotNull DefaultValue PrimaryKey ForeignKey{
+Column		:	IDENTIFIER ColumnType NotNull DefaultValue PrimaryKey ForeignKey
+			{
 				strcpy($$.name, $1);
 				$$.attrType = $2.attrType;
 				$$.attrLength = $2.attrLength;
@@ -166,13 +181,24 @@ DefaultValue 	:	/* empty */
 				$$.hasDefaultValue = false;
 				memset(&$$.defaultValue, 0, sizeof($$.defaultValue));
 			}
-		|	DEFAULT Value
+		|	DEFAULT ConstValue
 			{
 				$$.hasDefaultValue = true;
 				$$.defaultValue = $2;
 			};
 
-Value		:	INTEGER
+ConstValueList	:	ConstValue ',' ConstValueList
+			{
+				$$ = $3;
+				$$->push_back($1);
+			}
+		|	ConstValue
+			{
+				$$ = new std::vector<AttrValue>;
+				$$->push_back($1);
+			}
+
+ConstValue		:	INTEGER
 			{
 				$$.intValue = $1;
 			}
@@ -238,6 +264,16 @@ DropForeignKey	:	ALTER TABLE IDENTIFIER DROP FOREIGN KEY IDENTIFIER ';'
 			{
 				DO(SM_Manager::Instance().DropForeignKey($3,$7));
 			};
+
+InsertRow	:	INSERT P_INTO IDENTIFIER P_VALUES '(' ConstValueList ')' ';'
+			{
+				DO(QL_Manager::Instance().Insert($3, nullptr, $6));
+			}
+		|	INSERT P_INTO IDENTIFIER '(' ColumnNameList ')' P_VALUES '(' ConstValueList ')' ';'
+			{
+				DO(QL_Manager::Instance().Insert($3, $5, $9));
+			}
+		;
 %%
 
 

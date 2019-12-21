@@ -1,11 +1,11 @@
-#include <stdio.h>
+#include <cstdio>
 
 extern FILE *yyin;
 
 extern int yyparse();
 
-int main(int argc) {
-    const char test_sql[] = "../test/db.sql";
+int main() {
+    const char test_sql[] = "../test/insert.sql";
     yyin = fopen(test_sql, "rb");
     if (yyin == nullptr) {
         printf("Open file  %s\n failed", test_sql);

@@ -1,0 +1,13 @@
+show databases;
+create database test_insert;
+use database test_insert;
+show tables;
+drop table test;
+show tables;
+create table test(a int primary key, b char(20) not null, c decimal, d date);
+show tables;
+insert into test values(1, 'first', 100.1, '2019-12-21');
+insert into test(a, b, c) values(2, 'second', 200);
+insert into test(a, c, d) values(3, 300.1, '2019-12-21');
+insert into test values(1, 'third', 400.1, '2019-12-21');
+desc table test;

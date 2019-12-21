@@ -38,8 +38,19 @@ RC SM_Manager::CloseDb() {
     return OK_RC;
 }
 
-RC SM_Manager::DropTable(const char *relName) {
-    return PF_NOBUF;
+RC SM_Manager::DropTable(const char *tbName) {
+    if (!isUsingDb) return SM_NOT_USING_DATABASE;
+
+    TableId tableId = GetTableIdFromName(tbName);
+    if (tableId < 0) return SM_TABLE_NOT_EXIST;
+
+    if (dbMeta.tableMetas[tableId].primaryKey.referenceNum) return SM_TABLE_HAS_REFERENCE;
+
+    memset(&dbMeta.tableMetas[tableId], 0, sizeof(TableMeta));
+    memset(dbMeta.tableNames[tableId], 0, sizeof(dbMeta.tableNames[tableId]));
+    //TODO 删除表的相关东西
+    WriteDbMeta();
+    return OK_RC;
 }
 
 RC SM_Manager::CreateIndex(const char *relName, const char *attrName) {
@@ -301,10 +312,9 @@ RC SM_Manager::DescTable(const char *tbName) {
 
 RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnList) {
     RC rc;
-    if (!isUsingDb) {
-        return SM_NOT_USING_DATABASE;
-    }
-    for (int i = 0; i < MAX_TABLE_NUM; i++)
+    if (!isUsingDb)return SM_NOT_USING_DATABASE;
+
+    for (int i = 0; i < MAX_TABLE_NUM; i++) {
         if (strlen(dbMeta.tableNames[i]) == 0) {
             strcpy(dbMeta.tableNames[i], tbName);
             TableMeta tableMeta{};
@@ -338,7 +348,10 @@ RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnLi
             }
             WriteDbMeta();
             return OK_RC;
+        } else if (strcmp(dbMeta.tableNames[i], tbName) == 0) {
+            return SM_TABLE_ALREADY_IN;
         }
+    }
     return SM_TABLE_IS_FULL;
     ERROR_EXIT:
     RecoverDbMeta();

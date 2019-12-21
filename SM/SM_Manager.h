@@ -24,7 +24,7 @@ public:
 
     RC CreateTable(const char *tbName, std::vector<ColumnDesc> *columnList);
 
-    RC DropTable(const char *relName);          // destroy a relation
+    RC DropTable(const char *tbName);          // destroy a relation
 
     RC CreateIndex(const char *relName,           // create an index for
                    const char *attrName);         //   relName.attrName

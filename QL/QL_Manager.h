@@ -19,7 +19,7 @@ public:
 
     RC Select();
 
-    RC Insert();
+    RC Insert(const char *tbName, std::vector<const char *> *columnList, std::vector<AttrValue> *constValueList);
 
     RC Delete();
 

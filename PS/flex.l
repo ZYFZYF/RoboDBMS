@@ -43,6 +43,7 @@ WHERE|where             return P_WHERE;
 INTO|into               return P_INTO;
 NOT|not                 return P_NOT;
 NULL|null               return P_NULL;
+VALUES|values           return P_VALUES;
 
 INT|int                 return T_INT;
 BIGINT|bigint           return T_BIGINT;
@@ -55,6 +56,7 @@ DECIMAL|decimal         return T_DECIMAL;
 
 [a-zA-Z][a-zA-Z0-9_]*   yylval.str = strdup(yytext); return IDENTIFIER;
 '[^']*'                 yylval.str = strdup(yytext); return STR;
+
 
 "=="                    yylval.comparator = EQ_OP; return OP;
 "!="                    yylval.comparator = NE_OP; return OP;

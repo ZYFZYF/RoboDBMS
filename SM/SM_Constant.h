@@ -60,6 +60,7 @@ struct PrimaryKeyDesc {
     int keyNum;//因为联合主键的存在
     ColumnId columnId[MAX_COLUMN_NUM];
     //因为会有别的外键引用到这个主键，所以要记录下来
+    int referenceNum;
     ForeignKeyDesc references[MAX_TABLE_NUM];
 };
 

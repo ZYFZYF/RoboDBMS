@@ -17,10 +17,6 @@ RC QL_Manager::Select() {
     return PF_EOF;
 }
 
-RC QL_Manager::Insert() {
-    return PF_EOF;
-}
-
 RC QL_Manager::Delete() {
     return PF_EOF;
 }
@@ -32,4 +28,10 @@ RC QL_Manager::Update() {
 QL_Manager::QL_Manager() : rmManager(RM_Manager::Instance()), ixManager(IX_Manager::Instance()),
                            smManager(SM_Manager::Instance()) {
 
+}
+
+RC
+QL_Manager::Insert(const char *tbName, std::vector<const char *> *columnList, std::vector<AttrValue> *constValueList) {
+    printf("insert one row");
+    return OK_RC;
 }
