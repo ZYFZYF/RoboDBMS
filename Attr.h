@@ -39,7 +39,8 @@ enum AttrType {
     ATTRARRAY
 };
 
-union AttrValue {
+struct AttrValue {
+    bool isNull;
     int intValue;
     float floatValue;
     char stringValue[MAX_CHAR_LENGTH + 1];

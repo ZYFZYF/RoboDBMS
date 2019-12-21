@@ -4,7 +4,7 @@ use database test_insert;
 show tables;
 drop table test;
 show tables;
-create table test(a int primary key, b char(20) not null, c decimal, d date);
+create table test(a int primary key, b char(20) not null, c decimal default 0.1, d date);
 show tables;
 insert into test values(1, 'first', 100.1, '2019-12-21');
 insert into test(a, b, c) values(2, 'second', 200);

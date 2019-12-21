@@ -198,19 +198,28 @@ ConstValueList	:	ConstValue ',' ConstValueList
 				$$->push_back($1);
 			}
 
-ConstValue		:	INTEGER
+ConstValue	:	/* empty */
 			{
+				$$.isNull = true;
+			}
+		|	INTEGER
+			{
+				$$.isNull = false;
 				$$.intValue = $1;
 			}
 		|	REAL
 			{
+				$$.isNull = false;
 				$$.floatValue = $1;
 			}
 		|	STR
 			{
+				$$.isNull = false;
 				memcpy($$.stringValue, $1 + 1, strlen($1) - 2);
 				$$.stringValue[strlen($1)-2] = '\0';
-			};
+				$$.charValue = $1;
+			}
+		;
 
 PrimaryKey	:	/* empty */
 			{

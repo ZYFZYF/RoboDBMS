@@ -38,11 +38,16 @@ class IX_IndexHandle {
     friend class IX_IndexScan;
 
 public:
-    IX_IndexHandle();                             // Constructor
-    ~IX_IndexHandle();                             // Destructor
-    RC InsertEntry(void *key, const RM_RID &value);  // Insert new index entry
-    RC DeleteEntry(void *key, const RM_RID &value);  // Delete index entry
-    RC ForcePages();                             // Copy index to disk
+    IX_IndexHandle();
+
+    ~IX_IndexHandle();
+
+    RC InsertEntry(void *key, const RM_RID &value);
+
+    RC DeleteEntry(void *key, const RM_RID &value);
+
+    RC ForcePages();
+
 private:
     PF_FileHandle pfFileHandle;
     IX_FileHeader ixFileHeader;
