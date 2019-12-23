@@ -17,22 +17,25 @@ class IX_Manager {
 public:
     static IX_Manager &Instance();
 
-    ~IX_Manager();                             // Destructor
-    RC CreateIndex(const char *fileName,          // Create new index
+    ~IX_Manager();
+
+    RC CreateIndex(const char *fileName,
                    int indexNo,
                    AttrType attrType,
                    int attrLength);
 
-    RC DestroyIndex(const char *fileName,          // Destroy index
+    RC DestroyIndex(const char *fileName,
                     int indexNo);
 
-    RC OpenIndex(const char *fileName,          // Open index
+    RC OpenIndex(const char *fileName,
                  int indexNo,
                  IX_IndexHandle &indexHandle);
 
-    RC CloseIndex(IX_IndexHandle &indexHandle);  // Close index
+    RC CloseIndex(IX_IndexHandle &indexHandle);
+
 private:
-    IX_Manager();              // Constructor
+    IX_Manager();
+
     PF_Manager pfManager;
 };
 

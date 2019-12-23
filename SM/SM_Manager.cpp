@@ -297,6 +297,7 @@ RC SM_Manager::DescTable(const char *tbName) {
 }
 
 RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnList) {
+    DbMeta backup = dbMeta;
     RC rc;
     if (!isUsingDb)return SM_NOT_USING_DATABASE;
 
@@ -350,9 +351,9 @@ RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnLi
     }
     return SM_TABLE_IS_FULL;
     ERROR_EXIT:
-    RecoverDbMeta();
+    dbMeta = backup;
+    WriteDbMeta();
     return rc;
-
 }
 
 RC SM_Manager::ReadDbMeta() {
@@ -365,13 +366,11 @@ RC SM_Manager::ReadDbMeta() {
     if (fread(&dbMeta, sizeof(dbMeta), 1, file) != 1) {
         return SM_UNIX;
     }
-    dbMetaBackup = dbMeta;
     fclose(file);
     return OK_RC;
 }
 
 RC SM_Manager::WriteDbMeta() {
-    dbMetaBackup = dbMeta;
     FILE *file = fopen("DB.Meta", "w");
     if (fwrite(&dbMeta, sizeof(dbMeta), 1, file) != 1) {
         return SM_UNIX;
@@ -472,10 +471,6 @@ ColumnId SM_Manager::GetColumnIdFromName(TableId tableId, const char *columnName
             return i;
         }
     return -1;
-}
-
-RC SM_Manager::RecoverDbMeta() {
-    dbMeta = dbMetaBackup;
 }
 
 RC SM_Manager::DropPrimaryKey(const char *table) {

@@ -91,14 +91,11 @@ public:
 private:
     SM_Manager();
 
-    DbMeta dbMeta, dbMetaBackup;
+    DbMeta dbMeta;
 
     RC ReadDbMeta();//读取当前数据库的Meta信息到dbMeta中
 
     RC WriteDbMeta();//将dbMeta写回到文件中
-
-    RC RecoverDbMeta();//操作中出现错误，将meta回滚
-
 
 
     PF_Manager pfManager;

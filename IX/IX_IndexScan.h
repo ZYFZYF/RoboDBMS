@@ -11,15 +11,19 @@
 
 class IX_IndexScan {
 public:
-    IX_IndexScan();                                 // Constructor
-    ~IX_IndexScan();                                 // Destructor
-    RC OpenScan(const IX_IndexHandle &indexHandle, // Initialize index scan
+    IX_IndexScan();
+
+    ~IX_IndexScan();
+
+    RC OpenScan(const IX_IndexHandle &indexHandle,
                 CompOp compOp,
                 void *value,
                 ClientHint pinHint = NO_HINT);
 
-    RC GetNextEntry(RM_RID &rid);                         // Get next matching entry
-    RC CloseScan();                                 // Terminate index scan
+    RC GetNextEntry(RM_RID &rid);
+
+    RC CloseScan();
+
     void *getCurrentKey();
 
 private:
