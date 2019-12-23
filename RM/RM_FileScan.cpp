@@ -31,8 +31,7 @@ RC RM_FileScan::OpenScan(const RM_FileHandle &rmFileHandle,
                          int attrLength,
                          int attrOffset,
                          CompOp compOp,
-                         void *value,
-                         ClientHint pinHint) {
+                         void *value) {
     if (openScan)
         return (RM_INVALIDSCAN);
     this->rmFileHandle = const_cast<RM_FileHandle *>(&rmFileHandle);

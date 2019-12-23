@@ -57,7 +57,6 @@ struct ForeignKeyDesc {
 
 //描述唯一主键
 struct PrimaryKeyDesc {
-    char name[MAX_NAME_LENGTH];
     int keyNum;//因为联合主键的存在
     ColumnId columnId[MAX_COLUMN_NUM];
     //因为会有别的外键引用到这个主键，所以要记录下来
@@ -67,24 +66,24 @@ struct PrimaryKeyDesc {
 
 //描述一个索引
 struct IndexDesc {
-    char name[MAX_NAME_LENGTH];
-    int keyNum;
-    ColumnId columnId[MAX_COLUMN_NUM];
+    char name[MAX_NAME_LENGTH]{};
+    int keyNum{};
+    ColumnId columnId[MAX_COLUMN_NUM]{};
 };
 
 //每个的源信息，存在文件头里
 struct TableMeta {
     //建表的时候的名字，以后改名之后仍然用这个来建索引等等
-    char createName[MAX_NAME_LENGTH];
+    char createName[MAX_NAME_LENGTH]{};
     //主键
-    PrimaryKeyDesc primaryKey;
+    PrimaryKeyDesc primaryKey{};
     //外键
-    ForeignKeyDesc foreignKeys[MAX_FOREIGN_KEY_NUM];
+    ForeignKeyDesc foreignKeys[MAX_FOREIGN_KEY_NUM]{};
     //索引
     IndexDesc indexes[MAX_INDEX_NUM];
     //列描述，列的存储必须是从下标0到columnNum-1
-    int columnNum;
-    ColumnDesc columns[MAX_COLUMN_NUM];
+    int columnNum{};
+    ColumnDesc columns[MAX_COLUMN_NUM]{};
 };
 
 struct DbMeta {

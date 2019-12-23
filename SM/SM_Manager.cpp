@@ -387,8 +387,8 @@ const char *SM_Manager::GetColumnNameFromId(TableId tableId, ColumnId columnId) 
     return dbMeta.tableMetas[tableId].columns[columnId].name;
 }
 
-RC SM_Manager::AddPrimaryKey(const char *table, std::vector<const char *> *columns) {
-    TableId tableId = GetTableIdFromName(table);
+RC SM_Manager::AddPrimaryKey(const char *tbName, std::vector<const char *> *columns) {
+    TableId tableId = GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
     //必须先drop掉原来的才可以建新的
     if (dbMeta.tableMetas[tableId].primaryKey.keyNum != 0)return SM_ALREADY_HAVE_PRIMARY_KEY;
@@ -400,11 +400,23 @@ RC SM_Manager::AddPrimaryKey(const char *table, std::vector<const char *> *colum
             return SM_COLUMN_NOT_EXIST;
         }
     }
-    //TODO 唯一性检查、索引建立
-
-    dbMeta.tableMetas[tableId].primaryKey = primaryKey;
-    WriteDbMeta();
-    return OK_RC;
+    //找到索引空位，然后尝试插入索引，同时判断是否存在有空
+    for (int i = 0; i < MAX_INDEX_NUM; i++)
+        if (strlen(dbMeta.tableMetas[tableId].indexes[i].name) == 0) {
+            IndexDesc indexDesc{};
+            strcpy(indexDesc.name, tbName);
+            indexDesc.keyNum = primaryKey.keyNum;
+            for (int j = 0; j < primaryKey.keyNum; j++) {
+                indexDesc.columnId[j] = primaryKey.columnId[j];
+            }
+            SM_Table table(dbMeta.tableMetas[tableId]);
+            TRY(table.createIndex(i, indexDesc, false));
+            dbMeta.tableMetas[tableId].indexes[i] = indexDesc;
+            dbMeta.tableMetas[tableId].primaryKey = primaryKey;
+            WriteDbMeta();
+            return OK_RC;
+        }
+    return SM_INDEX_IS_FULL;
 }
 
 RC

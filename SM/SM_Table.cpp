@@ -7,6 +7,8 @@
 #include "../utils/Utils.h"
 #include "../RM/RM_Manager.h"
 #include "../RM/RM_FileScan.h"
+#include "../IX/IX_Manager.h"
+#include "../IX/IX_IndexScan.h"
 
 SM_Table::SM_Table(const TableMeta &tableMeta) : tableMeta(tableMeta) {
     recordSize = 0;
@@ -84,7 +86,7 @@ void SM_Table::showRecords(int num) {
     std::cout << splitLine << std::endl;
     //打开一个无条件遍历
     RM_FileScan rmFileScan;
-    rmFileScan.OpenScan(rmFileHandle, INT, 0, 0, NO_OP, nullptr);
+    rmFileScan.OpenScan(rmFileHandle);
     RM_Record rmRecord;
     //如果输出够了条数或者没有了就停止
     for (int i = 0; (i < num || num == -1) && (rmFileScan.GetNextRec(rmRecord) == OK_RC); i++) {
@@ -294,4 +296,78 @@ int SM_Table::getRecordSize() const {
 SM_Table::~SM_Table() {
     RM_Manager::Instance().CloseFile(rmFileHandle);
     SP_Manager::CloseStringPool(spHandle);
+}
+
+RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) {
+    //自己拉的屎自己擦屁股，保证新建的时候没有，新建的时候出问题的话自己关掉/删掉相关文件
+    int attrLength = getIndexLength(indexDesc);
+    std::string indexFileName = Utils::getIndexFileName(tableMeta.createName, indexNo);
+    TRY(IX_Manager::Instance().CreateIndex(tableMeta.createName, indexNo, indexDesc.keyNum > 1 ? ATTRARRAY
+                                                                                               : tableMeta.columns[indexDesc.columnId[0]].attrType,
+                                           attrLength))
+    IX_IndexHandle ixIndexHandle;
+    TRY(IX_Manager::Instance().OpenIndex(tableMeta.createName, indexNo, ixIndexHandle))
+    //打开一个无条件遍历
+    RM_FileScan rmFileScan;
+    TRY(rmFileScan.OpenScan(rmFileHandle))
+    RM_Record rmRecord;
+    char key[attrLength];
+    //逐条组织成index所需要的key，然后insert进去
+    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        RM_RID rmRid;
+        char *record;
+        TRY(rmRecord.GetData(record))
+        composeIndexKey(record, indexDesc, key);
+        TRY(rmRecord.GetRid(rmRid))
+        TRY(ixIndexHandle.InsertEntry(key, rmRid))
+        //索引值出现重复且这样是不允许的，例如主键
+        if (!allowDuplicate && getIndexKeyDuplicateNum(key, indexNo, indexDesc) > 1) {
+            TRY(rmFileScan.CloseScan())
+            TRY(IX_Manager::Instance().CloseIndex(ixIndexHandle))
+            TRY(IX_Manager::Instance().DestroyIndex(tableMeta.createName, indexNo))
+            return SM_INDEX_NOT_ALLOW_DUPLICATE;
+        }
+    }
+    TRY(rmFileScan.CloseScan())
+    TRY(IX_Manager::Instance().CloseIndex(ixIndexHandle))
+}
+
+int SM_Table::getIndexLength(IndexDesc indexDesc) {
+    return 0;
+}
+
+RC SM_Table::composeIndexKey(char *record, IndexDesc indexDesc, char *key) {
+    if (indexDesc.keyNum == 1) {
+        ColumnId columnId = indexDesc.columnId[0];
+        char *data = getColumnData(record, columnId);
+        if (data == nullptr)return SM_INDEX_COLUMN_NOT_ALLOW_NULL;
+        memcpy(key, data, tableMeta.columns[columnId].attrLength);
+        return OK_RC;
+    } else {
+        //联合索引的key组成形式为attrType1 + attrLength1 + attrValue1 + attrType2 + attrLength2 + attrValue2.....
+        int length = 0;
+        for (int i = 0; i < indexDesc.keyNum; i++) {
+            ColumnId columnId = indexDesc.columnId[i];
+            *(AttrType *) (key + length) = tableMeta.columns[columnId].attrType;
+            *(int *) (key + length + ATTR_TYPE_LENGTH) = tableMeta.columns[columnId].attrLength;
+            char *data = getColumnData(record, columnId);
+            if (data == nullptr)return SM_INDEX_COLUMN_NOT_ALLOW_NULL;
+            memcpy(key + length + ATTR_TYPE_LENGTH + 4, data, tableMeta.columns[columnId].attrLength);
+            length += tableMeta.columns[columnId].attrLength + ATTR_TYPE_LENGTH + 4;
+        }
+        return OK_RC;
+    }
+}
+
+int SM_Table::getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDesc) {
+    IX_IndexHandle ixIndexHandle;
+    IX_Manager::Instance().OpenIndex(tableMeta.createName, indexNo, ixIndexHandle);
+    IX_IndexScan ixIndexScan;
+    ixIndexScan.OpenScan(ixIndexHandle, EQ_OP, key);
+    int cnt = 0;
+    RM_RID rmRid;
+    while (ixIndexScan.GetNextEntry(rmRid) == OK_RC) cnt++;
+    ixIndexScan.CloseScan();
+    IX_Manager::Instance().CloseIndex(ixIndexHandle);
+    return cnt;
 }

@@ -17,8 +17,7 @@ public:
 
     RC OpenScan(const IX_IndexHandle &indexHandle,
                 CompOp compOp,
-                void *value,
-                ClientHint pinHint = NO_HINT);
+                void *value);
 
     RC GetNextEntry(RM_RID &rid);
 

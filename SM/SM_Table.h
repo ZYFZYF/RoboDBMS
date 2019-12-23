@@ -32,7 +32,16 @@ public:
 
     RC completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue);
 
-    virtual ~SM_Table();
+    RC createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate);
+
+    int getIndexLength(IndexDesc indexDesc);
+
+    RC composeIndexKey(char *record, IndexDesc indexDesc, char *key);
+
+    //获取一个key在index中出现了多少次
+    int getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDesc);
+
+    ~SM_Table();
 
 private:
     TableMeta tableMeta;

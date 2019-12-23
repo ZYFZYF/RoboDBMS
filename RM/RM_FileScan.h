@@ -17,15 +17,18 @@ public:
 
     ~RM_FileScan();
 
+    //默认是一个不需要比较的scan，遍历全部的记录
     RC OpenScan(const RM_FileHandle &rmFileHandle,
-                AttrType attrType,
-                int attrLength,
-                int attrOffset,
-                CompOp compOp,
-                void *value,
-                ClientHint pinHint = NO_HINT); // Initialize a file scan
-    RC GetNextRec(RM_Record &rec);               // Get next matching record
-    RC CloseScan();                             // Close the scan
+                AttrType attrType = INT,
+                int attrLength = 0,
+                int attrOffset = 0,
+                CompOp compOp = NO_OP,
+                void *value = nullptr);
+
+    RC GetNextRec(RM_Record &rec);
+
+    RC CloseScan();
+
 private:
     RC GetRecordNumOnPage(PF_PageHandle &pfPageHandle, int &recordNum);
 

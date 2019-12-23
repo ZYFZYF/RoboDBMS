@@ -65,6 +65,8 @@
  - 日期类型必须是yyyy-mm-dd格式的
  - 去掉numeric，全部为decimal，或者decimal(a,b)
  - AttrValue中的char*只做传递用，真正序列化和反序列化的时候不能用这儿的值
+ - index为什么要用indexNo命名呢，直接用name不就可以了？（待改进）
+ - 某些返回值是RC的没有TRY
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase

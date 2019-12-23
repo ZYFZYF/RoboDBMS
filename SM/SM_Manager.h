@@ -65,7 +65,7 @@ public:
 
     RC DescTable(const char *tbName);
 
-    RC AddPrimaryKey(const char *table, std::vector<const char *> *columns);
+    RC AddPrimaryKey(const char *tbName, std::vector<const char *> *columns);
 
     RC
     AddForeignKey(const char *name, const char *foreignTable, std::vector<const char *> *foreignColumns,
