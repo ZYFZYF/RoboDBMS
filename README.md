@@ -59,6 +59,8 @@
     - 可能存在的内存泄漏问题（lex） ×
 ## TIPS
  - 序列化的是Varchar，但是内存中可以存成String
+ - char类型存进去的时候后面多拷贝个\0方便格式化
+ - RM_FileScan是否可以去除比较器，挪到Table来做？
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase

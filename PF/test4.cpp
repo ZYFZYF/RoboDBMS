@@ -24,15 +24,26 @@ int main() {
     }
     char *buffer;
     //也可以将buffer作为输出参数
-    if((buffer = getcwd(NULL, 0)) == NULL)
-    {
+    if ((buffer = getcwd(NULL, 0)) == NULL) {
         perror("getcwd error");
-    }
-    else
-    {
+    } else {
         printf("%s\n", buffer);
         free(buffer);
     }
 
+    char temp[100];
+    char format[100];
+    sprintf(format, "%%%d.%df", 10, 2);
+    sprintf(temp, format, 1000.222222);
+    printf("%s %s", format, temp);
+    sprintf(temp, format, 10000000000.222222);
+    printf("%s %s", format, temp);
+    std::string s;
+    s.append(10, 'a');
+    cout << s << endl;
+    s.append(0, 'a');
+    cout << s << endl;
+    s.append('a', 10);
+    cout << s << endl;
     return 0;
 }

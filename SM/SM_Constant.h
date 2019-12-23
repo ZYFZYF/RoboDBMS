@@ -8,6 +8,7 @@
 #include <cstring>
 #include <cassert>
 #include "../Constant.h"
+#include "../Attr.h"
 
 #define MAX_DATABASE_NUM 100//一个数据库管理系统中最多的数据库个数
 #define MAX_TABLE_NUM 30 //一个数据库中最多的表的数目
@@ -81,27 +82,9 @@ struct TableMeta {
     ForeignKeyDesc foreignKeys[MAX_FOREIGN_KEY_NUM];
     //索引
     IndexDesc indexes[MAX_INDEX_NUM];
-    //列描述
+    //列描述，列的存储必须是从下标0到columnNum-1
+    int columnNum;
     ColumnDesc columns[MAX_COLUMN_NUM];
-
-    int getColumnId(const char *columnName) {
-        for (int i = 0; i < MAX_TABLE_NUM; i++)
-            if (strcmp(columns[i].name, columnName) == 0) {
-                return i;
-            }
-        return INVALID_INDEX;
-    }
-
-    RC insertColumn(const char *columnName) {
-        if (columnName == nullptr || strlen(columnName) > MAX_NAME_LENGTH)
-            return SM_INVALID_NAME;
-        int index = getColumnId(columnName);
-        if (index != INVALID_INDEX) {
-            return SM_COLUMN_ALREADY_IN;
-        }
-        //这里需要增加具体的列插入
-        return OK_RC;
-    }
 };
 
 struct DbMeta {

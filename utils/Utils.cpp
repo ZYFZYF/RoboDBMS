@@ -45,6 +45,10 @@ std::string Utils::getStringPoolFileName(const char *fileName) {
     return std::string(fileName) + ".stringpool";
 }
 
+std::string Utils::getRecordFileName(const char *fileName) {
+    return std::string(fileName) + ".record";
+}
+
 int Utils::Cmp(void *value1, void *value2, AttrType attrType, int attrLength) {
     switch (attrType) {
 

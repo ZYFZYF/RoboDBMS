@@ -18,6 +18,8 @@ public:
 
     static std::string getStringPoolFileName(const char *fileName);
 
+    static std::string getRecordFileName(const char *fileName);
+
     static bool Compare(void *value1, void *value2, AttrType attrType, int attrLength, CompOp compOp);
 
     //类似strcmp，<返回负数，==返回0，＞返回正数
