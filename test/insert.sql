@@ -10,4 +10,5 @@ insert into test values(1, 'first', 100.1, '2019-12-21');
 insert into test(a, b, c) values(2, 'second', 200);
 insert into test(a, c, d) values(3, 300.1, '2019-12-21');
 insert into test values(1, 'third', 400.1, '2019-12-21');
+insert into test values('test', 'fourth', 500.2, '2019-12-23');
 desc table test;

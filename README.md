@@ -59,8 +59,11 @@
     - 可能存在的内存泄漏问题（lex） ×
 ## TIPS
  - 序列化的是Varchar，但是内存中可以存成String
- - char类型存进去的时候后面多拷贝个\0方便格式化
+ - char类型存进去的时候后面多拷贝个\0方便格式化，所以实际上char(10)占用11个byte
  - RM_FileScan是否可以去除比较器，挪到Table来做？
+ - insert统统用字符串来解析
+ - 日期类型必须是yyyy-mm-dd格式的
+ - 去掉numeric，全部为decimal，或者decimal(a,b)
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase

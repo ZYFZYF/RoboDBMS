@@ -19,7 +19,8 @@ public:
 
     char *getColumnData(char *record, ColumnId columnId);//获取某一列的数据，如果没有返回NULL
 
-    RC setRecordData(char *record, std::vector<ColumnId> columnIdList, std::vector<AttrValue> *constValueList);//给一列设置数据
+    RC
+    setRecordData(char *record, std::vector<ColumnId> *columnIdList, std::vector<AttrValue> *constValueList);//给一列设置数据
 
     RC insertRecord(const char *record);//插入一行记录
 
@@ -29,9 +30,14 @@ private:
     TableMeta tableMeta;
     int recordSize;
     RM_FileHandle rmFileHandle;
+    SP_Handle spHandle;
     int columnOffset[MAX_COLUMN_NUM];
 
     std::string formatRecordToString(char *record);
+
+    RC setColumnData(char *record, ColumnId columnId, AttrValue attrValue);
+
+    RC setColumnNull(char *record, ColumnId columnId);
 };
 
 

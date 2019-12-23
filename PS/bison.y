@@ -206,11 +206,13 @@ ConstValue	:	/* empty */
 			{
 				$$.isNull = false;
 				$$.intValue = $1;
+				$$.charValue = yylval.str;
 			}
 		|	REAL
 			{
 				$$.isNull = false;
 				$$.floatValue = $1;
+				$$.charValue = yylval.str;
 			}
 		|	STR
 			{

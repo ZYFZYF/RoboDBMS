@@ -2,6 +2,7 @@
 // Created by 赵鋆峰 on 2019/12/21.
 //
 
+#include <cmath>
 #include "SM_Table.h"
 #include "../utils/Utils.h"
 #include "../RM/RM_Manager.h"
@@ -18,6 +19,11 @@ SM_Table::SM_Table(const TableMeta &tableMeta) : tableMeta(tableMeta) {
         RM_Manager::Instance().CreateFile(recordFileName.c_str(), recordSize);
     }
     RM_Manager::Instance().OpenFile(recordFileName.c_str(), rmFileHandle);
+    std::string stringPoolFileName = Utils::getStringPoolFileName(tableMeta.createName);
+    if (!access(stringPoolFileName.c_str(), F_OK)) {
+        SP_Manager::CreateStringPool(stringPoolFileName.c_str());
+    }
+    SP_Manager::OpenStringPool(stringPoolFileName.c_str(), spHandle);
 }
 
 char *SM_Table::getColumnData(char *record, ColumnId columnId) {
@@ -30,12 +36,34 @@ char *SM_Table::getColumnData(char *record, ColumnId columnId) {
     }
 }
 
-RC SM_Table::setRecordData(char *record, std::vector<ColumnId> columnIdList, std::vector<AttrValue> *constValueList) {
-    return PF_EOF;
+RC SM_Table::setRecordData(char *record, std::vector<ColumnId> *columnIdList, std::vector<AttrValue> *constValueList) {
+    //列为空则代表是默认的顺序排列
+    if (columnIdList == nullptr) {
+        //检测给定参数个数是否与行数相同
+        if (constValueList->size() != tableMeta.columnNum)return QL_COLUMNS_VALUES_DONT_MATCH;
+        for (int i = 0; i < tableMeta.columnNum; i++) {
+            TRY(setColumnData(record, i, (*constValueList)[i]));
+        }
+    } else {
+        //检测给定参数个数是否与行数相同
+        if (columnIdList->size() != constValueList->size())return QL_COLUMNS_VALUES_DONT_MATCH;
+        bool hasValue[tableMeta.columnNum];
+        for (int i = 0; i < tableMeta.columnNum; i++)hasValue[i] = false;
+        for (int i = 0; i < columnIdList->size(); i++) {
+            hasValue[(*columnIdList)[i]] = true;
+            TRY(setColumnData(record, (*columnIdList)[i], (*constValueList)[i]));
+        }
+        for (int i = 0; i < tableMeta.columnNum; i++)
+            if (!hasValue[i]) {
+                TRY(setColumnNull(record, i));
+            }
+    }
+    return OK_RC;
 }
 
 RC SM_Table::insertRecord(const char *record) {
     RM_RID rmRid;
+    //TODO 插入之前要进行逻辑判断，主键是否重复、外键是否存在
     TRY(rmFileHandle.InsertRec(record, rmRid));
     return OK_RC;
 }
@@ -62,6 +90,7 @@ void SM_Table::showRecords(int num) {
         rmRecord.GetData(record);
         std::cout << formatRecordToString(record) << std::endl;;
     }
+    rmFileScan.CloseScan();
     std::cout << splitLine << std::endl;;
 }
 
@@ -88,8 +117,9 @@ std::string SM_Table::formatRecordToString(char *record) {
                 }
                 case DATE: {
                     Date date = *(Date *) data;
-                    column = std::to_string(date.year) + "-" + std::to_string(date.month) + "-" +
-                             std::to_string(date.day);
+                    char temp[100];
+                    sprintf(temp, "%04d-%02d-%02d", date.year, date.day, date.day);
+                    column = temp;
                     break;
                 }
                 case STRING: {
@@ -113,5 +143,77 @@ std::string SM_Table::formatRecordToString(char *record) {
         line.append(column);
     }
     return line;
+}
+
+RC SM_Table::setColumnData(char *record, ColumnId columnId, AttrValue attrValue) {
+    //命令里有传该参数的值，但也有可能是null
+    if (attrValue.isNull) {
+        TRY(setColumnNull(record, columnId))
+    }
+    //先设为不是null
+    record[columnOffset[columnId]] = 0;
+    char *data = record + columnOffset[columnId] + 1;
+    switch (tableMeta.columns[columnId].attrType) {
+        case INT: {
+            char *endPtr;
+            int num = strtol(attrValue.charValue, &endPtr, 10);
+            if (errno == ERANGE)return QL_INT_OUT_OF_RANGE;
+            if (strlen(endPtr) != 0)return QL_INT_CONT_CONVERT_TO_INT;
+            *(int *) data = num;
+            break;
+        }
+        case FLOAT: {
+            char *endPtr;
+            float num = strtof(attrValue.charValue, &endPtr);
+            if (errno == ERANGE)return QL_FLOAT_OUT_OF_RANGE;
+            if (strlen(endPtr) != 0)return QL_FLOAT_CONT_CONVERT_TO_FLOAT;
+            if (fabsf(num) >= powf(10, tableMeta.columns[columnId].decimalLength))return QL_FLOAT_OUT_OF_RANGE;
+            *(float *) data = num;
+            break;
+        }
+        case STRING: {
+            if (strlen(attrValue.charValue) >= tableMeta.columns[columnId].attrLength)return QL_CHAR_TOO_LONG;
+            strcpy(data, attrValue.charValue);
+            break;
+        }
+        case DATE: {
+            char *endPtr;
+            Date date{};
+            date.year = strtol(attrValue.charValue, &endPtr, 10);
+            if (endPtr != attrValue.charValue + 4 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
+            date.month = strtol(attrValue.charValue + 5, &endPtr, 10);
+            if (endPtr != attrValue.charValue + 7 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
+            date.day = strtol(attrValue.charValue + 8, &endPtr, 10);
+            if (endPtr != attrValue.charValue + 10 || strlen(endPtr) != 0)return QL_DATE_CONT_CONVERT_TO_DATE;
+            if (!date.isValid())return QL_DATE_IS_NOT_VALID;
+            *(Date *) data = date;
+            break;
+        }
+        case VARCHAR: {
+            Varchar varchar{};
+            varchar.length = strlen(attrValue.charValue);
+            strcpy(varchar.spName, Utils::getStringPoolFileName(tableMeta.createName).c_str());
+            TRY(spHandle.InsertString(attrValue.charValue, varchar.length, varchar.offset))
+            *(Varchar *) data = varchar;
+            break;
+        }
+        case ATTRARRAY: { //不应该在这儿
+            exit(0);
+            break;
+        }
+    }
+}
+
+RC SM_Table::setColumnNull(char *record, ColumnId columnId) {
+    //命令里没传，所以认为是null，但要先看是不是有defaultValue
+    if (tableMeta.columns[columnId].hasDefaultValue) {
+        TRY(setColumnData(record, columnId, tableMeta.columns[columnId].defaultValue))
+        return OK_RC;
+    }
+    if (tableMeta.columns[columnId].allowNull) {
+        record[columnOffset[columnId]] = 1;
+        return OK_RC;
+    }
+    return QL_COLUMN_NOT_ALLOW_NULL;
 }
 
