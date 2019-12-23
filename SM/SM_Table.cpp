@@ -15,12 +15,12 @@ SM_Table::SM_Table(const TableMeta &tableMeta) : tableMeta(tableMeta) {
         recordSize += tableMeta.columns[i].attrLength + 1;//多一位来存储是否是NULL，放在数据的开头
     }
     std::string recordFileName = Utils::getRecordFileName(tableMeta.createName);
-    if (!access(recordFileName.c_str(), F_OK)) {
+    if (access(recordFileName.c_str(), F_OK) < 0) {
         RM_Manager::Instance().CreateFile(recordFileName.c_str(), recordSize);
     }
     RM_Manager::Instance().OpenFile(recordFileName.c_str(), rmFileHandle);
     std::string stringPoolFileName = Utils::getStringPoolFileName(tableMeta.createName);
-    if (!access(stringPoolFileName.c_str(), F_OK)) {
+    if (access(stringPoolFileName.c_str(), F_OK) < 0) {
         SP_Manager::CreateStringPool(stringPoolFileName.c_str());
     }
     SP_Manager::OpenStringPool(stringPoolFileName.c_str(), spHandle);
@@ -182,7 +182,7 @@ std::string SM_Table::formatColumnToString(ColumnId columnId, char *data) {
         case DATE: {
             Date date = *(Date *) data;
             char temp[100];
-            sprintf(temp, "%04d-%02d-%02d", date.year, date.day, date.day);
+            sprintf(temp, "%04d-%02d-%02d", date.year, date.month, date.day);
             column = temp;
             break;
         }
@@ -211,6 +211,7 @@ RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue
             char *endPtr;
             int num = strtol(attrValue.charValue, &endPtr, 10);
             if (errno == ERANGE)return QL_INT_OUT_OF_RANGE;
+            printf("%s\n", attrValue.charValue);
             if (strlen(endPtr) != 0)return QL_INT_CONT_CONVERT_TO_INT;
             attrValue.intValue = num;
             break;
@@ -223,7 +224,7 @@ RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue
             int integerLength = tableMeta.columns[columnId].integerLength;
             int decimalLength = tableMeta.columns[columnId].decimalLength;
             if (integerLength < 0 || decimalLength < 0 || decimalLength > integerLength)return QL_DECIMAL_FORMAT_ERROR;
-            if (fabsf(num) >= powf(10, integerLength))return QL_FLOAT_OUT_OF_RANGE;
+            if (integerLength > 0 && fabsf(num) >= powf(10, integerLength))return QL_FLOAT_OUT_OF_RANGE;
             attrValue.floatValue = num;
             break;
         }
@@ -238,7 +239,7 @@ RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue
             date.year = strtol(attrValue.charValue, &endPtr, 10);
             if (endPtr != attrValue.charValue + 4 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
             date.month = strtol(attrValue.charValue + 5, &endPtr, 10);
-            if (endPtr != attrValue.charValue || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
+            if (endPtr != attrValue.charValue + 7 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
             date.day = strtol(attrValue.charValue + 8, &endPtr, 10);
             if (endPtr != attrValue.charValue + 10 || strlen(endPtr) != 0)return QL_DATE_CONT_CONVERT_TO_DATE;
             if (!date.isValid())return QL_DATE_IS_NOT_VALID;
@@ -280,4 +281,13 @@ std::string SM_Table::formatAttrValueToString(ColumnId columnId, AttrValue attrV
             //不应该在这儿
             break;
     }
+}
+
+int SM_Table::getRecordSize() const {
+    return recordSize;
+}
+
+SM_Table::~SM_Table() {
+    RM_Manager::Instance().CloseFile(rmFileHandle);
+    SP_Manager::CloseStringPool(spHandle);
 }

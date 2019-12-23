@@ -74,6 +74,18 @@ public:
 
     RC DropForeignKey(const char *foreignTable, const char *name);
 
+    const char *GetTableNameFromTableId(TableId tableId);
+
+    const char *GetColumnNameFromId(TableId tableId, ColumnId columnId);
+
+    TableId GetTableIdFromName(const char *tableName);
+
+    ColumnId GetColumnIdFromName(const char *tableName, const char *columnName);
+
+    ColumnId GetColumnIdFromName(TableId tableId, const char *columnName);
+
+    TableMeta &GetTableMeta(TableId tableId);
+
 private:
     SM_Manager();
 
@@ -85,15 +97,7 @@ private:
 
     RC RecoverDbMeta();//操作中出现错误，将meta回滚
 
-    const char *GetTableNameFromTableId(TableId tableId);
 
-    const char *GetColumnNameFromId(TableId tableId, ColumnId columnId);
-
-    TableId GetTableIdFromName(const char *tableName);
-
-    ColumnId GetColumnIdFromName(const char *tableName, const char *columnName);
-
-    ColumnId GetColumnIdFromName(TableId tableId, const char *columnName);
 
     PF_Manager pfManager;
     RM_Manager rmManager;

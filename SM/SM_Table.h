@@ -32,10 +32,15 @@ public:
 
     RC completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue);
 
+    virtual ~SM_Table();
 
 private:
     TableMeta tableMeta;
     int recordSize;
+public:
+    int getRecordSize() const;
+
+private:
     RM_FileHandle rmFileHandle;
     SP_Handle spHandle;
     int columnOffset[MAX_COLUMN_NUM];

@@ -46,10 +46,11 @@ RC SM_Manager::DropTable(const char *tbName) {
     if (tableId < 0) return SM_TABLE_NOT_EXIST;
 
     if (dbMeta.tableMetas[tableId].primaryKey.referenceNum) return SM_TABLE_HAS_REFERENCE;
-
+    rmManager.DestroyFile(Utils::getRecordFileName(dbMeta.tableMetas[tableId].createName).c_str());
+    SP_Manager::DestroyStringPool(Utils::getStringPoolFileName(dbMeta.tableMetas[tableId].createName).c_str());
     memset(&dbMeta.tableMetas[tableId], 0, sizeof(TableMeta));
     memset(dbMeta.tableNames[tableId], 0, sizeof(dbMeta.tableNames[tableId]));
-    //TODO 删除表的相关东西
+
     WriteDbMeta();
     return OK_RC;
 }
@@ -289,6 +290,7 @@ RC SM_Manager::DescTable(const char *tbName) {
         }
     printf("%s-----------------------------------------------------------------------------\n", indent);
     //显示表数据的前五行
+    printf("Front(<=5) rows\n");
     table.showRecords(5);
     return OK_RC;
 
@@ -504,6 +506,10 @@ RC SM_Manager::DropForeignKey(const char *foreignTable, const char *name) {
             return OK_RC;
         }
     return SM_FOREIGN_KEY_NOT_EXIST;
+}
+
+TableMeta &SM_Manager::GetTableMeta(TableId tableId) {
+    return dbMeta.tableMetas[tableId];
 }
 
 

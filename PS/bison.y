@@ -134,11 +134,6 @@ ColumnType	:	T_INT
 				$$.attrType = INT;
 				$$.attrLength = 4;
 			}
-		|	T_BIGINT
-			{
-				$$.attrType = INT;
-				$$.attrLength = 4;
-			}
 		|	T_CHAR '(' INTEGER ')'
 			{
 				$$.attrType = STRING;
@@ -188,10 +183,10 @@ DefaultValue 	:	/* empty */
 				$$.defaultValue = $2;
 			};
 
-ConstValueList	:	ConstValue ',' ConstValueList
+ConstValueList	:	ConstValueList ',' ConstValue
 			{
-				$$ = $3;
-				$$->push_back($1);
+				$$ = $1;
+				$$->push_back($3);
 			}
 		|	ConstValue
 			{

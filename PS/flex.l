@@ -55,7 +55,7 @@ NUMERIC|numeric         return T_NUMERIC;
 DECIMAL|decimal         return T_DECIMAL;
 
 [a-zA-Z][a-zA-Z0-9_]*   yylval.str = strdup(yytext); return IDENTIFIER;
-'[^']*'                 yylval.str = strdup(yytext); return STR;
+'[^']*'                 {yylval.str = new char[strlen(yytext)-1];memcpy(yylval.str,yytext+1,strlen(yytext)-2);yylval.str[strlen(yytext)-1]='\0';return STR;}
 
 
 "=="                    yylval.comparator = EQ_OP; return OP;
