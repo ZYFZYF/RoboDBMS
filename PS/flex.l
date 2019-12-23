@@ -10,8 +10,8 @@
 %}
 
 %%
-[0-9]+                  yylval.integer = atoi(yytext); yylval.str = strdup(yytext); return INTEGER;
-[+-]?[0-9]+\.[0-9]*     yylval.real = atof(yytext); yylval.str = strdup(yytext); return REAL;
+[0-9]+                  yylval.str = strdup(yytext); return STR_INTEGER;
+[+-]?[0-9]+\.[0-9]*     yylval.str = strdup(yytext); return STR_REAL;
 
 SHOW|show               return SHOW;
 DESC|desc               return DESC;

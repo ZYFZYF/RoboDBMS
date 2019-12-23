@@ -25,9 +25,7 @@ void yyerror(const char *s, ...);
 }
 
 //定义标识符
-%token <integer> INTEGER
-%token <real> REAL
-%token <str> IDENTIFIER STR
+%token <str> IDENTIFIER STR STR_INTEGER STR_REAL
 %token <comparator> OP
 
 %token SHOW DESC USE CREATE DROP UPDATE INSERT ALTER SELECT ADD QUIT
@@ -36,6 +34,8 @@ void yyerror(const char *s, ...);
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL T_NUMERIC
 
 //定义语法中需要的节点的类型
+%type <integer> INTEGER
+%type <real> REAL
 %type <columnDesc> Column ColumnType NotNull DefaultValue PrimaryKey ForeignKey
 %type <columnList> ColumnDescList
 %type <attrValue> ConstValue
@@ -121,6 +121,7 @@ Column		:	IDENTIFIER ColumnType NotNull DefaultValue PrimaryKey ForeignKey
 				$$.allowNull = $3.allowNull;
 				$$.hasDefaultValue = $4.hasDefaultValue;
 				$$.defaultValue = $4.defaultValue;
+				//printf("qaq%d%s",$$.hasDefaultValue, $$.defaultValue.charValue);
 				$$.isPrimaryKey = $5.isPrimaryKey;
 				$$.hasForeignKey = $6.hasForeignKey;
 				strcpy($$.primaryKeyTable, $6.primaryKeyTable);
@@ -202,23 +203,19 @@ ConstValue	:	/* empty */
 			{
 				$$.isNull = true;
 			}
-		|	INTEGER
+		|	STR_INTEGER
 			{
 				$$.isNull = false;
-				$$.intValue = $1;
-				$$.charValue = yylval.str;
+				$$.charValue = $1;
 			}
-		|	REAL
+		|	STR_REAL
 			{
 				$$.isNull = false;
-				$$.floatValue = $1;
-				$$.charValue = yylval.str;
+				$$.charValue = $1;
 			}
 		|	STR
 			{
 				$$.isNull = false;
-				memcpy($$.stringValue, $1 + 1, strlen($1) - 2);
-				$$.stringValue[strlen($1)-2] = '\0';
 				$$.charValue = $1;
 			}
 		;
@@ -283,6 +280,18 @@ InsertRow	:	INSERT P_INTO IDENTIFIER P_VALUES '(' ConstValueList ')' ';'
 		|	INSERT P_INTO IDENTIFIER '(' ColumnNameList ')' P_VALUES '(' ConstValueList ')' ';'
 			{
 				DO(QL_Manager::Instance().Insert($3, $5, $9));
+			}
+		;
+
+INTEGER 	:	STR_INTEGER
+			{
+				$$ = atoi($1);
+			}
+		;
+
+REAL		:	STR_REAL
+			{
+				$$ = atof($1);
 			}
 		;
 %%

@@ -100,45 +100,7 @@ std::string SM_Table::formatRecordToString(char *record) {
         std::string column;
         char *data = getColumnData(record, i);
         if (data == nullptr)column = "NULL";
-        else {
-            switch (tableMeta.columns[i].attrType) {
-                case INT: {
-                    column = std::to_string(*(int *) data);
-                    break;
-                }
-                case FLOAT: {
-
-                    char temp[100];
-                    char format[100];
-                    sprintf(format, "%%%d.%df", tableMeta.columns[i].integerLength, tableMeta.columns->decimalLength);
-                    sprintf(temp, format, *(float *) data);
-                    column = temp;
-                    break;
-                }
-                case DATE: {
-                    Date date = *(Date *) data;
-                    char temp[100];
-                    sprintf(temp, "%04d-%02d-%02d", date.year, date.day, date.day);
-                    column = temp;
-                    break;
-                }
-                case STRING: {
-                    column = data;
-                    break;
-                }
-
-                case VARCHAR: {
-                    char temp[tableMeta.columns[i].stringMaxLength];
-                    ((Varchar *) data)->getData(temp);
-                    column = temp;
-                    break;
-                }
-                case ATTRARRAY:
-                    //不应该在这儿
-                    exit(0);
-                    break;
-            }
-        }
+        else column = formatColumnToString(i, data);
         if (column.length() < COLUMN_SHOW_LENGTH)column.append(COLUMN_SHOW_LENGTH - column.length(), ' ');
         line.append(column);
     }
@@ -153,48 +115,26 @@ RC SM_Table::setColumnData(char *record, ColumnId columnId, AttrValue attrValue)
     //先设为不是null
     record[columnOffset[columnId]] = 0;
     char *data = record + columnOffset[columnId] + 1;
+    TRY(completeAttrValueByColumnId(columnId, attrValue));
     switch (tableMeta.columns[columnId].attrType) {
         case INT: {
-            char *endPtr;
-            int num = strtol(attrValue.charValue, &endPtr, 10);
-            if (errno == ERANGE)return QL_INT_OUT_OF_RANGE;
-            if (strlen(endPtr) != 0)return QL_INT_CONT_CONVERT_TO_INT;
-            *(int *) data = num;
+            *(int *) data = attrValue.intValue;
             break;
         }
         case FLOAT: {
-            char *endPtr;
-            float num = strtof(attrValue.charValue, &endPtr);
-            if (errno == ERANGE)return QL_FLOAT_OUT_OF_RANGE;
-            if (strlen(endPtr) != 0)return QL_FLOAT_CONT_CONVERT_TO_FLOAT;
-            if (fabsf(num) >= powf(10, tableMeta.columns[columnId].decimalLength))return QL_FLOAT_OUT_OF_RANGE;
-            *(float *) data = num;
+            *(float *) data = attrValue.floatValue;
             break;
         }
         case STRING: {
-            if (strlen(attrValue.charValue) >= tableMeta.columns[columnId].attrLength)return QL_CHAR_TOO_LONG;
             strcpy(data, attrValue.charValue);
             break;
         }
         case DATE: {
-            char *endPtr;
-            Date date{};
-            date.year = strtol(attrValue.charValue, &endPtr, 10);
-            if (endPtr != attrValue.charValue + 4 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
-            date.month = strtol(attrValue.charValue + 5, &endPtr, 10);
-            if (endPtr != attrValue.charValue + 7 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
-            date.day = strtol(attrValue.charValue + 8, &endPtr, 10);
-            if (endPtr != attrValue.charValue + 10 || strlen(endPtr) != 0)return QL_DATE_CONT_CONVERT_TO_DATE;
-            if (!date.isValid())return QL_DATE_IS_NOT_VALID;
-            *(Date *) data = date;
+            *(Date *) data = attrValue.dateValue;
             break;
         }
         case VARCHAR: {
-            Varchar varchar{};
-            varchar.length = strlen(attrValue.charValue);
-            strcpy(varchar.spName, Utils::getStringPoolFileName(tableMeta.createName).c_str());
-            TRY(spHandle.InsertString(attrValue.charValue, varchar.length, varchar.offset))
-            *(Varchar *) data = varchar;
+            *(Varchar *) data = attrValue.varcharValue;
             break;
         }
         case ATTRARRAY: { //不应该在这儿
@@ -202,6 +142,7 @@ RC SM_Table::setColumnData(char *record, ColumnId columnId, AttrValue attrValue)
             break;
         }
     }
+    return OK_RC;
 }
 
 RC SM_Table::setColumnNull(char *record, ColumnId columnId) {
@@ -217,3 +158,126 @@ RC SM_Table::setColumnNull(char *record, ColumnId columnId) {
     return QL_COLUMN_NOT_ALLOW_NULL;
 }
 
+std::string SM_Table::formatColumnToString(ColumnId columnId, char *data) {
+    std::string column;
+    switch (tableMeta.columns[columnId].attrType) {
+        case INT: {
+            column = std::to_string(*(int *) data);
+            break;
+        }
+        case FLOAT: {
+
+            char temp[100];
+            char format[100];
+            if (tableMeta.columns[columnId].integerLength) {
+                sprintf(format, "%%%d.%df", tableMeta.columns[columnId].integerLength,
+                        tableMeta.columns->decimalLength);
+                sprintf(temp, format, *(float *) data);
+                column = temp;
+            } else {
+                column = std::to_string(*(float *) data);
+            }
+            break;
+        }
+        case DATE: {
+            Date date = *(Date *) data;
+            char temp[100];
+            sprintf(temp, "%04d-%02d-%02d", date.year, date.day, date.day);
+            column = temp;
+            break;
+        }
+        case STRING: {
+            column = data;
+            break;
+        }
+
+        case VARCHAR: {
+            char temp[tableMeta.columns[columnId].stringMaxLength];
+            ((Varchar *) data)->getData(temp);
+            column = temp;
+            break;
+        }
+        case ATTRARRAY:
+            //不应该在这儿
+            exit(0);
+            break;
+    }
+    return column;
+}
+
+RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue) {
+    switch (tableMeta.columns[columnId].attrType) {
+        case INT: {
+            char *endPtr;
+            int num = strtol(attrValue.charValue, &endPtr, 10);
+            if (errno == ERANGE)return QL_INT_OUT_OF_RANGE;
+            if (strlen(endPtr) != 0)return QL_INT_CONT_CONVERT_TO_INT;
+            attrValue.intValue = num;
+            break;
+        }
+        case FLOAT: {
+            char *endPtr;
+            float num = strtof(attrValue.charValue, &endPtr);
+            if (errno == ERANGE)return QL_FLOAT_OUT_OF_RANGE;
+            if (strlen(endPtr) != 0)return QL_FLOAT_CONT_CONVERT_TO_FLOAT;
+            int integerLength = tableMeta.columns[columnId].integerLength;
+            int decimalLength = tableMeta.columns[columnId].decimalLength;
+            if (integerLength < 0 || decimalLength < 0 || decimalLength > integerLength)return QL_DECIMAL_FORMAT_ERROR;
+            if (fabsf(num) >= powf(10, integerLength))return QL_FLOAT_OUT_OF_RANGE;
+            attrValue.floatValue = num;
+            break;
+        }
+        case STRING: {
+            if (strlen(attrValue.charValue) >= tableMeta.columns[columnId].attrLength)return QL_CHAR_TOO_LONG;
+            strcpy(attrValue.stringValue, attrValue.charValue);
+            break;
+        }
+        case DATE: {
+            char *endPtr;
+            Date date{};
+            date.year = strtol(attrValue.charValue, &endPtr, 10);
+            if (endPtr != attrValue.charValue + 4 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
+            date.month = strtol(attrValue.charValue + 5, &endPtr, 10);
+            if (endPtr != attrValue.charValue || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
+            date.day = strtol(attrValue.charValue + 8, &endPtr, 10);
+            if (endPtr != attrValue.charValue + 10 || strlen(endPtr) != 0)return QL_DATE_CONT_CONVERT_TO_DATE;
+            if (!date.isValid())return QL_DATE_IS_NOT_VALID;
+            attrValue.dateValue = date;
+            break;
+        }
+        case VARCHAR: {
+            Varchar varchar{};
+            varchar.length = strlen(attrValue.charValue);
+            strcpy(varchar.spName, Utils::getStringPoolFileName(tableMeta.createName).c_str());
+            TRY(spHandle.InsertString(attrValue.charValue, varchar.length, varchar.offset))
+            attrValue.varcharValue = varchar;
+            break;
+        }
+        case ATTRARRAY: { //不应该在这儿
+            exit(0);
+            break;
+        }
+    }
+    return OK_RC;
+}
+
+std::string SM_Table::formatAttrValueToString(ColumnId columnId, AttrValue attrValue) {
+    switch (tableMeta.columns[columnId].attrType) {
+        case INT:
+            return formatColumnToString(columnId, (char *) &(attrValue.intValue));
+        case FLOAT:
+            return formatColumnToString(columnId, (char *) &(attrValue.floatValue));
+        case STRING:
+            return formatColumnToString(columnId, (char *) &(attrValue.stringValue));
+
+        case DATE:
+            return formatColumnToString(columnId, (char *) &(attrValue.dateValue));
+
+        case VARCHAR:
+            return formatColumnToString(columnId, (char *) &(attrValue.varcharValue));
+
+        case ATTRARRAY:
+            //不应该在这儿
+            break;
+    }
+}

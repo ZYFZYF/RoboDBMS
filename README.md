@@ -64,6 +64,7 @@
  - insert统统用字符串来解析
  - 日期类型必须是yyyy-mm-dd格式的
  - 去掉numeric，全部为decimal，或者decimal(a,b)
+ - AttrValue中的char*只做传递用，真正序列化和反序列化的时候不能用这儿的值
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase

@@ -101,7 +101,7 @@ RC SM_Manager::CreateDb(const char *dbName) {
 }
 
 RC SM_Manager::DropDb(const char *dbName) {
-    for (auto &db : dbmsMeta.databaseName)
+    for (auto &db : dbmsMeta.databaseName) {
         if (strcmp(db, dbName) == 0) {
             memset(db, 0, sizeof(db));
             if (rmdir(dbName) < 0) {
@@ -110,6 +110,7 @@ RC SM_Manager::DropDb(const char *dbName) {
             TRY(pfManager.UpdateMeta(dbmsMetaFile.c_str(), &dbmsMeta, sizeof(DbmsMeta)));
             return OK_RC;
         }
+    }
     return SM_DB_NOT_EXIST;
 }
 
@@ -183,7 +184,8 @@ RC SM_Manager::DescTable(const char *tbName) {
     printf("%s-----------------------------------------------------------------------------\n", indent);
     printf("%s%-20s%-20s%-20s%-20s\n", indent, "name", "type", "nullable", "default");
     printf("%s-----------------------------------------------------------------------------\n", indent);
-    for (auto &column : dbMeta.tableMetas[tableId].columns)
+    for (int i = 0; i < dbMeta.tableMetas[tableId].columnNum; i++) {
+        ColumnDesc column = dbMeta.tableMetas[tableId].columns[i];
         if (strlen(column.name) > 0) {
             printf("%s%-20s", indent, column.name);
             char typeStr[100];
@@ -193,7 +195,7 @@ RC SM_Manager::DescTable(const char *tbName) {
                     break;
                 case FLOAT:
                     if (column.integerLength || column.decimalLength) {
-                        sprintf(typeStr, "numeric(%d,%d)", column.integerLength, column.decimalLength);
+                        sprintf(typeStr, "decimal(%d,%d)", column.integerLength, column.decimalLength);
                     } else {
                         sprintf(typeStr, "decimal");
                     }
@@ -213,30 +215,11 @@ RC SM_Manager::DescTable(const char *tbName) {
             printf("%-20s", typeStr);
             printf("%-20s", column.allowNull ? "" : "not null");
             if (column.hasDefaultValue) {
-                switch (column.attrType) {
-                    case INT:
-                        printf("%d\n", column.defaultValue.intValue);
-                        break;
-                    case FLOAT:
-                        printf("%f\n", column.defaultValue.floatValue);
-                        break;
-                    case STRING:
-                        printf("%s\n", column.defaultValue.stringValue);
-                        break;
-                    case DATE:
-                        printf("%d-%d-%d\n", column.defaultValue.dateValue.year,
-                               column.defaultValue.dateValue.month, column.defaultValue.dateValue.day
-                        );
-                        break;
-                    case VARCHAR:
-                        //TODO 这里先把varchar的默认值也放到了定长数组里
-                        printf("%s\n", column.defaultValue.stringValue);
-                        break;
-                    case ATTRARRAY:
-                        break;
-                }
+                printf("%s\n", table.formatAttrValueToString(i, column.defaultValue).c_str());
             } else printf("\n");
         }
+    }
+
     printf("%s-----------------------------------------------------------------------------\n", indent);
     //索引信息展示
     printf("Index\n");
@@ -323,6 +306,15 @@ RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnLi
             strcpy(tableMeta.createName, tbName);
             for (int j = 0; j < columnList->size(); j++) {
                 tableMeta.columns[j] = (*columnList)[j];
+            }
+            SM_Table table(tableMeta);
+            //尝试去生成defaultValue的具体值，顺便检查
+            for (int j = 0; j < columnList->size(); j++) {
+                if (tableMeta.columns[j].hasDefaultValue) {
+                    if ((rc = table.completeAttrValueByColumnId(j, tableMeta.columns[j].defaultValue)) != OK_RC) {
+                        goto ERROR_EXIT;
+                    }
+                }
             }
             dbMeta.tableMetas[i] = tableMeta;
             //把主键和外键加进去

@@ -26,6 +26,13 @@ public:
 
     void showRecords(int num);//显示头多少条记录，如果是-1代表显示所有
 
+    std::string formatColumnToString(ColumnId columnId, char *data);
+
+    std::string formatAttrValueToString(ColumnId columnId, AttrValue);
+
+    RC completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue);
+
+
 private:
     TableMeta tableMeta;
     int recordSize;
@@ -34,6 +41,7 @@ private:
     int columnOffset[MAX_COLUMN_NUM];
 
     std::string formatRecordToString(char *record);
+
 
     RC setColumnData(char *record, ColumnId columnId, AttrValue attrValue);
 
