@@ -74,6 +74,9 @@ HELP 	: 	SHOW DATABASES ';'{
 	|	DESC TABLE IDENTIFIER';' {
 			DO(SM_Manager::Instance().DescTable($3));
 		};
+	|	SHOW TABLE IDENTIFIER';' {
+			DO(SM_Manager::Instance().ShowTable($3));
+		}
 	|	QUIT ';'{
 			YYACCEPT;
 		};

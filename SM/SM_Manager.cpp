@@ -512,4 +512,12 @@ TableMeta &SM_Manager::GetTableMeta(TableId tableId) {
     return dbMeta.tableMetas[tableId];
 }
 
+RC SM_Manager::ShowTable(const char *tbName) {
+    TableId tableId = GetTableIdFromName(tbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    SM_Table table(dbMeta.tableMetas[tableId]);
+    table.showRecords(-1);
+    return OK_RC;
+}
+
 

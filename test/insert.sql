@@ -9,4 +9,8 @@ insert into test_insert(a, b, c) values(2, 'second', 200);
 insert into test_insert(a, c, d) values(3, 300.1, '2019-12-21');
 insert into test_insert values(1, 'third', 400.1, '2019-12-21');
 insert into test_insert values('test', 'fourth', 500.2, '2019-12-23');
+insert into test_insert values(4, 'first', 100.1, '2019-12-21');
+insert into test_insert values(5, 'first', 100.1, '2019-12-21');
+insert into test_insert values(6, 'first', 100.1, '2019-12-21');
 desc table test_insert;
+show table test_insert;

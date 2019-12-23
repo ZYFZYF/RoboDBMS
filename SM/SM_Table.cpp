@@ -70,9 +70,11 @@ RC SM_Table::insertRecord(const char *record) {
 
 void SM_Table::showRecords(int num) {
     //分割线
-    std::string splitLine(tableMeta.columnNum * COLUMN_SHOW_LENGTH, '-');
+    std::string splitLine((tableMeta.columnNum + 1) * COLUMN_SHOW_LENGTH, '-');
     std::cout << splitLine << std::endl;
     std::string headerLine;
+    headerLine.append("num");
+    headerLine.append(COLUMN_SHOW_LENGTH - 3, ' ');
     for (int i = 0; i < tableMeta.columnNum; i++) {
         std::string columnName = std::string(tableMeta.columns[i].name);
         headerLine.append(columnName);
@@ -88,7 +90,9 @@ void SM_Table::showRecords(int num) {
     for (int i = 0; (i < num || num == -1) && (rmFileScan.GetNextRec(rmRecord) == OK_RC); i++) {
         char *record;
         rmRecord.GetData(record);
-        std::cout << formatRecordToString(record) << std::endl;;
+        std::string number = std::to_string(i + 1);
+        number.append(COLUMN_SHOW_LENGTH - number.length(), ' ');
+        std::cout << number << formatRecordToString(record) << std::endl;;
     }
     rmFileScan.CloseScan();
     std::cout << splitLine << std::endl;;

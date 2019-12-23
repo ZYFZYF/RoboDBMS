@@ -61,6 +61,8 @@ public:
 
     RC ShowTables();
 
+    RC ShowTable(const char *tbName);
+
     RC DescTable(const char *tbName);
 
     RC AddPrimaryKey(const char *table, std::vector<const char *> *columns);
