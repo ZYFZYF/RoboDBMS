@@ -198,7 +198,7 @@ std::string SM_Table::formatColumnToString(ColumnId columnId, char *data) {
             char format[100];
             if (tableMeta.columns[columnId].integerLength) {
                 sprintf(format, "%%%d.%df", tableMeta.columns[columnId].integerLength,
-                        tableMeta.columns->decimalLength);
+                        tableMeta.columns[columnId].decimalLength);
                 sprintf(temp, format, *(float *) data);
                 column = temp;
             } else {
@@ -342,16 +342,26 @@ RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) 
         composeIndexKey(record, indexDesc, key);
         TRY(rmRecord.GetRid(rmRid))
         TRY(ixIndexHandle.InsertEntry(key, rmRid))
-        //索引值出现重复且这样是不允许的，例如主键
-        if (!allowDuplicate && getIndexKeyDuplicateNum(key, indexNo, indexDesc) > 1) {
-            TRY(rmFileScan.CloseScan())
-            TRY(IX_Manager::Instance().CloseIndex(ixIndexHandle))
-            TRY(IX_Manager::Instance().DestroyIndex(tableMeta.createName, indexNo))
-            return SM_INDEX_NOT_ALLOW_DUPLICATE;
-        }
     }
     TRY(rmFileScan.CloseScan())
     TRY(IX_Manager::Instance().CloseIndex(ixIndexHandle))
+    //先全部插进去，关闭索引的句柄，再来判断unique，因为边插入边查询好像会出问题（感觉是同时握有一个文件的两个句柄导致的？）
+    if (!allowDuplicate) {
+        TRY(rmFileScan.OpenScan(rmFileHandle))
+        while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+            RM_RID rmRid;
+            char *record;
+            TRY(rmRecord.GetData(record))
+            composeIndexKey(record, indexDesc, key);
+            TRY(rmRecord.GetRid(rmRid))
+            if (getIndexKeyDuplicateNum(key, indexNo, indexDesc) > 1) {
+                TRY(rmFileScan.CloseScan())
+                TRY(IX_Manager::Instance().DestroyIndex(tableMeta.createName, indexNo))
+                return SM_INDEX_NOT_ALLOW_DUPLICATE;
+            }
+        }
+        TRY(rmFileScan.CloseScan())
+    }
     return OK_RC;
 }
 

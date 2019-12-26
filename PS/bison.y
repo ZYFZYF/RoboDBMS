@@ -31,7 +31,7 @@ void yyerror(const char *s, ...);
 %token SHOW DESC USE CREATE DROP UPDATE INSERT ALTER SELECT ADD QUIT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
 %token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES
-%token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL T_NUMERIC
+%token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
 
 //定义语法中需要的节点的类型
 %type <integer> INTEGER
@@ -158,7 +158,7 @@ ColumnType	:	T_INT
 				$$.attrType = FLOAT;
 				$$.attrLength = 4;
 			}
-		|	T_NUMERIC '(' INTEGER ',' INTEGER ')'
+		|	T_DECIMAL '(' INTEGER ',' INTEGER ')'
 			{
 				$$.attrType = FLOAT;
 				$$.attrLength = 4;

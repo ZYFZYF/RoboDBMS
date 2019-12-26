@@ -51,7 +51,6 @@ CHAR|char               return T_CHAR;
 CHARACTER|character     return T_CHAR;
 VARCHAR|varchar         return T_VARCHAR;
 DATE|date               return T_DATE;
-NUMERIC|numeric         return T_NUMERIC;
 DECIMAL|decimal         return T_DECIMAL;
 
 [a-zA-Z][a-zA-Z0-9_]*   yylval.str = strdup(yytext); return IDENTIFIER;

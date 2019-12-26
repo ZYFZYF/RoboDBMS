@@ -493,7 +493,10 @@ RC SM_Manager::DropPrimaryKey(const char *table) {
     for (auto &reference:dbMeta.tableMetas[primaryTableId].primaryKey.references) {
         TRY(DropForeignKey(GetTableNameFromTableId(reference.foreignTable), reference.name));
     }
-    //TODO 删除主键的索引
+    int primaryIndex = dbMeta.tableMetas[primaryTableId].primaryKey.indexIndex;
+    //删除主键的索引以及索引记录
+    IX_Manager::Instance().DestroyIndex(dbMeta.tableMetas[primaryTableId].createName, primaryIndex);
+    memset(&dbMeta.tableMetas[primaryTableId].indexes[primaryIndex], 0, sizeof(IndexDesc));
     memset(&dbMeta.tableMetas[primaryTableId].primaryKey, 0, sizeof(PrimaryKeyDesc));
     return OK_RC;
 }
