@@ -25,6 +25,18 @@ insert into add_primary_key values ('aaaa', 9);
 alter table add_primary_key add primary key(a);
 desc table add_primary_key;
 
+drop table add_primary_key;
+create table add_primary_key(a char(10), b int);
+insert into add_primary_key values ('aaaa', 100);
+alter table add_primary_key add primary key(a,b);
+insert into add_primary_key values ('aaaa', 100);
+insert into add_primary_key values ('aaaa', 88);
+insert into add_primary_key values ('bbbb', 100);
+alter table add_primary_key drop primary key;
+insert into add_primary_key values ('aaaa', 100);
+alter table add_primary_key add primary key(a,b);
+desc table add_primary_key;
+
 
 
 
