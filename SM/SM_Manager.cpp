@@ -46,8 +46,15 @@ RC SM_Manager::DropTable(const char *tbName) {
     if (tableId < 0) return SM_TABLE_NOT_EXIST;
 
     if (dbMeta.tableMetas[tableId].primaryKey.referenceNum) return SM_TABLE_HAS_REFERENCE;
+    //删掉记录文件
     rmManager.DestroyFile(Utils::getRecordFileName(dbMeta.tableMetas[tableId].createName).c_str());
+    //删掉字符池文件
     SP_Manager::DestroyStringPool(Utils::getStringPoolFileName(dbMeta.tableMetas[tableId].createName).c_str());
+    //删掉索引文件
+    for (int i = 0; i < MAX_INDEX_NUM; i++)
+        if (dbMeta.tableMetas[tableId].indexes[i].keyNum) {
+            ixManager.DestroyIndex(dbMeta.tableMetas[tableId].createName, i);
+        }
     memset(&dbMeta.tableMetas[tableId], 0, sizeof(TableMeta));
     memset(dbMeta.tableNames[tableId], 0, sizeof(dbMeta.tableNames[tableId]));
 
@@ -225,22 +232,15 @@ RC SM_Manager::DescTable(const char *tbName) {
     //索引信息展示
     printf("Index\n");
     printf("%s-----------------------------------------------------------------------------\n", indent);
-    printf("%s%-20s%-20s%-20s\n", indent, "name", "columns", "note");
+    printf("%s%-20s%-20s\n", indent, "name", "columns");
     printf("%s-----------------------------------------------------------------------------\n", indent);
     for (auto &index : dbMeta.tableMetas[tableId].indexes)
         if (index.keyNum) {
-            printf("%-20s", index.name);
+            printf("%s%-20s", indent, index.name);
             for (int j = 0; j < index.keyNum; j++) {
                 printf("%s%s", GetColumnNameFromId(tableId, index.columnId[j]), j == index.keyNum - 1 ? "" : ",");
             }
-            bool isPrimaryKey = true;
-            if (index.keyNum == dbMeta.tableMetas[tableId].primaryKey.keyNum) {
-                for (int j = 0; j < index.keyNum; j++)
-                    if (index.columnId[j] != dbMeta.tableMetas[tableId].primaryKey.columnId[j]) {
-                        isPrimaryKey = false;
-                    }
-            }
-            printf("%-20s\n", isPrimaryKey ? "primary key" : "");
+            printf("\n");
         }
     printf("%s-----------------------------------------------------------------------------\n", indent);
 
@@ -404,7 +404,7 @@ RC SM_Manager::AddPrimaryKey(const char *tbName, std::vector<const char *> *colu
     for (int i = 0; i < MAX_INDEX_NUM; i++)
         if (strlen(dbMeta.tableMetas[tableId].indexes[i].name) == 0) {
             IndexDesc indexDesc{};
-            strcpy(indexDesc.name, tbName);
+            strcpy(indexDesc.name, "primary key");
             indexDesc.keyNum = primaryKey.keyNum;
             for (int j = 0; j < primaryKey.keyNum; j++) {
                 indexDesc.columnId[j] = primaryKey.columnId[j];

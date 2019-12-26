@@ -34,7 +34,7 @@ public:
 
     RC createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate);
 
-    int getIndexLength(IndexDesc indexDesc);
+    int getIndexKeyLength(IndexDesc indexDesc);
 
     RC composeIndexKey(char *record, IndexDesc indexDesc, char *key);
 

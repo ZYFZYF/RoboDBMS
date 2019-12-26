@@ -300,7 +300,7 @@ SM_Table::~SM_Table() {
 
 RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) {
     //自己拉的屎自己擦屁股，保证新建的时候没有，新建的时候出问题的话自己关掉/删掉相关文件
-    int attrLength = getIndexLength(indexDesc);
+    int attrLength = getIndexKeyLength(indexDesc);
     std::string indexFileName = Utils::getIndexFileName(tableMeta.createName, indexNo);
     TRY(IX_Manager::Instance().CreateIndex(tableMeta.createName, indexNo, indexDesc.keyNum > 1 ? ATTRARRAY
                                                                                                : tableMeta.columns[indexDesc.columnId[0]].attrType,
@@ -330,10 +330,17 @@ RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) 
     }
     TRY(rmFileScan.CloseScan())
     TRY(IX_Manager::Instance().CloseIndex(ixIndexHandle))
+    return OK_RC;
 }
 
-int SM_Table::getIndexLength(IndexDesc indexDesc) {
-    return 0;
+int SM_Table::getIndexKeyLength(IndexDesc indexDesc) {
+    int length = 0;
+    for (int i = 0; i < indexDesc.keyNum; i++) {
+        length += ATTR_TYPE_LENGTH + 4 + tableMeta.columns[indexDesc.columnId[i]].attrLength;
+    }
+    //如果只有一列的话直接存就可以了
+    if (indexDesc.keyNum == 1)length -= ATTR_TYPE_LENGTH + 4;
+    return length;
 }
 
 RC SM_Table::composeIndexKey(char *record, IndexDesc indexDesc, char *key) {

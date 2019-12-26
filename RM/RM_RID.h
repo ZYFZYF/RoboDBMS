@@ -7,14 +7,7 @@
 
 #include "../Constant.h"
 
-//
-// PageNum: uniquely identifies a page in a file
-//
 typedef int PageNum;
-
-//
-// SlotNum: uniquely identifies a record in a page
-//
 typedef int SlotNum;
 
 class RM_RID {
