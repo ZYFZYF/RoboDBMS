@@ -12,3 +12,6 @@ create table insert_from_file(  O_ORDERKEY      INT PRIMARY KEY,
                                 O_COMMENT		VARCHAR(79));
 insert into insert_from_file from '../../dataset/orders.tbl';
 desc table insert_from_file;
+insert into insert_from_file from '../../dataset/orders_null.tbl';
+desc table insert_from_file;
+show table insert_from_file;
