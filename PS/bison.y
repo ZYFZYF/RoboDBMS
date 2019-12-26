@@ -58,6 +58,8 @@ DDL 	: 	CreateDatabase
 	|	AddForeignKey
 	|	DropPrimaryKey
 	|	DropForeignKey
+	|	AddIndex
+	|	DropIndex
 	;
 
 DML	: 	InsertRow;
@@ -269,6 +271,16 @@ DropPrimaryKey	:	ALTER TABLE IDENTIFIER DROP PRIMARY KEY ';'
 DropForeignKey	:	ALTER TABLE IDENTIFIER DROP FOREIGN KEY IDENTIFIER ';'
 			{
 				DO(SM_Manager::Instance().DropForeignKey($3,$7));
+			};
+
+AddIndex	:	ALTER TABLE IDENTIFIER ADD INDEX IDENTIFIER '(' ColumnNameList ')' ';'
+			{
+				DO(SM_Manager::Instance().AddIndex($3,$6,$8));
+			};
+
+DropIndex	:	ALTER TABLE IDENTIFIER DROP INDEX IDENTIFIER ';'
+			{
+				DO(SM_Manager::Instance().DropIndex($3,$6));
 			};
 
 InsertRow	:	INSERT P_INTO IDENTIFIER P_VALUES '(' ConstValueList ')' ';'

@@ -32,7 +32,7 @@ public:
 
     RC completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue);
 
-    RC createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate);
+    RC createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate = true);
 
     int getIndexKeyLength(IndexDesc indexDesc);
 

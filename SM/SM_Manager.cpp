@@ -62,14 +62,6 @@ RC SM_Manager::DropTable(const char *tbName) {
     return OK_RC;
 }
 
-RC SM_Manager::CreateIndex(const char *relName, const char *attrName) {
-    return PF_NOBUF;
-}
-
-RC SM_Manager::DropIndex(const char *relName, const char *attrName) {
-    return PF_NOBUF;
-}
-
 RC SM_Manager::Load(const char *relName, const char *fileName) {
     return PF_NOBUF;
 }
@@ -495,7 +487,7 @@ RC SM_Manager::DropPrimaryKey(const char *table) {
     }
     int primaryIndex = dbMeta.tableMetas[primaryTableId].primaryKey.indexIndex;
     //删除主键的索引以及索引记录
-    IX_Manager::Instance().DestroyIndex(dbMeta.tableMetas[primaryTableId].createName, primaryIndex);
+    TRY(IX_Manager::Instance().DestroyIndex(dbMeta.tableMetas[primaryTableId].createName, primaryIndex))
     memset(&dbMeta.tableMetas[primaryTableId].indexes[primaryIndex], 0, sizeof(IndexDesc));
     memset(&dbMeta.tableMetas[primaryTableId].primaryKey, 0, sizeof(PrimaryKeyDesc));
     return OK_RC;
@@ -529,6 +521,48 @@ RC SM_Manager::ShowTable(const char *tbName) {
     SM_Table table(dbMeta.tableMetas[tableId]);
     table.showRecords(-1);
     return OK_RC;
+}
+
+RC SM_Manager::AddIndex(const char *tbName, const char *indexName, std::vector<const char *> *columns) {
+    TableId tableId = GetTableIdFromName(tbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    //先拷贝到一个index上
+    IndexDesc indexDesc;
+    indexDesc.keyNum = columns->size();
+    for (int i = 0; i < columns->size(); i++) {
+        indexDesc.columnId[i] = GetColumnIdFromName(tableId, (*columns)[i]);
+        if (indexDesc.columnId[i] < 0) {
+            return SM_COLUMN_NOT_EXIST;
+        }
+    }
+    strcpy(indexDesc.name, indexName);
+
+    //先看一遍是否有重名的index，有的话不允许添加
+    for (auto &index:dbMeta.tableMetas[tableId].indexes)
+        if (strcmp(index.name, indexName) == 0)
+            return SM_INDEX_ALREADY_IN;
+    //没有的话再找空位往里加
+    for (int i = 0; i < MAX_INDEX_NUM; i++)
+        if (dbMeta.tableMetas[tableId].indexes[i].keyNum == 0) {
+            SM_Table table(dbMeta.tableMetas[tableId]);
+            TRY(table.createIndex(i, indexDesc));
+            dbMeta.tableMetas[tableId].indexes[i] = indexDesc;
+            WriteDbMeta();
+            return OK_RC;
+        }
+    return SM_INDEX_IS_FULL;
+}
+
+RC SM_Manager::DropIndex(const char *tbName, const char *indexName) {
+    TableId tableId = GetTableIdFromName(tbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    for (int i = 0; i < MAX_INDEX_NUM; i++)
+        if (strcmp(dbMeta.tableMetas[tableId].indexes[i].name, indexName) == 0) {
+            TRY(ixManager.DestroyIndex(dbMeta.tableMetas[tableId].createName, i))
+            memset(&dbMeta.tableMetas[tableId].indexes[i], 0, sizeof(IndexDesc));
+            return OK_RC;
+        }
+    return SM_INDEX_NOT_EXIST;
 }
 
 

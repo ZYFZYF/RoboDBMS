@@ -16,31 +16,31 @@ class SM_Manager {
 public:
     static SM_Manager &Instance();
 
-    ~SM_Manager();                             // Destructor
+    ~SM_Manager();
 
-    RC OpenDb(const char *dbName);           // Open the database
+    RC OpenDb(const char *dbName);
 
-    RC CloseDb();                             // close the database
+    RC CloseDb();
 
     RC CreateTable(const char *tbName, std::vector<ColumnDesc> *columnList);
 
-    RC DropTable(const char *tbName);          // destroy a relation
+    RC DropTable(const char *tbName);
 
-    RC CreateIndex(const char *relName,           // create an index for
-                   const char *attrName);         //   relName.attrName
-    RC DropIndex(const char *relName,           // destroy index on
-                 const char *attrName);         //   relName.attrName
+    RC AddIndex(const char *tbName, const char *indexName, std::vector<const char *> *columns);
 
-    RC Load(const char *relName,           // load relName from
-            const char *fileName);         //   fileName
+    RC DropIndex(const char *tbName, const char *indexName);
 
-    RC Help();                             // Print relations in db
-    RC Help(const char *relName);          // print schema of relName
+    RC Load(const char *relName,
+            const char *fileName);
 
-    RC Print(const char *relName);          // print relName contents
+    RC Help();
 
-    RC Set(const char *paramName,         // set parameter to
-           const char *value);            //   value
+    RC Help(const char *relName);
+
+    RC Print(const char *relName);
+
+    RC Set(const char *paramName,
+           const char *value);
 
     //课程中额外要求的操作
     RC CreateDb(const char *dbName);
