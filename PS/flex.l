@@ -44,6 +44,7 @@ INTO|into               return P_INTO;
 NOT|not                 return P_NOT;
 NULL|null               return P_NULL;
 VALUES|values           return P_VALUES;
+FROM|from               return P_FROM;
 
 INT|int                 return T_INT;
 BIGINT|bigint           return T_BIGINT;

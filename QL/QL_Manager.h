@@ -19,6 +19,9 @@ public:
 
     RC Select();
 
+    //从文件一次性插入一大堆
+    RC Insert(const char *tbName, const char *fileName);
+
     RC Insert(const char *tbName, std::vector<const char *> *columnList, std::vector<AttrValue> *constValueList);
 
     RC Delete();

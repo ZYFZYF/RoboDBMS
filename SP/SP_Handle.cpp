@@ -14,7 +14,6 @@ SP_Handle::~SP_Handle() {
 }
 
 RC SP_Handle::InsertString(const char *string, int length, int &offset) {
-    printf("insert string %s\n", string);
     int nowSpaceOffset = 0;
     SP_SpaceHeader prevSpaceHeader, nowSpaceHeader, nextSpaceHeader;
     while (1) {

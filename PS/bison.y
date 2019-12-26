@@ -30,7 +30,7 @@ void yyerror(const char *s, ...);
 
 %token SHOW DESC USE CREATE DROP UPDATE INSERT ALTER SELECT ADD QUIT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
-%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES
+%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
 
 //定义语法中需要的节点的类型
@@ -62,7 +62,9 @@ DDL 	: 	CreateDatabase
 	|	DropIndex
 	;
 
-DML	: 	InsertRow;
+DML	: 	InsertRow
+	|	InsertFromFile
+	;
 
 HELP 	: 	SHOW DATABASES ';'{
 			DO(SM_Manager::Instance().ShowDatabases());
@@ -290,6 +292,12 @@ InsertRow	:	INSERT P_INTO IDENTIFIER P_VALUES '(' ConstValueList ')' ';'
 		|	INSERT P_INTO IDENTIFIER '(' ColumnNameList ')' P_VALUES '(' ConstValueList ')' ';'
 			{
 				DO(QL_Manager::Instance().Insert($3, $5, $9));
+			}
+		;
+
+InsertFromFile 	:	INSERT P_INTO IDENTIFIER P_FROM STR ';'
+			{
+				DO(QL_Manager::Instance().Insert($3, $5));
 			}
 		;
 
