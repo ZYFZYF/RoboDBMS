@@ -402,13 +402,14 @@ RC SM_Manager::AddPrimaryKey(const char *tbName, std::vector<const char *> *colu
     }
     //找到索引空位，然后尝试插入索引，同时判断是否存在有空
     for (int i = 0; i < MAX_INDEX_NUM; i++)
-        if (strlen(dbMeta.tableMetas[tableId].indexes[i].name) == 0) {
+        if (dbMeta.tableMetas[tableId].indexes[i].keyNum == 0) {
             IndexDesc indexDesc{};
             strcpy(indexDesc.name, "primary key");
             indexDesc.keyNum = primaryKey.keyNum;
             for (int j = 0; j < primaryKey.keyNum; j++) {
                 indexDesc.columnId[j] = primaryKey.columnId[j];
             }
+            primaryKey.indexIndex = i;
             SM_Table table(dbMeta.tableMetas[tableId]);
             TRY(table.createIndex(i, indexDesc, false));
             dbMeta.tableMetas[tableId].indexes[i] = indexDesc;

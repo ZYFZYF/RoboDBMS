@@ -59,6 +59,7 @@ struct ForeignKeyDesc {
 struct PrimaryKeyDesc {
     int keyNum;//因为联合主键的存在
     ColumnId columnId[MAX_COLUMN_NUM];
+    int indexIndex;//记录主键在索引里存的下标
     //因为会有别的外键引用到这个主键，所以要记录下来
     int referenceNum;
     ForeignKeyDesc references[MAX_TABLE_NUM];

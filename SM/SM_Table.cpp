@@ -63,10 +63,29 @@ RC SM_Table::setRecordData(char *record, std::vector<ColumnId> *columnIdList, st
     return OK_RC;
 }
 
-RC SM_Table::insertRecord(const char *record) {
+RC SM_Table::insertRecord(char *record) {
     RM_RID rmRid;
-    //TODO 插入之前要进行逻辑判断，主键是否重复、外键是否存在
-    TRY(rmFileHandle.InsertRec(record, rmRid));
+    //插入之前判断主键是否重复
+    int indexNo = tableMeta.primaryKey.indexIndex;
+    IndexDesc &indexDesc = tableMeta.indexes[indexNo];
+    int indexKeyLength = getIndexKeyLength(indexDesc);
+    char key[indexKeyLength];
+    TRY(composeIndexKey(record, indexDesc, key))
+    if (getIndexKeyDuplicateNum(key, indexNo, indexDesc))return QL_PRIMARY_KEY_DUPLICATE;
+    //TODO 插入之前判断外键是否存在
+    TRY(rmFileHandle.InsertRec(record, rmRid))
+    //插入索引
+    for (int i = 0; i < MAX_INDEX_NUM; i++) {
+        IndexDesc &index = tableMeta.indexes[i];
+        if (index.keyNum) {
+            char keyData[getIndexKeyLength(index)];
+            TRY(composeIndexKey(record, index, keyData));
+            IX_IndexHandle ixIndexHandle;
+            TRY(IX_Manager::Instance().OpenIndex(tableMeta.createName, i, ixIndexHandle))
+            TRY(ixIndexHandle.InsertEntry(keyData, rmRid))
+            TRY(IX_Manager::Instance().CloseIndex(ixIndexHandle));
+        }
+    }
     return OK_RC;
 }
 
@@ -80,7 +99,8 @@ void SM_Table::showRecords(int num) {
     for (int i = 0; i < tableMeta.columnNum; i++) {
         std::string columnName = std::string(tableMeta.columns[i].name);
         headerLine.append(columnName);
-        if (columnName.length() < COLUMN_SHOW_LENGTH)headerLine.append(COLUMN_SHOW_LENGTH - columnName.length(), ' ');
+        if (columnName.length() < COLUMN_SHOW_LENGTH)
+            headerLine.append(COLUMN_SHOW_LENGTH - columnName.length(), ' ');
     }
     std::cout << headerLine << std::endl;
     std::cout << splitLine << std::endl;
@@ -217,7 +237,6 @@ RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue
             char *endPtr;
             int num = strtol(attrValue.charValue, &endPtr, 10);
             if (errno == ERANGE)return QL_INT_OUT_OF_RANGE;
-            printf("%s\n", attrValue.charValue);
             if (strlen(endPtr) != 0)return QL_INT_CONT_CONVERT_TO_INT;
             attrValue.intValue = num;
             break;
@@ -229,7 +248,8 @@ RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue
             if (strlen(endPtr) != 0)return QL_FLOAT_CONT_CONVERT_TO_FLOAT;
             int integerLength = tableMeta.columns[columnId].integerLength;
             int decimalLength = tableMeta.columns[columnId].decimalLength;
-            if (integerLength < 0 || decimalLength < 0 || decimalLength > integerLength)return QL_DECIMAL_FORMAT_ERROR;
+            if (integerLength < 0 || decimalLength < 0 || decimalLength > integerLength)
+                return QL_DECIMAL_FORMAT_ERROR;
             if (integerLength > 0 && fabsf(num) >= powf(10, integerLength))return QL_FLOAT_OUT_OF_RANGE;
             attrValue.floatValue = num;
             break;

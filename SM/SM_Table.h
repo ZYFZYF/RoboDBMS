@@ -22,7 +22,7 @@ public:
     RC
     setRecordData(char *record, std::vector<ColumnId> *columnIdList, std::vector<AttrValue> *constValueList);//给一列设置数据
 
-    RC insertRecord(const char *record);//插入一行记录
+    RC insertRecord(char *record);//插入一行记录
 
     void showRecords(int num);//显示头多少条记录，如果是-1代表显示所有
 
