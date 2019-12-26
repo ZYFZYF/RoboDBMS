@@ -133,15 +133,16 @@ std::string SM_Table::formatRecordToString(char *record) {
     return line;
 }
 
-RC SM_Table::setColumnData(char *record, ColumnId columnId, AttrValue attrValue) {
+RC SM_Table::setColumnData(char *record, ColumnId columnId, AttrValue attrValue, bool alreadyComplete) {
     //命令里有传该参数的值，但也有可能是null
     if (attrValue.isNull) {
         TRY(setColumnNull(record, columnId))
+        return OK_RC;
     }
     //先设为不是null
     record[columnOffset[columnId]] = 0;
     char *data = record + columnOffset[columnId] + 1;
-    TRY(completeAttrValueByColumnId(columnId, attrValue));
+    if (!alreadyComplete)TRY(completeAttrValueByColumnId(columnId, attrValue));
     switch (tableMeta.columns[columnId].attrType) {
         case INT: {
             *(int *) data = attrValue.intValue;
@@ -174,7 +175,7 @@ RC SM_Table::setColumnData(char *record, ColumnId columnId, AttrValue attrValue)
 RC SM_Table::setColumnNull(char *record, ColumnId columnId) {
     //命令里没传，所以认为是null，但要先看是不是有defaultValue
     if (tableMeta.columns[columnId].hasDefaultValue) {
-        TRY(setColumnData(record, columnId, tableMeta.columns[columnId].defaultValue))
+        TRY(setColumnData(record, columnId, tableMeta.columns[columnId].defaultValue, true))
         return OK_RC;
     }
     if (tableMeta.columns[columnId].allowNull) {
@@ -275,6 +276,7 @@ RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue
         case VARCHAR: {
             Varchar varchar{};
             varchar.length = strlen(attrValue.charValue);
+            if (strlen(attrValue.charValue) >= tableMeta.columns[columnId].stringMaxLength)return QL_VARCHAR_TOO_LONG;
             strcpy(varchar.spName, Utils::getStringPoolFileName(tableMeta.createName).c_str());
             TRY(spHandle.InsertString(attrValue.charValue, varchar.length, varchar.offset))
             attrValue.varcharValue = varchar;

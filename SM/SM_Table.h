@@ -57,7 +57,7 @@ private:
     std::string formatRecordToString(char *record);
 
 
-    RC setColumnData(char *record, ColumnId columnId, AttrValue attrValue);
+    RC setColumnData(char *record, ColumnId columnId, AttrValue attrValue, bool alreadyComplete = false);
 
     RC setColumnNull(char *record, ColumnId columnId);
 };

@@ -209,13 +209,13 @@ RC SM_Manager::DescTable(const char *tbName) {
                     }
                     break;
                 case STRING:
-                    sprintf(typeStr, "char(%d)", column.attrLength);
+                    sprintf(typeStr, "char(%d)", column.attrLength - 1);
                     break;
                 case DATE:
                     sprintf(typeStr, "date");
                     break;
                 case VARCHAR:
-                    sprintf(typeStr, "varchar(%d)", column.stringMaxLength);
+                    sprintf(typeStr, "varchar(%d)", column.stringMaxLength - 1);
                     break;
                 case ATTRARRAY:
                     break;

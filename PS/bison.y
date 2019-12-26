@@ -140,13 +140,13 @@ ColumnType	:	T_INT
 		|	T_CHAR '(' INTEGER ')'
 			{
 				$$.attrType = STRING;
-				$$.attrLength = $3;
+				$$.attrLength = $3 + 1;
 			}
 		| 	T_VARCHAR '(' INTEGER ')'
 			{
 				$$.attrType = VARCHAR;
 				$$.attrLength = sizeof(Varchar);
-				$$.stringMaxLength = $3;
+				$$.stringMaxLength = $3 + 1;
 			}
 		|	T_DATE
 			{
