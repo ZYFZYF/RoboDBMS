@@ -31,6 +31,7 @@ void yyerror(const char *s, ...);
 %token <comparator> OP
 
 %token SHOW DESC USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
+%token COUNT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
 %token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
@@ -75,15 +76,18 @@ HELP 	: 	SHOW DATABASES ';'{
 		}
 	|	USE DATABASE IDENTIFIER ';' {
 			DO(SM_Manager::Instance().UseDb($3));
-		};
+		}
 	|	SHOW TABLES ';' {
 			DO(SM_Manager::Instance().ShowTables());
-		};
+		}
 	|	DESC TABLE IDENTIFIER';' {
 			DO(SM_Manager::Instance().DescTable($3));
-		};
+		}
 	|	SHOW TABLE IDENTIFIER';' {
 			DO(SM_Manager::Instance().ShowTable($3));
+		}
+	| 	COUNT TABLE IDENTIFIER ';' {
+			DO(QL_Manager::Instance().Count($3));
 		}
 	|	QUIT ';'{
 			YYACCEPT;

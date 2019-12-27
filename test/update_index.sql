@@ -14,5 +14,3 @@ alter table update_index drop index test_1;
 alter table update_index drop index test_1;
 alter table update_index drop index test_666;
 desc table update_index;
-
-

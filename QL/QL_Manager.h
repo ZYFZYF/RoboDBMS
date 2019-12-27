@@ -29,6 +29,9 @@ public:
 
     RC Update();
 
+    //输出表的行数
+    RC Count(const char *tbName);
+
 private:
     QL_Manager();
 

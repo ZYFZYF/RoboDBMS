@@ -11,8 +11,8 @@ create table test_delete(  O_ORDERKEY      INT PRIMARY KEY,
                                 O_SHIPPRIORITY	INT,
                                 O_COMMENT		VARCHAR(79));
 insert into test_delete from '../../dataset/orders.tbl';
+count table test_delete;
 delete from test_delete;
-desc table test_delete;
+count table test_delete;
 insert into test_delete from '../../dataset/orders.tbl';
-desc table test_delete;
-show table test_delete;
+count table test_delete;

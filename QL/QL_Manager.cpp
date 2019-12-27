@@ -84,3 +84,11 @@ RC QL_Manager::Delete(const char *tbName, PS_Expr *condition) {
     TRY(table.deleteCondition(condition));
     return OK_RC;
 }
+
+RC QL_Manager::Count(const char *tbName) {
+    TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    SM_Table table(SM_Manager::Instance().GetTableMeta(tableId));
+    printf("Table %s has %d rows\n", tbName, table.count());
+    return OK_RC;
+}

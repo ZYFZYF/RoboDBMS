@@ -46,6 +46,8 @@ public:
     //获取一个key在index中出现了多少次
     int getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDesc);
 
+    int count();
+
     ~SM_Table();
 
 private:

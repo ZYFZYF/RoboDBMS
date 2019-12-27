@@ -443,3 +443,15 @@ RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid) {
     }
     return OK_RC;
 }
+
+int SM_Table::count() {
+    RM_FileScan rmFileScan;
+    rmFileScan.OpenScan(rmFileHandle);
+    RM_Record rmRecord;
+    int cnt = 0;
+    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        cnt++;
+    }
+    rmFileScan.CloseScan();
+    return cnt;
+}
