@@ -409,6 +409,7 @@ RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) 
         for (auto &condition:*conditionList) {
             condition.eval(*this, record);
             conditionSatisfied &= condition.value.boolValue;
+            if (!conditionSatisfied)break;
         }
         if (conditionSatisfied) TRY(deleteRecord(record, rmRid))
     }

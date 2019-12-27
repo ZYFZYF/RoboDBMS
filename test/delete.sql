@@ -12,7 +12,11 @@ create table test_delete(  O_ORDERKEY      INT PRIMARY KEY,
                                 O_COMMENT		VARCHAR(79));
 insert into test_delete from '../../dataset/orders.tbl';
 count table test_delete;
-delete from test_delete;
+delete from test_delete where O_ORDERKEY < 100;
 count table test_delete;
-insert into test_delete from '../../dataset/orders.tbl';
+delete from test_delete where O_ORDERKEY == 200 + 100;
+count table test_delete;
+delete from test_delete where O_ORDERKEY < 200 and O_ORDERSTATUS == 'O';
+count table test_delete;
+delete from test_delete where O_ORDERKEY < 200 or O_ORDERKEY > 7000;
 count table test_delete;

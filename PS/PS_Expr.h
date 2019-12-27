@@ -15,7 +15,9 @@ class PS_Expr {
     friend class SM_Table;
 
 public:
-    //叶子就是这五种类型
+    //叶子就是这六种类型
+    explicit PS_Expr();
+
     explicit PS_Expr(bool _value);
 
     explicit PS_Expr(int _value);
@@ -26,6 +28,9 @@ public:
 
     PS_Expr(char *tbName, char *colName);
 
+    //运算得到的类型
+    PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right);
+
     RC eval(SM_Table &table, char *record);
 
 
@@ -34,8 +39,8 @@ private:
     bool isConst{false};
     //是否是一列中的数据
     bool isColumn{false};
-    TableId tableId{-1};
-    ColumnId columnId{-1};
+    std::string tableName{};
+    std::string columnName{};
     //数据类型
     AttrType type;
     AttrValue value{};
@@ -43,6 +48,7 @@ private:
     std::string string;
     //二元运算
     PS_Expr *left{nullptr}, *right{nullptr};
+    Operator op{NO_OP};
 };
 
 

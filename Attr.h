@@ -40,6 +40,7 @@ struct Varchar {
 };
 
 enum AttrType {
+    UNKNOWN,
     BOOL,
     INT,
     FLOAT,

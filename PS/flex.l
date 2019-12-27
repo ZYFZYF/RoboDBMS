@@ -49,6 +49,7 @@ NOT|not                 return P_NOT;
 NULL|null               return P_NULL;
 VALUES|values           return P_VALUES;
 FROM|from               return P_FROM;
+IS|is                   return P_IS;
 
 INT|int                 return T_INT;
 BIGINT|bigint           return T_BIGINT;
@@ -58,11 +59,12 @@ VARCHAR|varchar         return T_VARCHAR;
 DATE|date               return T_DATE;
 DECIMAL|decimal         return T_DECIMAL;
 
+AND|and                 return C_AND;
+OR|or                   return C_OR;
+
 [a-zA-Z][a-zA-Z0-9_]*   yylval.str = strdup(yytext); return IDENTIFIER;
 '[^']*'                 {yylval.str = new char[strlen(yytext)-1];memcpy(yylval.str,yytext+1,strlen(yytext)-2);yylval.str[strlen(yytext)-2]='\0';return STR;}
 
-AND|and                 return C_AND;
-OR|or                   return C_OR;
 [*/+\-=<>':;,.|&()]     return yytext[0];
 
 %%

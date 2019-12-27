@@ -70,6 +70,7 @@
  - 还需要支持BIGINT？
  - Expr里面的字符串都用std::string来表示
  - 需要一个得到行数的函数
+ - 列的话不需要一开始就知道type
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase

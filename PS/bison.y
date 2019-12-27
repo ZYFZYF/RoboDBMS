@@ -10,6 +10,7 @@
 #include "../QL/QL_Manager.h"
 extern int yylex (void);
 void yyerror(const char *s, ...);
+
 %}
 //让yylval不仅返回int数据
 %union{
@@ -34,7 +35,7 @@ void yyerror(const char *s, ...);
 %token SHOW DESC USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
 %token COUNT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
-%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM
+%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
 %token C_AND C_OR
 
@@ -45,7 +46,7 @@ void yyerror(const char *s, ...);
 %type <columnList> ColumnDescList
 %type <attrValue> ConstValue
 %type <attrValueList> ConstValueList
-%type <identifierList> ColumnNameList
+%type <identifierList> NameList
 %type <expr> Expr
 %type <conditionList> WhereClause
 %type <conditionList> ConditionList
@@ -256,17 +257,17 @@ ForeignKey	:	/* empty */
 				strcpy($$.primaryKeyColumn, $4);
 			};
 
-AddPrimaryKey	:	ALTER TABLE IDENTIFIER ADD PRIMARY KEY '(' ColumnNameList ')' ';'
+AddPrimaryKey	:	ALTER TABLE IDENTIFIER ADD PRIMARY KEY '(' NameList ')' ';'
 			{
 				DO(SM_Manager::Instance().AddPrimaryKey($3, $8));
 			};
 
-AddForeignKey	:	ALTER TABLE IDENTIFIER ADD CONSTRAINT IDENTIFIER FOREIGN KEY '(' ColumnNameList ')' REFERENCES IDENTIFIER '(' ColumnNameList ')' ';'
+AddForeignKey	:	ALTER TABLE IDENTIFIER ADD CONSTRAINT IDENTIFIER FOREIGN KEY '(' NameList ')' REFERENCES IDENTIFIER '(' NameList ')' ';'
 			{
 				DO(SM_Manager::Instance().AddForeignKey($6, $3, $10, $13, $15));
 			};
 
-ColumnNameList	:	ColumnNameList ',' IDENTIFIER
+NameList	:	NameList ',' IDENTIFIER
 			{
 				$$ = $1;
 				$$->push_back($3);
@@ -287,7 +288,7 @@ DropForeignKey	:	ALTER TABLE IDENTIFIER DROP FOREIGN KEY IDENTIFIER ';'
 				DO(SM_Manager::Instance().DropForeignKey($3,$7));
 			};
 
-AddIndex	:	ALTER TABLE IDENTIFIER ADD INDEX IDENTIFIER '(' ColumnNameList ')' ';'
+AddIndex	:	ALTER TABLE IDENTIFIER ADD INDEX IDENTIFIER '(' NameList ')' ';'
 			{
 				DO(SM_Manager::Instance().AddIndex($3,$6,$8));
 			};
@@ -301,7 +302,7 @@ InsertRow	:	INSERT P_INTO IDENTIFIER P_VALUES '(' ConstValueList ')' ';'
 			{
 				DO(QL_Manager::Instance().Insert($3, nullptr, $6));
 			}
-		|	INSERT P_INTO IDENTIFIER '(' ColumnNameList ')' P_VALUES '(' ConstValueList ')' ';'
+		|	INSERT P_INTO IDENTIFIER '(' NameList ')' P_VALUES '(' ConstValueList ')' ';'
 			{
 				DO(QL_Manager::Instance().Insert($3, $5, $9));
 			}
@@ -342,9 +343,97 @@ ConditionList	:	ConditionList C_AND Expr
 			}
 		;
 
-Expr		:	INTEGER
+Expr		:	'(' Expr ')'
+			{
+				$$ = $2;
+			}
+		|	INTEGER
 			{
 				$$ = new PS_Expr($1);
+			}
+		|	REAL
+			{
+				$$ = new PS_Expr($1);
+			}
+		|	STR
+			{
+				$$ = new PS_Expr($1);
+			}
+		|	IDENTIFIER
+			{
+				$$ = new PS_Expr(nullptr, $1);
+			}
+		|	IDENTIFIER '.' IDENTIFIER
+			{
+				$$ = new PS_Expr($1, $3);
+			}
+		|	Expr C_OR Expr
+			{
+				$$ = new PS_Expr($1, OR_OP, $3);
+			}
+		|	Expr '=' '=' Expr
+			{
+				$$ = new PS_Expr($1, EQ_OP, $4);
+			}
+		|	Expr '=' Expr
+			{
+				$$ = new PS_Expr($1, EQ_OP, $3);
+			}
+		|	Expr '!' '=' Expr
+			{
+				$$ = new PS_Expr($1, NE_OP, $4);
+			}
+		|	Expr '<' '>' Expr
+			{
+				$$ = new PS_Expr($1, NE_OP, $4);
+			}
+		|	Expr '<' Expr
+			{
+				$$ = new PS_Expr($1, LT_OP, $3);
+			}
+		|	Expr '<' '=' Expr
+			{
+				$$ = new PS_Expr($1, LE_OP, $4);
+			}
+		|	Expr '>' Expr
+			{
+				$$ = new PS_Expr($1, GT_OP, $3);
+			}
+		|	Expr '>' '=' Expr
+			{
+				$$ = new PS_Expr($1, GE_OP, $4);
+			}
+		|	Expr '+' Expr
+			{
+				$$ = new PS_Expr($1, PLUS_OP, $3);
+			}
+		|	Expr '-' Expr
+			{
+				$$ = new PS_Expr($1, MINUS_OP, $3);
+			}
+		|	Expr '*' Expr
+			{
+				$$ = new PS_Expr($1, MUL_OP, $3);
+			}
+		|	Expr '/' Expr
+			{
+				$$ = new PS_Expr($1, DIV_OP, $3);
+			}
+		|	Expr '%' Expr
+			{
+				$$ = new PS_Expr($1, MOD_OP, $3);
+			}
+		|	P_NOT Expr
+			{
+				$$ = new PS_Expr(nullptr, NOT_OP, $2);
+			}
+		|	Expr P_IS P_NULL
+			{
+				$$ = new PS_Expr($1, EQ_OP, new PS_Expr());
+			}
+		|	Expr P_IS P_NOT P_NULL
+			{
+				$$ = new PS_Expr($1, NE_OP, new PS_Expr());
 			}
 		;
 

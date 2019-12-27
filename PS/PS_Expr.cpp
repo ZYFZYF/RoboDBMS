@@ -5,6 +5,12 @@
 #include "PS_Expr.h"
 #include "../SM/SM_Manager.h"
 
+PS_Expr::PS_Expr() {
+    isConst = true;
+    type = UNKNOWN;
+    value.isNull = true;
+}
+
 PS_Expr::PS_Expr(bool _value) {
     isConst = true;
     type = BOOL;
@@ -31,13 +37,21 @@ PS_Expr::PS_Expr(char *_value) {
 
 PS_Expr::PS_Expr(char *tbName, char *colName) {
     isColumn = true;
-    tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
-    columnId = SM_Manager::Instance().GetColumnIdFromName(tableId, colName);
-    type = SM_Manager::Instance().GetType(tableId, columnId);
+    type = UNKNOWN;
+    if (tbName == nullptr)tableName = "";
+    else tableName = std::string(tbName);
+    columnName = std::string(colName);
 }
 
 RC PS_Expr::eval(SM_Table &table, char *record) {
     if (isConst)return OK_RC;
     //TODO 根据计算类型来进行eval，注意短路操作的实现
     return OK_RC;
+}
+
+PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right) {
+    op = _op;
+    left = _left;
+    right = _right;
+    //TODO 根据左右表达式来确定一些属性值
 }
