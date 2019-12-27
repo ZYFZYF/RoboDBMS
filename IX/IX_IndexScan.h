@@ -16,7 +16,7 @@ public:
     ~IX_IndexScan();
 
     RC OpenScan(const IX_IndexHandle &indexHandle,
-                CompOp compOp,
+                Operator compOp,
                 void *value);
 
     RC GetNextEntry(RM_RID &rid);
@@ -26,7 +26,7 @@ public:
     void *getCurrentKey();
 
 private:
-    CompOp compareOp;
+    Operator compareOp;
     IX_IndexHandle *ixIndexHandle;
     void *compareKey;
     BPlusTreeNodePointer currentLeaf;

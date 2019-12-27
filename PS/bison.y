@@ -4,6 +4,7 @@
 #include "../Attr.h"
 #include "../PS/PS_Node.h"
 #include "../PS/PS_ShowDatabases.h"
+#include "../PS/PS_Expr.h"
 #include "../SM/SM_Manager.h"
 #include "../utils/PrintError.h"
 #include "../QL/QL_Manager.h"
@@ -15,8 +16,9 @@ void yyerror(const char *s, ...);
   int integer;
   float real;
   char * str;
-  enum CompOp comparator;
+  enum Operator comparator;
   PS_Node *node;
+  PS_Expr *expr;
   ColumnDesc columnDesc;
   AttrValue attrValue;
   std::vector<AttrValue> *attrValueList;
@@ -28,7 +30,7 @@ void yyerror(const char *s, ...);
 %token <str> IDENTIFIER STR STR_INTEGER STR_REAL
 %token <comparator> OP
 
-%token SHOW DESC USE CREATE DROP UPDATE INSERT ALTER SELECT ADD QUIT
+%token SHOW DESC USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
 %token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
@@ -41,6 +43,7 @@ void yyerror(const char *s, ...);
 %type <attrValue> ConstValue
 %type <attrValueList> ConstValueList
 %type <identifierList> ColumnNameList
+%type <expr> WhereClause
 
 //定义语法
 %%
@@ -64,6 +67,7 @@ DDL 	: 	CreateDatabase
 
 DML	: 	InsertRow
 	|	InsertFromFile
+	|	Delete
 	;
 
 HELP 	: 	SHOW DATABASES ';'{
@@ -299,6 +303,22 @@ InsertFromFile 	:	INSERT P_INTO IDENTIFIER P_FROM STR ';'
 			{
 				DO(QL_Manager::Instance().Insert($3, $5));
 			}
+		;
+
+Delete		:	DELETE P_FROM IDENTIFIER WhereClause ';'
+			{
+				DO(QL_Manager::Instance().Delete($3, $4));
+			}
+		;
+
+WhereClause	:	/* empty */
+			{
+				$$ = new PS_Expr(true);
+			}
+//		|	P_WHERE Expr
+//			{
+//				$$ = $2;
+//			}
 		;
 
 INTEGER 	:	STR_INTEGER

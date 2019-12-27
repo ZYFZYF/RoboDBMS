@@ -65,13 +65,15 @@ RC SM_Table::setRecordData(char *record, std::vector<ColumnId> *columnIdList, st
 
 RC SM_Table::insertRecord(char *record) {
     RM_RID rmRid;
-    //插入之前判断主键是否重复
-    int indexNo = tableMeta.primaryKey.indexIndex;
-    IndexDesc &indexDesc = tableMeta.indexes[indexNo];
-    int indexKeyLength = getIndexKeyLength(indexDesc);
-    char key[indexKeyLength];
-    TRY(composeIndexKey(record, indexDesc, key))
-    if (getIndexKeyDuplicateNum(key, indexNo, indexDesc))return QL_PRIMARY_KEY_DUPLICATE;
+    //插入之前判断主键是否重复，没有主键不用判断
+    if (tableMeta.primaryKey.keyNum) {
+        int indexNo = tableMeta.primaryKey.indexIndex;
+        IndexDesc &indexDesc = tableMeta.indexes[indexNo];
+        int indexKeyLength = getIndexKeyLength(indexDesc);
+        char key[indexKeyLength];
+        TRY(composeIndexKey(record, indexDesc, key))
+        if (getIndexKeyDuplicateNum(key, indexNo, indexDesc))return QL_PRIMARY_KEY_DUPLICATE;
+    }
     //TODO 插入之前判断外键是否存在
     TRY(rmFileHandle.InsertRec(record, rmRid))
     //插入索引
@@ -164,10 +166,6 @@ RC SM_Table::setColumnData(char *record, ColumnId columnId, AttrValue attrValue,
             *(Varchar *) data = attrValue.varcharValue;
             break;
         }
-        case ATTRARRAY: { //不应该在这儿
-            exit(0);
-            break;
-        }
     }
     return OK_RC;
 }
@@ -217,17 +215,12 @@ std::string SM_Table::formatColumnToString(ColumnId columnId, char *data) {
             column = data;
             break;
         }
-
         case VARCHAR: {
             char temp[tableMeta.columns[columnId].stringMaxLength];
             ((Varchar *) data)->getData(temp);
             column = temp;
             break;
         }
-        case ATTRARRAY:
-            //不应该在这儿
-            exit(0);
-            break;
     }
     return column;
 }
@@ -282,10 +275,6 @@ RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue
             attrValue.varcharValue = varchar;
             break;
         }
-        case ATTRARRAY: { //不应该在这儿
-            exit(0);
-            break;
-        }
     }
     return OK_RC;
 }
@@ -298,16 +287,10 @@ std::string SM_Table::formatAttrValueToString(ColumnId columnId, AttrValue attrV
             return formatColumnToString(columnId, (char *) &(attrValue.floatValue));
         case STRING:
             return formatColumnToString(columnId, (char *) &(attrValue.stringValue));
-
         case DATE:
             return formatColumnToString(columnId, (char *) &(attrValue.dateValue));
-
         case VARCHAR:
             return formatColumnToString(columnId, (char *) &(attrValue.varcharValue));
-
-        case ATTRARRAY:
-            //不应该在这儿
-            break;
     }
 }
 
@@ -409,4 +392,54 @@ int SM_Table::getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDes
     ixIndexScan.CloseScan();
     IX_Manager::Instance().CloseIndex(ixIndexHandle);
     return cnt;
+}
+
+RC SM_Table::deleteCondition(PS_Expr *condition) {
+    //打开一个无条件遍历
+    RM_FileScan rmFileScan;
+    rmFileScan.OpenScan(rmFileHandle);
+    RM_Record rmRecord;
+    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        char *record;
+        rmRecord.GetData(record);
+        RM_RID rmRid;
+        rmRecord.GetRid(rmRid);
+        //用这行的值去计算表达式的值
+        condition->eval(*this, record);
+        if (condition->type == BOOL && condition->value.boolValue) {
+            RC rc;
+            if ((rc = deleteRecord(record, rmRid)) != OK_RC) {
+                rmFileScan.CloseScan();
+                return rc;
+            }
+        }
+    }
+    rmFileScan.CloseScan();
+    return OK_RC;
+}
+
+RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid) {
+    //删除之前判断主键的值是否被外联，外联的话不能删除，没有主键不用判断
+    if (tableMeta.primaryKey.keyNum) {
+        int indexNo = tableMeta.primaryKey.indexIndex;
+        IndexDesc &indexDesc = tableMeta.indexes[indexNo];
+        int indexKeyLength = getIndexKeyLength(indexDesc);
+        char key[indexKeyLength];
+        TRY(composeIndexKey(record, indexDesc, key))
+        //TODO 判断这个主键是否外链了存在的外键
+    }
+    TRY(rmFileHandle.DeleteRec(rmRid))
+    //删除索引
+    for (int i = 0; i < MAX_INDEX_NUM; i++) {
+        IndexDesc &index = tableMeta.indexes[i];
+        if (index.keyNum) {
+            char keyData[getIndexKeyLength(index)];
+            TRY(composeIndexKey(record, index, keyData));
+            IX_IndexHandle ixIndexHandle;
+            TRY(IX_Manager::Instance().OpenIndex(tableMeta.createName, i, ixIndexHandle))
+            TRY(ixIndexHandle.DeleteEntry(keyData, rmRid))
+            TRY(IX_Manager::Instance().CloseIndex(ixIndexHandle));
+        }
+    }
+    return OK_RC;
 }

@@ -10,6 +10,7 @@
 #include "SM_Constant.h"
 #include "../Attr.h"
 #include "../RM/RM_FileHandle.h"
+#include "../PS/PS_Expr.h"
 
 #define COLUMN_SHOW_LENGTH  30 //一列显示的时候占的宽度
 
@@ -23,6 +24,10 @@ public:
     setRecordData(char *record, std::vector<ColumnId> *columnIdList, std::vector<AttrValue> *constValueList);//给一列设置数据
 
     RC insertRecord(char *record);//插入一行记录
+
+    RC deleteRecord(char *record, const RM_RID &rmRid);//删除一行记录
+
+    RC deleteCondition(PS_Expr *condition);
 
     void showRecords(int num);//显示头多少条记录，如果是-1代表显示所有
 

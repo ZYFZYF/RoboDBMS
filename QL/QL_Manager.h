@@ -9,6 +9,7 @@
 #include "../RM/RM_Manager.h"
 #include "../IX/IX_Manager.h"
 #include "../SM/SM_Manager.h"
+#include "../PS/PS_Expr.h"
 
 class QL_Manager {
 
@@ -24,7 +25,7 @@ public:
 
     RC Insert(const char *tbName, std::vector<const char *> *columnList, std::vector<AttrValue> *constValueList);
 
-    RC Delete();
+    RC Delete(const char *tbName, PS_Expr *condition);
 
     RC Update();
 

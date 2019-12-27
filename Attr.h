@@ -40,6 +40,7 @@ struct Varchar {
 };
 
 enum AttrType {
+    BOOL,
     INT,
     FLOAT,
     STRING,
@@ -50,6 +51,7 @@ enum AttrType {
 
 struct AttrValue {
     bool isNull;
+    bool boolValue;
     int intValue;
     float floatValue;
     char stringValue[MAX_CHAR_LENGTH + 1];
@@ -58,13 +60,11 @@ struct AttrValue {
     char *charValue;
 };
 
+enum Operator {
+    NO_OP, EQ_OP, NE_OP, LT_OP, GT_OP, LE_OP, GE_OP,
 
-//
-// Comparison operators
-//
-enum CompOp {
-    NO_OP,                                      // no comparison
-    EQ_OP, NE_OP, LT_OP, GT_OP, LE_OP, GE_OP    // binary atomic operators
+    PLUS_OP, MINUS_OP, MUL_OP, DIV_OP, MOD_OP,
+    NOT_OP, AND_OP, OR_OP
 };
 
 #endif //ROBODBMS_TYPE_H

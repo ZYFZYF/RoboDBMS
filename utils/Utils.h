@@ -20,7 +20,7 @@ public:
 
     static std::string getRecordFileName(const char *fileName);
 
-    static bool Compare(void *value1, void *value2, AttrType attrType, int attrLength, CompOp compOp);
+    static bool Compare(void *value1, void *value2, AttrType attrType, int attrLength, Operator compOp);
 
     //类似strcmp，<返回负数，==返回0，＞返回正数
     static int Cmp(void *value1, void *value2, AttrType attrType, int attrLength);
@@ -30,6 +30,13 @@ public:
     static void GetMaximumValue(void *value, AttrType attrType);
 
     static std::string getAbsolutePath(const char *filename);
+
+    static bool isComparable(Operator op);
+
+    static bool isArithmetic(Operator op);
+
+    static bool isLogic(Operator op);
+
 };
 
 

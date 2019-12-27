@@ -17,10 +17,6 @@ RC QL_Manager::Select() {
     return PF_EOF;
 }
 
-RC QL_Manager::Delete() {
-    return PF_EOF;
-}
-
 RC QL_Manager::Update() {
     return PF_EOF;
 }
@@ -81,3 +77,10 @@ RC QL_Manager::Insert(const char *tbName, const char *fileName) {
     return OK_RC;
 }
 
+RC QL_Manager::Delete(const char *tbName, PS_Expr *condition) {
+    TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    SM_Table table(SM_Manager::Instance().GetTableMeta(tableId));
+    TRY(table.deleteCondition(condition));
+    return OK_RC;
+}

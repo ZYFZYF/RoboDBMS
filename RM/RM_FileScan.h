@@ -22,7 +22,7 @@ public:
                 AttrType attrType = INT,
                 int attrLength = 0,
                 int attrOffset = 0,
-                CompOp compOp = NO_OP,
+                Operator compOp = NO_OP,
                 void *value = nullptr);
 
     RC GetNextRec(RM_Record &rec);
@@ -38,7 +38,7 @@ private:
     int attrLength;
     void *value;
     AttrType attrType;
-    CompOp compOp;
+    Operator compOp;
 
     bool openScan;
     bool scanEnded;

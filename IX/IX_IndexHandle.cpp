@@ -599,7 +599,7 @@ RC IX_IndexHandle::Delete(BPlusTreeNodePointer cur, void *key, void *value) {
     return OK_RC;
 }
 
-bool IX_IndexHandle::Compare(CompOp compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight) {
+bool IX_IndexHandle::Compare(Operator compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight) {
     RM_RID left = *(RM_RID *) valueLeft, right = *(RM_RID *) valueRight;
     int cmp = Utils::Cmp(keyLeft, keyRight, ixFileHeader.attrType, ixFileHeader.attrLength);
     switch (compOp) {

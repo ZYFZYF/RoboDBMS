@@ -86,6 +86,8 @@ public:
 
     ColumnId GetColumnIdFromName(TableId tableId, const char *columnName);
 
+    AttrType GetType(TableId tableId, ColumnId columnId);
+
     TableMeta &GetTableMeta(TableId tableId);
 
 private:

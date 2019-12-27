@@ -6,6 +6,7 @@
 #include "../PS/PS_Node.h"
 #include "../PS/PS_ShowDatabases.h"
 #include "../SM/SM_Manager.h"
+#include "../PS/PS_Expr.h"
 #include "bison.h"
 %}
 
@@ -23,6 +24,7 @@ UPDATE|update           return UPDATE;
 INSERT|insert           return INSERT;
 ALTER|alter             return ALTER;
 SELECT|select           return SELECT;
+DELETE|delete           return DELETE;
 QUIT|quit               return QUIT;
 
 DATABASES|databases     return DATABASES;

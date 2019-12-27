@@ -6,6 +6,6 @@ add_flex_bison_dependency(lexer parser)
 
 include_directories(${PROJECT_BINARY_DIR})
 set(MAIN_SRC ${PROJECT_BINARY_DIR}/flex.cpp ${PROJECT_BINARY_DIR}/bison.cpp)
-add_library(PS ${MAIN_SRC})
+add_library(PS ${MAIN_SRC} ${CMAKE_CURRENT_SOURCE_DIR}/PS_Expr.h ${CMAKE_CURRENT_SOURCE_DIR}/PS_Expr.cpp)
 add_executable(PS_TEST test.cpp)
 target_link_libraries(PS_TEST IX PF PS RM SM SP QL)

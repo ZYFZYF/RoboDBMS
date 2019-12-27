@@ -30,7 +30,7 @@ RC RM_FileScan::OpenScan(const RM_FileHandle &rmFileHandle,
                          AttrType attrType,
                          int attrLength,
                          int attrOffset,
-                         CompOp compOp,
+                         Operator compOp,
                          void *value) {
     if (openScan)
         return (RM_INVALIDSCAN);

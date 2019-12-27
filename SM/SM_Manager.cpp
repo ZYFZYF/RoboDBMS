@@ -471,6 +471,7 @@ ColumnId SM_Manager::GetColumnIdFromName(const char *tableName, const char *colu
 }
 
 ColumnId SM_Manager::GetColumnIdFromName(TableId tableId, const char *columnName) {
+    if (tableId < 0)return -1;
     for (int i = 0; i < MAX_COLUMN_NUM; i++)
         if (strcmp(dbMeta.tableMetas[tableId].columns[i].name, columnName) == 0) {
             return i;
@@ -563,6 +564,11 @@ RC SM_Manager::DropIndex(const char *tbName, const char *indexName) {
             return OK_RC;
         }
     return SM_INDEX_NOT_EXIST;
+}
+
+AttrType SM_Manager::GetType(TableId tableId, ColumnId columnId) {
+    if (tableId < 0 || columnId < 0)return BOOL;
+    return dbMeta.tableMetas[tableId].columns[columnId].attrType;
 }
 
 

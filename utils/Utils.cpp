@@ -12,7 +12,7 @@ char dataL[MAX_VARCHAR_LENGTH];
 char dataR[MAX_VARCHAR_LENGTH];
 char rootPath[MAX_ROOT_PATH_LENGTH];
 
-bool Utils::Compare(void *value1, void *value2, AttrType attrType, int attrLength, CompOp compOp) {
+bool Utils::Compare(void *value1, void *value2, AttrType attrType, int attrLength, Operator compOp) {
     switch (compOp) {
         case NO_OP:
             return true;
@@ -108,4 +108,19 @@ int Utils::Cmp(void *value1, void *value2, AttrType attrType, int attrLength) {
 std::string Utils::getAbsolutePath(const char *filename) {
     static char *root = getcwd(rootPath, MAX_ROOT_PATH_LENGTH);
     return std::string(root) + "/" + std::string(filename);
+}
+
+bool Utils::isComparable(Operator op) {
+    return op == NO_OP || op == EQ_OP || op == NE_OP || op == LT_OP || op == GT_OP || op == LE_OP || op == GE_OP;
+
+}
+
+bool Utils::isArithmetic(Operator op) {
+    return op == PLUS_OP || op == MINUS_OP || op == MUL_OP || op == DIV_OP || op == MOD_OP;
+
+}
+
+bool Utils::isLogic(Operator op) {
+    return op == NOT_OP || op == AND_OP || op == OR_OP;
+
 }

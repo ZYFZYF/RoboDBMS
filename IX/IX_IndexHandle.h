@@ -71,7 +71,7 @@ private:
 
     RC Delete(BPlusTreeNodePointer cur, void *key, void *value);
 
-    bool Compare(CompOp compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight);
+    bool Compare(Operator compOp, void *keyLeft, void *valueLeft, void *keyRight, void *valueRight);
 
     void *GetKeyAt(char *pageStart, int index);
 
