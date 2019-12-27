@@ -108,7 +108,7 @@ PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right) {
     op = _op;
     left = _left;
     right = _right;
-    pushUp();
+    if (left && left->type != UNKNOWN && right->type != UNKNOWN)pushUp();
 }
 
 RC PS_Expr::pushUp() {
@@ -175,16 +175,80 @@ RC PS_Expr::pushUp() {
             value.boolValue = isComparable(left->type, right->type) && cmp() >= 0;
             break;
         }
-        case PLUS_OP:
+        case PLUS_OP: {
+            if (left->type == INT && right->type == INT) {
+                type = INT;
+                value.intValue = left->value.intValue + right->value.intValue;
+            } else if (left->type == INT && right->type == FLOAT) {
+                type = FLOAT;
+                value.floatValue = float(left->value.intValue) + right->value.floatValue;
+            } else if (left->type == FLOAT && right->type == INT) {
+                type = FLOAT;
+                value.floatValue = left->value.floatValue + float(right->value.intValue);
+            } else if (left->type == FLOAT && right->type == FLOAT) {
+                type = FLOAT;
+                value.floatValue = left->value.floatValue + right->value.floatValue;
+            } else if (left->type == STRING && right->type == STRING) {
+                type = STRING;
+                string = left->string + right->string;
+            } else throw "unsupported plus type";
             break;
-        case MINUS_OP:
+        }
+        case MINUS_OP: {
+            if (left->type == INT && right->type == INT) {
+                type = INT;
+                value.intValue = left->value.intValue - right->value.intValue;
+            } else if (left->type == INT && right->type == FLOAT) {
+                type = FLOAT;
+                value.floatValue = float(left->value.intValue) - right->value.floatValue;
+            } else if (left->type == FLOAT && right->type == INT) {
+                type = FLOAT;
+                value.floatValue = left->value.floatValue - float(right->value.intValue);
+            } else if (left->type == FLOAT && right->type == FLOAT) {
+                type = FLOAT;
+                value.floatValue = left->value.floatValue - right->value.floatValue;
+            } else throw "unsupported plus type";
             break;
-        case MUL_OP:
+        }
+        case MUL_OP: {
+            if (left->type == INT && right->type == INT) {
+                type = INT;
+                value.intValue = left->value.intValue * right->value.intValue;
+            } else if (left->type == INT && right->type == FLOAT) {
+                type = FLOAT;
+                value.floatValue = float(left->value.intValue) * right->value.floatValue;
+            } else if (left->type == FLOAT && right->type == INT) {
+                type = FLOAT;
+                value.floatValue = left->value.floatValue * float(right->value.intValue);
+            } else if (left->type == FLOAT && right->type == FLOAT) {
+                type = FLOAT;
+                value.floatValue = left->value.floatValue * right->value.floatValue;
+            } else throw "unsupported plus type";
             break;
-        case DIV_OP:
+        }
+        case DIV_OP: {
+            if (left->type == INT && right->type == INT) {
+                type = INT;
+                value.intValue = left->value.intValue / right->value.intValue;
+            } else if (left->type == INT && right->type == FLOAT) {
+                type = FLOAT;
+                value.floatValue = float(left->value.intValue) / right->value.floatValue;
+            } else if (left->type == FLOAT && right->type == INT) {
+                type = FLOAT;
+                value.floatValue = left->value.floatValue / float(right->value.intValue);
+            } else if (left->type == FLOAT && right->type == FLOAT) {
+                type = FLOAT;
+                value.floatValue = left->value.floatValue / right->value.floatValue;
+            } else throw "unsupported plus type";
             break;
-        case MOD_OP:
+        }
+        case MOD_OP: {
+            if (left->type == INT && right->type == INT) {
+                type = INT;
+                value.intValue = left->value.intValue % right->value.intValue;
+            } else throw "unsupported plus type";
             break;
+        }
         case NOT_OP: {
             value.boolValue = !right->value.boolValue;
             break;

@@ -11,7 +11,7 @@
 %}
 
 %%
-[0-9]+                  yylval.str = strdup(yytext); return STR_INTEGER;
+-?[0-9]+                  yylval.str = strdup(yytext); return STR_INTEGER;
 [+-]?[0-9]+\.[0-9]*     yylval.str = strdup(yytext); return STR_REAL;
 
 SHOW|show               return SHOW;
