@@ -27,7 +27,7 @@ public:
 
     RC deleteRecord(char *record, const RM_RID &rmRid);//删除一行记录
 
-    RC deleteCondition(PS_Expr *condition);
+    RC deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList);
 
     void showRecords(int num);//显示头多少条记录，如果是-1代表显示所有
 

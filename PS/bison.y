@@ -19,6 +19,7 @@ void yyerror(const char *s, ...);
   enum Operator comparator;
   PS_Node *node;
   PS_Expr *expr;
+  std::vector<PS_Expr> *conditionList;
   ColumnDesc columnDesc;
   AttrValue attrValue;
   std::vector<AttrValue> *attrValueList;
@@ -35,6 +36,7 @@ void yyerror(const char *s, ...);
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
 %token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
+%token C_AND C_OR
 
 //定义语法中需要的节点的类型
 %type <integer> INTEGER
@@ -44,7 +46,9 @@ void yyerror(const char *s, ...);
 %type <attrValue> ConstValue
 %type <attrValueList> ConstValueList
 %type <identifierList> ColumnNameList
-%type <expr> WhereClause
+%type <expr> Expr
+%type <conditionList> WhereClause
+%type <conditionList> ConditionList
 
 //定义语法
 %%
@@ -317,12 +321,31 @@ Delete		:	DELETE P_FROM IDENTIFIER WhereClause ';'
 
 WhereClause	:	/* empty */
 			{
-				$$ = new PS_Expr(true);
+				$$ = new std::vector<PS_Expr>;
+				$$->emplace_back(PS_Expr(true));
 			}
-//		|	P_WHERE Expr
-//			{
-//				$$ = $2;
-//			}
+		|	P_WHERE ConditionList
+			{
+				$$ = $2;
+			}
+		;
+
+ConditionList	:	ConditionList C_AND Expr
+			{
+				$$ = $1;
+				$$->emplace_back(*$3);
+			}
+		|	Expr
+			{
+				$$ = new std::vector<PS_Expr>;
+				$$->emplace_back(*$1);
+			}
+		;
+
+Expr		:	INTEGER
+			{
+				$$ = new PS_Expr($1);
+			}
 		;
 
 INTEGER 	:	STR_INTEGER

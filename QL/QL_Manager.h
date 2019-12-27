@@ -25,7 +25,7 @@ public:
 
     RC Insert(const char *tbName, std::vector<const char *> *columnList, std::vector<AttrValue> *constValueList);
 
-    RC Delete(const char *tbName, PS_Expr *condition);
+    RC Delete(const char *tbName, std::vector<PS_Expr> *conditionList);
 
     RC Update();
 

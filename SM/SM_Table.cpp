@@ -394,10 +394,10 @@ int SM_Table::getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDes
     return cnt;
 }
 
-RC SM_Table::deleteCondition(PS_Expr *condition) {
+RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) {
     //打开一个无条件遍历
     RM_FileScan rmFileScan;
-    rmFileScan.OpenScan(rmFileHandle);
+    TRY(rmFileScan.OpenScan(rmFileHandle))
     RM_Record rmRecord;
     while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
         char *record;
@@ -405,16 +405,14 @@ RC SM_Table::deleteCondition(PS_Expr *condition) {
         RM_RID rmRid;
         rmRecord.GetRid(rmRid);
         //用这行的值去计算表达式的值
-        condition->eval(*this, record);
-        if (condition->type == BOOL && condition->value.boolValue) {
-            RC rc;
-            if ((rc = deleteRecord(record, rmRid)) != OK_RC) {
-                rmFileScan.CloseScan();
-                return rc;
-            }
+        bool conditionSatisfied = true;
+        for (auto &condition:*conditionList) {
+            condition.eval(*this, record);
+            conditionSatisfied &= condition.value.boolValue;
         }
+        if (conditionSatisfied) TRY(deleteRecord(record, rmRid))
     }
-    rmFileScan.CloseScan();
+    TRY(rmFileScan.CloseScan())
     return OK_RC;
 }
 

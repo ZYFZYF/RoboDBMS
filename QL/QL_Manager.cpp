@@ -77,11 +77,11 @@ RC QL_Manager::Insert(const char *tbName, const char *fileName) {
     return OK_RC;
 }
 
-RC QL_Manager::Delete(const char *tbName, PS_Expr *condition) {
+RC QL_Manager::Delete(const char *tbName, std::vector<PS_Expr> *conditionList) {
     TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
     SM_Table table(SM_Manager::Instance().GetTableMeta(tableId));
-    TRY(table.deleteCondition(condition));
+    TRY(table.deleteWhereConditionSatisfied(conditionList));
     return OK_RC;
 }
 
