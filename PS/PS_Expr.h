@@ -33,6 +33,11 @@ public:
 
     RC eval(SM_Table &table, char *record);
 
+    RC pushUp();
+
+    //获取左边的值减去右边的值的差
+    int cmp();
+
 
 private:
     //是否是常量，无需和列数据挂钩
@@ -50,6 +55,8 @@ private:
     PS_Expr *left{nullptr}, *right{nullptr};
     Operator op{NO_OP};
 };
+
+bool isComparable(AttrType type1, AttrType type2);
 
 
 #endif //ROBODBMS_PS_EXPR_H

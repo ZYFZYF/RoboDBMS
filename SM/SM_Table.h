@@ -15,6 +15,8 @@
 #define COLUMN_SHOW_LENGTH  30 //一列显示的时候占的宽度
 
 class SM_Table {
+    friend class PS_Expr;
+
 public:
     explicit SM_Table(const TableMeta &tableMeta);
 
@@ -68,6 +70,5 @@ private:
 
     RC setColumnNull(char *record, ColumnId columnId);
 };
-
 
 #endif //ROBODBMS_SM_TABLE_H

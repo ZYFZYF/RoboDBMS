@@ -23,6 +23,10 @@ struct Date {
         if ((year % 4 == 0 && year % 100 != 0) || (year % 400 == 0))return day >= 1 && day <= 29;
         return day >= 1 && day <= 28;
     }
+
+    bool operator==(Date &date) {
+        return year == date.year && month == date.month && day == month.day;
+    }
 };
 
 struct Varchar {

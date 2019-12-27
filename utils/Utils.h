@@ -25,6 +25,8 @@ public:
     //类似strcmp，<返回负数，==返回0，＞返回正数
     static int Cmp(void *value1, void *value2, AttrType attrType, int attrLength);
 
+    static int transferFloatToCmpInt(float x);
+
     static void GetMinimumValue(void *value, AttrType attrType);
 
     static void GetMaximumValue(void *value, AttrType attrType);

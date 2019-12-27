@@ -56,13 +56,7 @@ int Utils::Cmp(void *value1, void *value2, AttrType attrType, int attrLength) {
             return *(int *) value1 - *(int *) value2;
         case FLOAT: {
             float gap = *(float *) value1 - *(float *) value2;
-            if (std::fabs(gap) < 1e-5) {
-                return 0;
-            } else if (gap < 0) {
-                return -1;
-            } else {
-                return 1;
-            }
+            return transferFloatToCmpInt(gap);
         }
         case STRING:
             return strncmp((char *) value1, (char *) value2, attrLength);
@@ -123,4 +117,14 @@ bool Utils::isArithmetic(Operator op) {
 bool Utils::isLogic(Operator op) {
     return op == NOT_OP || op == AND_OP || op == OR_OP;
 
+}
+
+int Utils::transferFloatToCmpInt(float x) {
+    if (std::fabs(x) < 1e-5) {
+        return 0;
+    } else if (x < 0) {
+        return -1;
+    } else {
+        return 1;
+    }
 }
