@@ -47,7 +47,7 @@ void yyerror(const char *s, ...);
 %type <attrValue> ConstValue
 %type <attrValueList> ConstValueList
 %type <identifierList> NameList
-%type <expr> Expr
+%type <expr> BoolExpr ValueExpr
 %type <conditionList> WhereClause
 %type <conditionList> ConditionList
 
@@ -331,23 +331,61 @@ WhereClause	:	/* empty */
 			}
 		;
 
-ConditionList	:	ConditionList C_AND Expr
+ConditionList	:	ConditionList C_AND BoolExpr
 			{
 				$$ = $1;
 				$$->emplace_back(*$3);
 			}
-		|	Expr
+		|	BoolExpr
 			{
 				$$ = new std::vector<PS_Expr>;
 				$$->emplace_back(*$1);
 			}
 		;
 
-Expr		:	'(' Expr ')'
+BoolExpr	:	BoolExpr C_OR BoolExpr
 			{
-				$$ = $2;
+				$$ = new PS_Expr($1, OR_OP, $3);
 			}
-		|	INTEGER
+		|	ValueExpr '=' '=' ValueExpr
+			{
+				$$ = new PS_Expr($1, EQ_OP, $4);
+			}
+		|	ValueExpr '=' ValueExpr
+			{
+				$$ = new PS_Expr($1, EQ_OP, $3);
+			}
+		|	ValueExpr '!' '=' ValueExpr
+			{
+				$$ = new PS_Expr($1, NE_OP, $4);
+			}
+		|	ValueExpr '<' '>' ValueExpr
+			{
+				$$ = new PS_Expr($1, NE_OP, $4);
+			}
+		|	ValueExpr '<' ValueExpr
+			{
+				$$ = new PS_Expr($1, LT_OP, $3);
+			}
+		|	ValueExpr '<' '=' ValueExpr
+			{
+				$$ = new PS_Expr($1, LE_OP, $4);
+			}
+		|	ValueExpr '>' ValueExpr
+			{
+				$$ = new PS_Expr($1, GT_OP, $3);
+			}
+		|	ValueExpr '>' '=' ValueExpr
+			{
+				$$ = new PS_Expr($1, GE_OP, $4);
+			}
+		|	P_NOT '(' BoolExpr ')'
+                 	{
+                        $$ = new PS_Expr(nullptr, NOT_OP, $3);
+                	}
+		;
+
+ValueExpr	:	INTEGER
 			{
 				$$ = new PS_Expr($1);
 			}
@@ -367,71 +405,32 @@ Expr		:	'(' Expr ')'
 			{
 				$$ = new PS_Expr($1, $3);
 			}
-		|	Expr C_OR Expr
-			{
-				$$ = new PS_Expr($1, OR_OP, $3);
-			}
-		|	Expr '=' '=' Expr
-			{
-				$$ = new PS_Expr($1, EQ_OP, $4);
-			}
-		|	Expr '=' Expr
-			{
-				$$ = new PS_Expr($1, EQ_OP, $3);
-			}
-		|	Expr '!' '=' Expr
-			{
-				$$ = new PS_Expr($1, NE_OP, $4);
-			}
-		|	Expr '<' '>' Expr
-			{
-				$$ = new PS_Expr($1, NE_OP, $4);
-			}
-		|	Expr '<' Expr
-			{
-				$$ = new PS_Expr($1, LT_OP, $3);
-			}
-		|	Expr '<' '=' Expr
-			{
-				$$ = new PS_Expr($1, LE_OP, $4);
-			}
-		|	Expr '>' Expr
-			{
-				$$ = new PS_Expr($1, GT_OP, $3);
-			}
-		|	Expr '>' '=' Expr
-			{
-				$$ = new PS_Expr($1, GE_OP, $4);
-			}
-		|	Expr '+' Expr
+
+		|	ValueExpr '+' ValueExpr
 			{
 				$$ = new PS_Expr($1, PLUS_OP, $3);
 			}
-		|	Expr '-' Expr
+		|	ValueExpr '-' ValueExpr
 			{
 				$$ = new PS_Expr($1, MINUS_OP, $3);
 			}
-		|	Expr '*' Expr
+		|	ValueExpr '*' ValueExpr
 			{
 				$$ = new PS_Expr($1, MUL_OP, $3);
 			}
-		|	Expr '/' Expr
+		|	ValueExpr '/' ValueExpr
 			{
 				$$ = new PS_Expr($1, DIV_OP, $3);
 			}
-		|	Expr '%' Expr
+		|	ValueExpr '%' ValueExpr
 			{
 				$$ = new PS_Expr($1, MOD_OP, $3);
 			}
-		|	P_NOT Expr
-			{
-				$$ = new PS_Expr(nullptr, NOT_OP, $2);
-			}
-		|	Expr P_IS P_NULL
+		|	ValueExpr P_IS P_NULL
 			{
 				$$ = new PS_Expr($1, EQ_OP, new PS_Expr());
 			}
-		|	Expr P_IS P_NOT P_NULL
+		|	ValueExpr P_IS P_NOT P_NULL
 			{
 				$$ = new PS_Expr($1, NE_OP, new PS_Expr());
 			}

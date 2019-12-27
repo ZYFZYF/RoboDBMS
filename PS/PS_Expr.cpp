@@ -52,8 +52,8 @@ RC PS_Expr::eval(SM_Table &table, char *record) {
     //从里面拿列的值
     if (isColumn) {
         //TODO 这里只考虑从当前表的列里面获取值，暂且不考虑多表
-        for (int i = 0; i < MAX_COLUMN_NUM; i++)
-            if (strcmp(tableName.c_str(), table.tableMeta.columns[i].name) == 0) {
+        for (int i = 0; i < table.tableMeta.columnNum; i++)
+            if (strcmp(columnName.c_str(), table.tableMeta.columns[i].name) == 0) {
                 type = table.tableMeta.columns[i].attrType;
                 char *data = table.getColumnData(record, i);
                 if (data == nullptr) {
@@ -86,6 +86,7 @@ RC PS_Expr::eval(SM_Table &table, char *record) {
                 }
                 //在计算时VARCHAR和STRING一视同仁，并且都转成std::string进行操作
                 if (type == VARCHAR)type = STRING;
+                return OK_RC;
             }
         return SM_COLUMN_NOT_EXIST;
     }
@@ -100,6 +101,7 @@ RC PS_Expr::eval(SM_Table &table, char *record) {
     }
     if (right)TRY(right->eval(table, record))
     TRY(pushUp())
+    return OK_RC;
 }
 
 PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right) {
@@ -183,15 +185,20 @@ RC PS_Expr::pushUp() {
             break;
         case MOD_OP:
             break;
-        case NOT_OP:
+        case NOT_OP: {
+            value.boolValue = !right->value.boolValue;
             break;
+        }
         case AND_OP:
             break;
-        case OR_OP:
+        case OR_OP: {
+            value.boolValue = left->value.boolValue || right->value.boolValue;
             break;
+        }
         default:
             throw "unsupported operator";
     }
+    return OK_RC;
 }
 
 int PS_Expr::cmp() {

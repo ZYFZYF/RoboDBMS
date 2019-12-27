@@ -25,7 +25,7 @@ struct Date {
     }
 
     bool operator==(Date &date) {
-        return year == date.year && month == date.month && day == month.day;
+        return year == date.year && month == date.month && day == date.day;
     }
 };
 
