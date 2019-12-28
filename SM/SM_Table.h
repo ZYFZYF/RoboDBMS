@@ -30,9 +30,10 @@ public:
     RC
     setRecordData(char *record, std::vector<ColumnId> *columnIdList, std::vector<AttrValue> *constValueList);//给一列设置数据
 
-    RC insertRecord(char *record);//插入一行记录
+    //是否影响主键
+    RC insertRecord(char *record, bool influencePrimaryKey = true);//插入一行记录
 
-    RC deleteRecord(char *record, const RM_RID &rmRid);//删除一行记录
+    RC deleteRecord(char *record, const RM_RID &rmRid, bool influencePrimaryKey = true);//删除一行记录
 
     RC deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList);
 
@@ -81,6 +82,8 @@ private:
     RC setColumnData(char *record, ColumnId columnId, AttrValue attrValue, bool alreadyComplete = false);
 
     RC setColumnNull(char *record, ColumnId columnId);
+
+    RC setColumnDataByExpr(char *record, ColumnId columnId, PS_Expr &expr);
 };
 
 #endif //ROBODBMS_SM_TABLE_H

@@ -72,10 +72,10 @@ RC SM_Table::setRecordData(char *record, std::vector<ColumnId> *columnIdList, st
     return OK_RC;
 }
 
-RC SM_Table::insertRecord(char *record) {
+RC SM_Table::insertRecord(char *record, bool influencePrimaryKey) {
     RM_RID rmRid;
     //插入之前判断主键是否重复，没有主键不用判断
-    if (tableMeta.primaryKey.keyNum) {
+    if (influencePrimaryKey && tableMeta.primaryKey.keyNum) {
         int indexNo = tableMeta.primaryKey.indexIndex;
         IndexDesc &indexDesc = tableMeta.indexes[indexNo];
         int indexKeyLength = getIndexKeyLength(indexDesc);
@@ -271,7 +271,7 @@ RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue
         case VARCHAR: {
             Varchar varchar{};
             varchar.length = strlen(attrValue.charValue);
-            if (strlen(attrValue.charValue) >= tableMeta.columns[columnId].stringMaxLength)return QL_VARCHAR_TOO_LONG;
+            if (varchar.length >= tableMeta.columns[columnId].stringMaxLength)return QL_VARCHAR_TOO_LONG;
             strcpy(varchar.spName, Utils::getStringPoolFileName(tableMeta.createName).c_str());
             TRY(spHandle.InsertString(attrValue.charValue, varchar.length, varchar.offset))
             attrValue.varcharValue = varchar;
@@ -419,7 +419,7 @@ RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) 
     return OK_RC;
 }
 
-RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid) {
+RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid, bool influencePrimaryKey) {
     //删除之前判断主键的值是否被外联，外联的话不能删除，没有主键不用判断
     if (tableMeta.primaryKey.keyNum) {
         int indexNo = tableMeta.primaryKey.indexIndex;
@@ -427,7 +427,9 @@ RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid) {
         int indexKeyLength = getIndexKeyLength(indexDesc);
         char key[indexKeyLength];
         TRY(composeIndexKey(record, indexDesc, key))
-        //TODO 判断这个主键是否外链了存在的外键
+        if (influencePrimaryKey) {
+            //TODO 判断这个主键是否外链了存在的外键
+        }
     }
     TRY(rmFileHandle.DeleteRec(rmRid))
     //删除索引
@@ -459,8 +461,104 @@ int SM_Table::count() {
 
 RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS_Expr> > *assignExprList,
                                            std::vector<PS_Expr> *conditionList) {
+    bool influencePrimaryKey = false;
     std::vector<ColumnId> updateColumnIdList;
     for (auto &assignExpr: *assignExprList) {
-        ColumnId columnId;
+        ColumnId columnId = SM_Manager::Instance().GetColumnIdFromName(tableId, assignExpr.first.data());
+        if (columnId < 0) return SM_COLUMN_NOT_EXIST;
+        for (int i = 0; i < tableMeta.primaryKey.keyNum; i++)
+            if (tableMeta.primaryKey.columnId[i] == columnId)influencePrimaryKey = true;
+        updateColumnIdList.push_back(columnId);
     }
+    RM_FileScan rmFileScan;
+    TRY(rmFileScan.OpenScan(rmFileHandle))
+    RM_Record rmRecord;
+    char newRecord[recordSize];
+    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        char *record;
+        rmRecord.GetData(record);
+        RM_RID rmRid;
+        rmRecord.GetRid(rmRid);
+        bool conditionSatisfied = true;
+        for (auto &condition:*conditionList) {
+            TRY(condition.eval(*this, record))
+            conditionSatisfied &= condition.value.boolValue;
+            if (!conditionSatisfied)break;
+        }
+        if (conditionSatisfied) {
+            //拷贝一个新的出来，因为不能直接修改原来的值
+            memcpy(newRecord, record, recordSize);
+            //这里一定要先尝试赋值，因为先删再赋值有可能出错这样就凭白少了一条记录，如果更新不成功跳过这一条的
+            bool updateSuccess = true;
+            for (int i = 0; i < updateColumnIdList.size(); i++) {
+                if (setColumnDataByExpr(newRecord, updateColumnIdList[i], (*assignExprList)[i].second) !=
+                    OK_RC) {
+                    updateSuccess = false;
+                    break;
+                }
+            }
+            if (updateSuccess) {
+                //这些基本不会出错
+                TRY(deleteRecord(record, rmRid, influencePrimaryKey))
+                TRY(insertRecord(newRecord, influencePrimaryKey));
+            }
+        }
+    }
+    TRY(rmFileScan.CloseScan())
+    return OK_RC;
+}
+
+RC SM_Table::setColumnDataByExpr(char *record, ColumnId columnId, PS_Expr &expr) {
+    TRY(expr.eval(*this, record))
+    //命令里有传该参数的值，但也有可能是null
+    if (expr.value.isNull) {
+        TRY(setColumnNull(record, columnId))
+        return OK_RC;
+    }
+    //先设为不是null
+    record[columnOffset[columnId]] = 0;
+    char *data = record + columnOffset[columnId] + 1;
+    switch (tableMeta.columns[columnId].attrType) {
+        case INT: {
+            if (expr.type == INT)*(int *) data = expr.value.intValue;
+            else return QL_UNSUPPORTED_ASSIGN_TYPE;
+            break;
+        }
+        case FLOAT: {
+            if (expr.type == FLOAT)*(float *) data = expr.value.floatValue;
+            else if (expr.type == INT) *(float *) data = float(expr.value.intValue);
+            else return QL_UNSUPPORTED_ASSIGN_TYPE;
+            break;
+        }
+        case STRING: {
+            if (expr.type == STRING) {
+                if (expr.string.length() >= tableMeta.columns[columnId].attrLength)return QL_CHAR_TOO_LONG;
+                strcpy(data, expr.string.data());
+            } else return QL_UNSUPPORTED_ASSIGN_TYPE;
+            break;
+        }
+        case DATE: {
+            if (expr.type == DATE)*(Date *) data = expr.value.dateValue;
+            else if (expr.type == STRING) {
+                Date date{};
+                TRY(Utils::transferStringToDate(expr.string.data(), date))
+                *(Date *) data = date;
+            } else return QL_UNSUPPORTED_ASSIGN_TYPE;
+            break;
+        }
+        case VARCHAR: {
+            if (expr.type == STRING) {
+                Varchar varchar{};
+                varchar.length = expr.string.length();
+                if (varchar.length >= tableMeta.columns[columnId].stringMaxLength)return QL_VARCHAR_TOO_LONG;
+                strcpy(varchar.spName, Utils::getStringPoolFileName(tableMeta.createName).c_str());
+                TRY(spHandle.InsertString(expr.string.data(), varchar.length, varchar.offset))
+                *(Varchar *) data = varchar;
+            } else return QL_UNSUPPORTED_ASSIGN_TYPE;
+            break;
+        }
+        default:
+            return QL_UNSUPPORTED_ASSIGN_TYPE;
+    }
+    return OK_RC;
 }

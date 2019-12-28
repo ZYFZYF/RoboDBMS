@@ -310,7 +310,7 @@ int PS_Expr::cmp() {
             } else {
                 if (date1.month != date2.month) {
                     return date1.month - date2.month;
-                } else return date1.day < date2.day;
+                } else return date1.day - date2.day;
             }
         }
     }
