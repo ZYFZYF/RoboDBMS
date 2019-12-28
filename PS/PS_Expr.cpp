@@ -59,6 +59,7 @@ RC PS_Expr::eval(SM_Table &table, char *record) {
                 if (data == nullptr) {
                     value.isNull = true;
                 } else {
+                    value.isNull = false;
                     switch (type) {
                         case INT: {
                             value.intValue = *(int *) data;
@@ -129,6 +130,7 @@ RC PS_Expr::pushUp() {
         }
         case NE_OP: {
             type = BOOL;
+            //printf("%s %d\n", left->string.c_str(), left->value.isNull);
             if (left->value.isNull && right->value.isNull) {
                 value.boolValue = false;
                 return OK_RC;
