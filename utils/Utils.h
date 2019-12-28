@@ -27,6 +27,8 @@ public:
 
     static int transferFloatToCmpInt(float x);
 
+    static RC transferStringToDate(const char *data, Date &date);
+
     static void GetMinimumValue(void *value, AttrType attrType);
 
     static void GetMaximumValue(void *value, AttrType attrType);

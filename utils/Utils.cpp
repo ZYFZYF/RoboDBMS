@@ -128,3 +128,15 @@ int Utils::transferFloatToCmpInt(float x) {
         return 1;
     }
 }
+
+RC Utils::transferStringToDate(const char *data, Date &date) {
+    char *endPtr;
+    date.year = strtol(data, &endPtr, 10);
+    if (endPtr != data + 4 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
+    date.month = strtol(data + 5, &endPtr, 10);
+    if (endPtr != data + 7 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
+    date.day = strtol(data + 8, &endPtr, 10);
+    if (endPtr != data + 10 || strlen(endPtr) != 0)return QL_DATE_CONT_CONVERT_TO_DATE;
+    if (!date.isValid())return QL_DATE_IS_NOT_VALID;
+    return OK_RC;
+}

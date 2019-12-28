@@ -111,8 +111,9 @@ map<RC, string> msg = {
         {QL_PRIMARY_KEY_DUPLICATE,       "QL WARNING: PRIMARY KEY IS NOT UNIQUE, NOT ALLOW"},
         {QL_VARCHAR_TOO_LONG,            "QL WARNING: INPUT VARCHAR IS LONGER THAN ITS MAX LENGTH"},
         {QL_FILE_NOT_EXIST,              "QL WARNING: FILE NOT EXIST"},
+        {QL_UNSUPPORTED_OPERATION_TYPE,  "QL WARNING: UNSUPPORTED OPERATION TYPE"},
 
-        {SM_UNIX,                        " SM ERROR: UNIX ERROR"},
+        {SM_UNIX,                        "SM ERROR: UNIX ERROR"},
 
 
         {UNKNOWN_RC,                     "Sorry: we haven't name this warning or error"}

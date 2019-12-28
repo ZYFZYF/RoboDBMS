@@ -123,7 +123,7 @@ RC PS_Expr::pushUp() {
                 value.boolValue = false;
                 return OK_RC;
             }
-            value.boolValue = isComparable(left->type, right->type) && cmp() == 0;
+            value.boolValue = isComparable() && cmp() == 0;
             break;
         }
         case NE_OP: {
@@ -136,7 +136,7 @@ RC PS_Expr::pushUp() {
                 value.boolValue = true;
                 return OK_RC;
             }
-            value.boolValue = isComparable(left->type, right->type) && cmp() == 0;
+            value.boolValue = isComparable() && cmp() == 0;
             break;
         }
         case LT_OP: {
@@ -145,7 +145,7 @@ RC PS_Expr::pushUp() {
                 value.boolValue = false;
                 return OK_RC;
             }
-            value.boolValue = isComparable(left->type, right->type) && cmp() < 0;
+            value.boolValue = isComparable() && cmp() < 0;
             break;
         }
         case GT_OP: {
@@ -154,7 +154,7 @@ RC PS_Expr::pushUp() {
                 value.boolValue = false;
                 return OK_RC;
             }
-            value.boolValue = isComparable(left->type, right->type) && cmp() > 0;
+            value.boolValue = isComparable() && cmp() > 0;
             break;
         }
         case LE_OP: {
@@ -163,7 +163,7 @@ RC PS_Expr::pushUp() {
                 value.boolValue = false;
                 return OK_RC;
             }
-            value.boolValue = isComparable(left->type, right->type) && cmp() <= 0;
+            value.boolValue = isComparable() && cmp() <= 0;
             break;
         }
         case GE_OP: {
@@ -172,7 +172,7 @@ RC PS_Expr::pushUp() {
                 value.boolValue = false;
                 return OK_RC;
             }
-            value.boolValue = isComparable(left->type, right->type) && cmp() >= 0;
+            value.boolValue = isComparable() && cmp() >= 0;
             break;
         }
         case PLUS_OP: {
@@ -191,7 +191,7 @@ RC PS_Expr::pushUp() {
             } else if (left->type == STRING && right->type == STRING) {
                 type = STRING;
                 string = left->string + right->string;
-            } else throw "unsupported plus type";
+            } else return QL_UNSUPPORTED_OPERATION_TYPE;
             break;
         }
         case MINUS_OP: {
@@ -207,7 +207,7 @@ RC PS_Expr::pushUp() {
             } else if (left->type == FLOAT && right->type == FLOAT) {
                 type = FLOAT;
                 value.floatValue = left->value.floatValue - right->value.floatValue;
-            } else throw "unsupported plus type";
+            } else return QL_UNSUPPORTED_OPERATION_TYPE;
             break;
         }
         case MUL_OP: {
@@ -223,7 +223,7 @@ RC PS_Expr::pushUp() {
             } else if (left->type == FLOAT && right->type == FLOAT) {
                 type = FLOAT;
                 value.floatValue = left->value.floatValue * right->value.floatValue;
-            } else throw "unsupported plus type";
+            } else return QL_UNSUPPORTED_OPERATION_TYPE;
             break;
         }
         case DIV_OP: {
@@ -239,28 +239,26 @@ RC PS_Expr::pushUp() {
             } else if (left->type == FLOAT && right->type == FLOAT) {
                 type = FLOAT;
                 value.floatValue = left->value.floatValue / right->value.floatValue;
-            } else throw "unsupported plus type";
+            } else return QL_UNSUPPORTED_OPERATION_TYPE;
             break;
         }
         case MOD_OP: {
             if (left->type == INT && right->type == INT) {
                 type = INT;
                 value.intValue = left->value.intValue % right->value.intValue;
-            } else throw "unsupported plus type";
+            } else return QL_UNSUPPORTED_OPERATION_TYPE;
             break;
         }
         case NOT_OP: {
             value.boolValue = !right->value.boolValue;
             break;
         }
-        case AND_OP:
-            break;
         case OR_OP: {
             value.boolValue = left->value.boolValue || right->value.boolValue;
             break;
         }
         default:
-            throw "unsupported operator";
+            return QL_UNSUPPORTED_OPERATION_TYPE;
     }
     return OK_RC;
 }
@@ -275,22 +273,34 @@ int PS_Expr::cmp() {
                 return left->value.intValue - right->value.intValue;
             } else if (right->type == FLOAT) {
                 return Utils::transferFloatToCmpInt(left->value.intValue - right->value.floatValue);
-            } else
-                throw "unsupported cmp type";
+            }
         }
         case FLOAT: {
             if (right->type == INT) {
                 return Utils::transferFloatToCmpInt(left->value.floatValue - right->value.intValue);
             } else if (right->type == FLOAT) {
                 return Utils::transferFloatToCmpInt(left->value.floatValue - right->value.floatValue);
-            } else
-                throw "unsupported cmp type";
+            }
         }
         case STRING: {
-            return strcmp(left->string.c_str(), right->string.c_str());
+            if (right->type == DATE) {
+                Date &date1 = left->value.dateValue, &date2 = right->value.dateValue;
+                Utils::transferStringToDate(left->string.c_str(), date1);
+                if (date1.year != date2.year) {
+                    return date1.year - date2.year;
+                } else {
+                    if (date1.month != date2.month) {
+                        return date1.month - date2.month;
+                    } else return date1.day < date2.day;
+                }
+            } else if (right->type == STRING)
+                return strcmp(left->string.c_str(), right->string.c_str());
         }
         case DATE: {
             Date &date1 = left->value.dateValue, &date2 = right->value.dateValue;
+            if (right->type == STRING) {
+                Utils::transferStringToDate(right->string.c_str(), date2);
+            }
             if (date1.year != date2.year) {
                 return date1.year - date2.year;
             } else {
@@ -299,12 +309,22 @@ int PS_Expr::cmp() {
                 } else return date1.day < date2.day;
             }
         }
-        default:
-            throw "unsupported cmp type";
     }
 }
 
-bool isComparable(AttrType type1, AttrType type2) {
-    return type1 == type2 || ((type1 == INT || type1 == FLOAT) && (type2 == INT || type2 == FLOAT));
+bool PS_Expr::isComparable() {
+    //普通的可比较函数
+    AttrType type1 = left->type, type2 = right->type;
+    if (type1 == type2 || ((type1 == INT || type1 == FLOAT) && (type2 == INT || type2 == FLOAT)))return true;
+    //字符串和日期的比较
+    if (type1 == STRING && type2 == DATE) {
+        Date date{};
+        return Utils::transferStringToDate(left->string.c_str(), date) == OK_RC;
+    }
+    if (type1 == DATE && type2 == STRING) {
+        Date date{};
+        return Utils::transferStringToDate(right->string.c_str(), date) == OK_RC;
+    }
+    return false;
 }
 

@@ -254,15 +254,8 @@ RC SM_Table::completeAttrValueByColumnId(ColumnId columnId, AttrValue &attrValue
             break;
         }
         case DATE: {
-            char *endPtr;
             Date date{};
-            date.year = strtol(attrValue.charValue, &endPtr, 10);
-            if (endPtr != attrValue.charValue + 4 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
-            date.month = strtol(attrValue.charValue + 5, &endPtr, 10);
-            if (endPtr != attrValue.charValue + 7 || endPtr[0] != '-')return QL_DATE_CONT_CONVERT_TO_DATE;
-            date.day = strtol(attrValue.charValue + 8, &endPtr, 10);
-            if (endPtr != attrValue.charValue + 10 || strlen(endPtr) != 0)return QL_DATE_CONT_CONVERT_TO_DATE;
-            if (!date.isValid())return QL_DATE_IS_NOT_VALID;
+            TRY(Utils::transferStringToDate(attrValue.charValue, date))
             attrValue.dateValue = date;
             break;
         }
@@ -407,7 +400,7 @@ RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) 
         //用这行的值去计算表达式的值
         bool conditionSatisfied = true;
         for (auto &condition:*conditionList) {
-            condition.eval(*this, record);
+            TRY(condition.eval(*this, record))
             conditionSatisfied &= condition.value.boolValue;
             if (!conditionSatisfied)break;
         }

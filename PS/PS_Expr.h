@@ -54,9 +54,9 @@ private:
     //二元运算
     PS_Expr *left{nullptr}, *right{nullptr};
     Operator op{NO_OP};
-};
 
-bool isComparable(AttrType type1, AttrType type2);
+    bool isComparable();
+};
 
 
 #endif //ROBODBMS_PS_EXPR_H
