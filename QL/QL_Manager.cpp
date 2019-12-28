@@ -26,7 +26,7 @@ RC
 QL_Manager::Insert(const char *tbName, std::vector<const char *> *columnList, std::vector<AttrValue> *constValueList) {
     TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
-    SM_Table table(SM_Manager::Instance().GetTableMeta(tableId));
+    SM_Table table(tableId);
     std::vector<ColumnId> columnIdList;
     if (columnList != nullptr) {
         for (auto &column:*columnList) {
@@ -76,7 +76,7 @@ RC QL_Manager::Insert(const char *tbName, const char *fileName) {
 RC QL_Manager::Delete(const char *tbName, std::vector<PS_Expr> *conditionList) {
     TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
-    SM_Table table(SM_Manager::Instance().GetTableMeta(tableId));
+    SM_Table table(tableId);
     TRY(table.deleteWhereConditionSatisfied(conditionList));
     return OK_RC;
 }
@@ -84,7 +84,7 @@ RC QL_Manager::Delete(const char *tbName, std::vector<PS_Expr> *conditionList) {
 RC QL_Manager::Count(const char *tbName) {
     TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
-    SM_Table table(SM_Manager::Instance().GetTableMeta(tableId));
+    SM_Table table(tableId);
     printf("Table %s has %d rows\n", tbName, table.count());
     return OK_RC;
 }
@@ -93,7 +93,7 @@ RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_
                       std::vector<PS_Expr> *conditionList) {
     TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
-    SM_Table table(SM_Manager::Instance().GetTableMeta(tableId));
+    SM_Table table(tableId);
     TRY(table.updateWhereConditionSatisfied(assignExprList, conditionList));
     return OK_RC;
 }

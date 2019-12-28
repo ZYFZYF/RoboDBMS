@@ -177,7 +177,7 @@ RC SM_Manager::DescTable(const char *tbName) {
     }
     TableId tableId = GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
-    SM_Table table(dbMeta.tableMetas[tableId]);
+    SM_Table table(tableId);
     //列内容展示
     printf("Column\n");
     char indent[] = "\t\t";
@@ -402,7 +402,7 @@ RC SM_Manager::AddPrimaryKey(const char *tbName, std::vector<const char *> *colu
                 indexDesc.columnId[j] = primaryKey.columnId[j];
             }
             primaryKey.indexIndex = i;
-            SM_Table table(dbMeta.tableMetas[tableId]);
+            SM_Table table(tableId);
             TRY(table.createIndex(i, indexDesc, false));
             dbMeta.tableMetas[tableId].indexes[i] = indexDesc;
             dbMeta.tableMetas[tableId].primaryKey = primaryKey;
@@ -545,7 +545,7 @@ RC SM_Manager::AddIndex(const char *tbName, const char *indexName, std::vector<c
     //没有的话再找空位往里加
     for (int i = 0; i < MAX_INDEX_NUM; i++)
         if (dbMeta.tableMetas[tableId].indexes[i].keyNum == 0) {
-            SM_Table table(dbMeta.tableMetas[tableId]);
+            SM_Table table(tableId);
             TRY(table.createIndex(i, indexDesc));
             dbMeta.tableMetas[tableId].indexes[i] = indexDesc;
             WriteDbMeta();

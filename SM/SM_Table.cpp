@@ -11,7 +11,15 @@
 #include "../IX/IX_IndexScan.h"
 #include "SM_Manager.h"
 
-SM_Table::SM_Table(const TableMeta &tableMeta) : tableMeta(tableMeta) {
+SM_Table::SM_Table(TableId _tableId) : tableId(_tableId), tableMeta(SM_Manager::Instance().GetTableMeta(tableId)) {
+    init();
+}
+
+SM_Table::SM_Table(TableMeta &_tableMeta) : tableId(-1), tableMeta(_tableMeta) {
+    init();
+}
+
+void SM_Table::init() {
     recordSize = 0;
     for (int i = 0; i < tableMeta.columnNum; i++) {
         columnOffset[i] = recordSize;

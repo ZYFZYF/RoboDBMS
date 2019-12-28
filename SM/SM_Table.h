@@ -18,7 +18,12 @@ class SM_Table {
     friend class PS_Expr;
 
 public:
-    explicit SM_Table(const TableMeta &tableMeta);
+    //通常情况下是从存在的表中新建
+    explicit SM_Table(TableId _tableId);
+
+    //有时候会从虚拟的tableMeta生成表，还可用于后面的Select实现
+    explicit SM_Table(TableMeta &_tableMeta);
+
 
     char *getColumnData(char *record, ColumnId columnId);//获取某一列的数据，如果没有返回NULL
 
@@ -56,15 +61,19 @@ public:
     ~SM_Table();
 
 private:
-    TableMeta tableMeta;
-    int recordSize;
+    TableId tableId;
+    TableMeta &tableMeta;
+    int recordSize{};
+
+    void init();
+
 public:
     int getRecordSize() const;
 
 private:
     RM_FileHandle rmFileHandle;
     SP_Handle spHandle;
-    int columnOffset[MAX_COLUMN_NUM];
+    int columnOffset[MAX_COLUMN_NUM]{};
 
     std::string formatRecordToString(char *record);
 
