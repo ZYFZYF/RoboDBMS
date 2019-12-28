@@ -47,7 +47,7 @@ void yyerror(const char *s, ...);
 %type <attrValue> ConstValue
 %type <attrValueList> ConstValueList
 %type <identifierList> NameList
-%type <expr> BoolExpr ValueExpr
+%type <expr> BoolExpr ValueExpr LowerValueExpr LeafValueExpr
 %type <conditionList> WhereClause
 %type <conditionList> ConditionList
 
@@ -381,11 +381,51 @@ BoolExpr	:	BoolExpr C_OR BoolExpr
 			}
 		|	P_NOT '(' BoolExpr ')'
                  	{
-                        $$ = new PS_Expr(nullptr, NOT_OP, $3);
+                        	$$ = new PS_Expr(nullptr, NOT_OP, $3);
                 	}
+                |	ValueExpr P_IS P_NULL
+                        {
+                        	$$ = new PS_Expr($1, EQ_OP, new PS_Expr());
+                        }
+                |	ValueExpr P_IS P_NOT P_NULL
+                        {
+                        	$$ = new PS_Expr($1, NE_OP, new PS_Expr());
+                        }
 		;
 
-ValueExpr	:	INTEGER
+ValueExpr	:	ValueExpr '+' LowerValueExpr
+			{
+				$$ = new PS_Expr($1, PLUS_OP, $3);
+			}
+		|	ValueExpr '-' LowerValueExpr
+			{
+				$$ = new PS_Expr($1, MINUS_OP, $3);
+			}
+		|	LowerValueExpr
+			{
+				$$ = $1;
+			}
+		;
+
+LowerValueExpr	:	LowerValueExpr '*' LeafValueExpr
+			{
+				$$ = new PS_Expr($1, MUL_OP, $3);
+			}
+		|	LowerValueExpr '/' LeafValueExpr
+			{
+				$$ = new PS_Expr($1, DIV_OP, $3);
+			}
+		|	LowerValueExpr '%' LeafValueExpr
+			{
+				$$ = new PS_Expr($1, MOD_OP, $3);
+			}
+		|	LeafValueExpr
+			{
+				$$ = $1;
+			}
+		;
+
+LeafValueExpr	:	INTEGER
 			{
 				$$ = new PS_Expr($1);
 			}
@@ -405,35 +445,10 @@ ValueExpr	:	INTEGER
 			{
 				$$ = new PS_Expr($1, $3);
 			}
-
-		|	ValueExpr '+' ValueExpr
-			{
-				$$ = new PS_Expr($1, PLUS_OP, $3);
-			}
-		|	ValueExpr '-' ValueExpr
-			{
-				$$ = new PS_Expr($1, MINUS_OP, $3);
-			}
-		|	ValueExpr '*' ValueExpr
-			{
-				$$ = new PS_Expr($1, MUL_OP, $3);
-			}
-		|	ValueExpr '/' ValueExpr
-			{
-				$$ = new PS_Expr($1, DIV_OP, $3);
-			}
-		|	ValueExpr '%' ValueExpr
-			{
-				$$ = new PS_Expr($1, MOD_OP, $3);
-			}
-		|	ValueExpr P_IS P_NULL
-			{
-				$$ = new PS_Expr($1, EQ_OP, new PS_Expr());
-			}
-		|	ValueExpr P_IS P_NOT P_NULL
-			{
-				$$ = new PS_Expr($1, NE_OP, new PS_Expr());
-			}
+		|	'(' ValueExpr ')'
+                	{
+                		$$ = $2;
+                	}
 		;
 
 INTEGER 	:	STR_INTEGER
