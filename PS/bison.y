@@ -26,6 +26,8 @@ void yyerror(const char *s, ...);
   std::vector<AttrValue> *attrValueList;
   std::vector<ColumnDesc> *columnList;
   std::vector<const char *> *identifierList;
+  std::pair<std::string, PS_Expr> *assignExpr;
+  std::vector<std::pair<std::string, PS_Expr> > *assignExprList;
 }
 
 //定义标识符
@@ -48,8 +50,9 @@ void yyerror(const char *s, ...);
 %type <attrValueList> ConstValueList
 %type <identifierList> NameList
 %type <expr> BoolExpr ValueExpr LowerValueExpr LeafValueExpr
-%type <conditionList> WhereClause
-%type <conditionList> ConditionList
+%type <conditionList> WhereClause ConditionList
+%type <assignExpr> AssignExpr
+%type <assignExprList> SetClause
 
 //定义语法
 %%
@@ -74,6 +77,7 @@ DDL 	: 	CreateDatabase
 DML	: 	InsertRow
 	|	InsertFromFile
 	|	Delete
+	|	Update
 	;
 
 HELP 	: 	SHOW DATABASES ';'{
@@ -317,6 +321,30 @@ InsertFromFile 	:	INSERT P_INTO IDENTIFIER P_FROM STR ';'
 Delete		:	DELETE P_FROM IDENTIFIER WhereClause ';'
 			{
 				DO(QL_Manager::Instance().Delete($3, $4));
+			}
+		;
+
+Update		:	UPDATE IDENTIFIER P_SET SetClause WhereClause ';'
+			{
+				DO(QL_Manager::Instance().Update($2, $4, $5));
+			}
+		;
+
+SetClause	:	SetClause ',' AssignExpr
+			{
+				$$ = $1;
+				$$->emplace_back(*$3);
+			}
+		|	AssignExpr
+			{
+				$$ = new std::vector<std::pair<std::string, PS_Expr> >;
+				$$->emplace_back(*$1);
+			}
+		;
+
+AssignExpr	:	IDENTIFIER '=' ValueExpr
+			{
+				$$ = new std::pair<std::string, PS_Expr>(std::string($1), *$3);
 			}
 		;
 

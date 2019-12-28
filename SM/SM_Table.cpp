@@ -9,6 +9,7 @@
 #include "../RM/RM_FileScan.h"
 #include "../IX/IX_Manager.h"
 #include "../IX/IX_IndexScan.h"
+#include "SM_Manager.h"
 
 SM_Table::SM_Table(const TableMeta &tableMeta) : tableMeta(tableMeta) {
     recordSize = 0;
@@ -446,4 +447,12 @@ int SM_Table::count() {
     }
     rmFileScan.CloseScan();
     return cnt;
+}
+
+RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS_Expr> > *assignExprList,
+                                           std::vector<PS_Expr> *conditionList) {
+    std::vector<ColumnId> updateColumnIdList;
+    for (auto &assignExpr: *assignExprList) {
+        ColumnId columnId;
+    }
 }

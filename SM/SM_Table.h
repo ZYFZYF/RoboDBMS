@@ -31,6 +31,9 @@ public:
 
     RC deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList);
 
+    RC updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS_Expr> > *assignExprList,
+                                     std::vector<PS_Expr> *conditionList);
+
     void showRecords(int num);//显示头多少条记录，如果是-1代表显示所有
 
     std::string formatColumnToString(ColumnId columnId, char *data);

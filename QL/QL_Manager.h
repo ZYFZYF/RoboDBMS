@@ -27,7 +27,8 @@ public:
 
     RC Delete(const char *tbName, std::vector<PS_Expr> *conditionList);
 
-    RC Update();
+    RC Update(const char *tbName, std::vector<std::pair<std::string, PS_Expr> > *assignExprList,
+              std::vector<PS_Expr> *conditionList);
 
     //输出表的行数
     RC Count(const char *tbName);

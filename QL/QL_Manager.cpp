@@ -17,10 +17,6 @@ RC QL_Manager::Select() {
     return PF_EOF;
 }
 
-RC QL_Manager::Update() {
-    return PF_EOF;
-}
-
 QL_Manager::QL_Manager() : rmManager(RM_Manager::Instance()), ixManager(IX_Manager::Instance()),
                            smManager(SM_Manager::Instance()) {
 
@@ -90,5 +86,14 @@ RC QL_Manager::Count(const char *tbName) {
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
     SM_Table table(SM_Manager::Instance().GetTableMeta(tableId));
     printf("Table %s has %d rows\n", tbName, table.count());
+    return OK_RC;
+}
+
+RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_Expr> > *assignExprList,
+                      std::vector<PS_Expr> *conditionList) {
+    TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    SM_Table table(SM_Manager::Instance().GetTableMeta(tableId));
+    TRY(table.updateWhereConditionSatisfied(assignExprList, conditionList));
     return OK_RC;
 }
