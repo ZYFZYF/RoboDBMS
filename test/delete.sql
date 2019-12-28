@@ -42,3 +42,6 @@ delete from test_delete where O_ORDERDATE < '1993-01-01' + 1;
 count table test_delete;
 delete from test_delete where O_ORDERDATE < '1993-01-01';
 count table test_delete;
+delete from test_delete where O_ORDERKEY == 7000 + 73;
+count table test_delete;
+desc table test_delete;

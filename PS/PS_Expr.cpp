@@ -112,6 +112,7 @@ PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right) {
 }
 
 RC PS_Expr::pushUp() {
+    if (left && left->isConst && right && right->isConst)isConst = true;
     switch (op) {
         case EQ_OP: {
             type = BOOL;
@@ -178,6 +179,7 @@ RC PS_Expr::pushUp() {
         case PLUS_OP: {
             if (left->type == INT && right->type == INT) {
                 type = INT;
+                //if (left->value.intValue == 7000 && right->value.intValue == 73)printf("compute\n");
                 value.intValue = left->value.intValue + right->value.intValue;
             } else if (left->type == INT && right->type == FLOAT) {
                 type = FLOAT;
