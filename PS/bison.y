@@ -222,6 +222,10 @@ ConstValue	:	/* empty */
 			{
 				$$.isNull = true;
 			}
+		|	P_NULL
+			{
+				$$.isNull = true;
+			}
 		|	STR_INTEGER
 			{
 				$$.isNull = false;
@@ -453,7 +457,11 @@ LowerValueExpr	:	LowerValueExpr '*' LeafValueExpr
 			}
 		;
 
-LeafValueExpr	:	INTEGER
+LeafValueExpr	:	P_NULL
+			{
+				$$ = new PS_Expr();
+			}
+		|	INTEGER
 			{
 				$$ = new PS_Expr($1);
 			}
