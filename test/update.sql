@@ -21,4 +21,6 @@ update test_update set O_ORDERDATE = '2019-12-8' where O_CUSTKEY < 5;
 update test_update set O_ORDERDATE = '2019-12-28' where O_CUSTKEY < 5;
 update test_update set O_ORDERDATE = null where O_CUSTKEY < 5;
 update test_update set O_CUSTKEY = 100 where O_ORDERDATE is not null;
+update test_update set O_ORDERPRIORITY = O_ORDERPRIORITY + 'TEST' where O_ORDERDATE is not null;
+update test_update set O_TOTALPRICE = O_ORDERKEY + O_CUSTKEY where O_ORDERDATE is not null;
 desc table test_update;
