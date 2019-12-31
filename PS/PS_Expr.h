@@ -8,6 +8,7 @@
 
 #include "../Attr.h"
 #include "../SM/SM_Constant.h"
+#include "../QL/QL_MultiTable.h"
 
 class SM_Table;
 
@@ -38,6 +39,8 @@ public:
     //获取左边的值减去右边的值的差
     int cmp();
 
+    void setName(const std::string &_name);
+
 
 private:
     //是否是常量，无需和列数据挂钩
@@ -54,6 +57,9 @@ private:
     //二元运算
     PS_Expr *left{nullptr}, *right{nullptr};
     Operator op{NO_OP};
+    std::string name;
+
+private:
 
     bool isComparable();
 };

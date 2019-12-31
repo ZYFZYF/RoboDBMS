@@ -332,3 +332,6 @@ bool PS_Expr::isComparable() {
     return false;
 }
 
+void PS_Expr::setName(const std::string &_name) {
+    name = _name;
+}

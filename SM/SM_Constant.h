@@ -76,6 +76,8 @@ struct IndexDesc {
 struct TableMeta {
     //存一下它的数组索引，如果没有的话就是-1
     TableId tableId{-1};
+    //还是增加名字，为了方便
+    char name[MAX_NAME_LENGTH]{};
     //建表的时候的名字，以后改名之后仍然用这个来建索引等等
     char createName[MAX_NAME_LENGTH]{};
     //主键

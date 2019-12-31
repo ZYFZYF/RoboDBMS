@@ -17,6 +17,8 @@
 class SM_Table {
     friend class PS_Expr;
 
+    friend class QL_MultiTable;
+
 public:
     //通常情况下是从存在的表中新建
     explicit SM_Table(TableId _tableId);

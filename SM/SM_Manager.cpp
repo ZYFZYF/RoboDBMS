@@ -300,6 +300,7 @@ RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnLi
             tableMeta.tableId = i;
             tableMeta.columnNum = columnList->size();
             strcpy(tableMeta.createName, tbName);
+            strcpy(tableMeta.name, tbName);
             for (int j = 0; j < columnList->size(); j++) {
                 tableMeta.columns[j] = (*columnList)[j];
             }

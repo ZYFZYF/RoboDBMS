@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <exception>
 
 #define MAXNAME       24                // maximum length of a relation
 // or attribute name
@@ -164,6 +165,7 @@ enum RC {
 enum ClientHint {
     NO_HINT                                     // default value
 };
+
 
 #ifndef TRUE
 #define TRUE 1
