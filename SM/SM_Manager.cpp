@@ -297,6 +297,7 @@ RC SM_Manager::CreateTable(const char *tbName, std::vector<ColumnDesc> *columnLi
         if (strlen(dbMeta.tableNames[i]) == 0) {
             strcpy(dbMeta.tableNames[i], tbName);
             TableMeta tableMeta{};
+            tableMeta.tableId = i;
             tableMeta.columnNum = columnList->size();
             strcpy(tableMeta.createName, tbName);
             for (int j = 0; j < columnList->size(); j++) {
