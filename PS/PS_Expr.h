@@ -15,6 +15,8 @@ class SM_Table;
 class PS_Expr {
     friend class SM_Table;
 
+    friend class QL_MultiTable;
+
 public:
     //叶子就是这六种类型
     explicit PS_Expr();

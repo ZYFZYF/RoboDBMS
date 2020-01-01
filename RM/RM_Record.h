@@ -32,6 +32,10 @@ public:
 private:
     RM_RID rmRid;
     char *data;
+public:
+    char *getData() const;
+
+private:
     int size;
 };
 

@@ -562,3 +562,23 @@ RC SM_Table::setColumnDataByExpr(char *record, ColumnId columnId, PS_Expr &expr)
     }
     return OK_RC;
 }
+
+std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
+    //TODO 根据表的索引来优化返回的RM_RID list
+    std::vector<RM_RID> ans;
+    RM_FileScan rmFileScan;
+    rmFileScan.OpenScan(rmFileHandle);
+    RM_Record rmRecord;
+    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        RM_RID rmRid;
+        rmRecord.GetRid(rmRid);
+        ans.emplace_back(rmRid);
+    }
+    rmFileScan.CloseScan();
+    return ans;
+}
+
+RC SM_Table::getRecordFromRID(RM_RID rmRid, RM_Record rmRecord) {
+    TRY(rmFileHandle.GetRec(rmRid, rmRecord))
+    return OK_RC;
+}

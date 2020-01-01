@@ -12,14 +12,27 @@ class QL_MultiTable {
 public:
     explicit QL_MultiTable(std::vector<TableMeta> *tableMetaList);
 
-    TableMeta select(std::vector<PS_Expr> *valueList, std::vector<PS_Expr> *conditionList);
+    TableMeta
+    select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name = "temp");
 
     //从表名和列名获得表以及列id
     std::pair<SM_Table *, ColumnId> getColumn(std::string &tbName, std::string &columnName);
 
+    RC iterateTables(int n);
+
+    RC eval(PS_Expr &value);
+
 private:
     int tableNum;
     std::vector<SM_Table> tableList;
+    std::vector<RM_Record> recordList{};
+    std::vector<std::vector<RM_RID> > ridListList{};
+    std::vector<PS_Expr> *valueList{};
+    std::vector<PS_Expr> *conditionList{};
+    TableMeta targetMeta{};
+    SM_Table *smTable;
+    bool isFirstIterate{};
+    std::string name;
 };
 
 

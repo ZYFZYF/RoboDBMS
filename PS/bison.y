@@ -78,6 +78,7 @@ DML	: 	InsertRow
 	|	InsertFromFile
 	|	Delete
 	|	Update
+	|	Select
 	;
 
 HELP 	: 	SHOW DATABASES ';'{
@@ -333,6 +334,8 @@ Update		:	UPDATE IDENTIFIER P_SET SetClause WhereClause ';'
 				DO(QL_Manager::Instance().Update($2, $4, $5));
 			}
 		;
+
+Select 		:	Select NamedColumnList
 
 SetClause	:	SetClause ',' AssignExpr
 			{

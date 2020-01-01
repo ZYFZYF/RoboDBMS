@@ -59,3 +59,7 @@ RC RM_Record::Set(const RM_RID &rmRid, char *bufferData, int size) {
     this->size = size;
     return OK_RC;
 }
+
+char *RM_Record::getData() const {
+    return data;
+}
