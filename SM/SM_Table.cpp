@@ -21,6 +21,7 @@ SM_Table::SM_Table(TableMeta &_tableMeta) : tableId(-1), tableMeta(_tableMeta) {
 }
 
 void SM_Table::init() {
+    //printf("create %s\n", tableMeta.name);
     recordSize = 0;
     for (int i = 0; i < tableMeta.columnNum; i++) {
         columnOffset[i] = recordSize;
@@ -302,6 +303,8 @@ int SM_Table::getRecordSize() const {
 }
 
 SM_Table::~SM_Table() {
+    //printf("delete %s\n", tableMeta.name);
+
     RM_Manager::Instance().CloseFile(rmFileHandle);
     SP_Manager::CloseStringPool(spHandle);
 }

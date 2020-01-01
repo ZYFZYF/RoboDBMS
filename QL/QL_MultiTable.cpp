@@ -8,10 +8,14 @@
 
 QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
     tableNum = tableMetaList->size();
+    tableList.reserve(tableNum);
     for (auto &tableMeta:*tableMetaList) {
         tableList.emplace_back(tableMeta);
         recordList.emplace_back();
     }
+//    for (int i = 0; i < tableList.size(); i++) {
+//        printf("%d %s\n", i, tableList[i].tableMeta.name);
+//    }
 }
 
 TableMeta
@@ -23,9 +27,8 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     name = _name;
     //先拿到所有遍历的节点
     ridListList.clear();
-    for (int i = 0; i < tableNum; i++) {
-        ridListList.push_back(tableList[i].filter(conditionList));
-    }
+    for (int i = 0; i < tableNum; i++)ridListList.emplace_back(tableList[i].filter(conditionList));
+    //for (auto &ridList:ridListList)printf("TAT %d\n", ridList.size());
     isFirstIterate = true;
     iterateTables(0);
     delete smTable;

@@ -7,6 +7,7 @@
 
 RM_Record::RM_Record() {
     data = nullptr;
+    size = 0;
 }
 
 RM_Record::~RM_Record() {
@@ -22,9 +23,11 @@ RM_Record::RM_Record(RM_RID &rmRid, char *bufferData, int size) {
 
 RM_Record::RM_Record(const RM_Record &rmRecord) {
     this->rmRid = rmRecord.rmRid;
-    data = new char[rmRecord.size];
-    memcpy(data, rmRecord.data, size);
-    this->size = rmRecord.size;
+    if (rmRecord.size) {
+        data = new char[rmRecord.size];
+        memcpy(data, rmRecord.data, size);
+        this->size = rmRecord.size;
+    }
 }
 
 RM_Record &RM_Record::operator=(const RM_Record &rmRecord) {
