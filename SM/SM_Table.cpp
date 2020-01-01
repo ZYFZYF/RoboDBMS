@@ -26,6 +26,8 @@ void SM_Table::init() {
     for (int i = 0; i < tableMeta.columnNum; i++) {
         columnOffset[i] = recordSize;
         recordSize += tableMeta.columns[i].attrLength + 1;//多一位来存储是否是NULL，放在数据的开头
+        columnShowLength[i] = std::max(tableMeta.columns[i].stringMaxLength,
+                                       std::max(tableMeta.columns[i].attrLength, COLUMN_SHOW_LENGTH));
     }
     std::string recordFileName = Utils::getRecordFileName(tableMeta.createName);
     if (access(recordFileName.c_str(), F_OK) < 0) {
@@ -104,16 +106,18 @@ RC SM_Table::insertRecord(char *record, bool influencePrimaryKey) {
 
 void SM_Table::showRecords(int num) {
     //分割线
-    std::string splitLine((tableMeta.columnNum + 1) * COLUMN_SHOW_LENGTH, '-');
+    int lineLength = COLUMN_SHOW_LENGTH;
+    for (int i = 0; i < tableMeta.columnNum; i++)lineLength += columnShowLength[i] + 1;
+    std::string splitLine(lineLength, '-');
     std::cout << splitLine << std::endl;
     std::string headerLine;
-    headerLine.append("num");
-    headerLine.append(COLUMN_SHOW_LENGTH - 3, ' ');
+    headerLine.append("id");
+    headerLine.append(COLUMN_SHOW_LENGTH - 2, ' ');
     for (int i = 0; i < tableMeta.columnNum; i++) {
         std::string columnName = std::string(tableMeta.columns[i].name);
         headerLine.append(columnName);
-        if (columnName.length() < COLUMN_SHOW_LENGTH)
-            headerLine.append(COLUMN_SHOW_LENGTH - columnName.length(), ' ');
+        if (columnName.length() < columnShowLength[i])
+            headerLine.append(columnShowLength[i] - columnName.length(), ' ');
     }
     std::cout << headerLine << std::endl;
     std::cout << splitLine << std::endl;
@@ -140,7 +144,7 @@ std::string SM_Table::formatRecordToString(char *record) {
         char *data = getColumnData(record, i);
         if (data == nullptr)column = "NULL";
         else column = formatColumnToString(i, data);
-        if (column.length() < COLUMN_SHOW_LENGTH)column.append(COLUMN_SHOW_LENGTH - column.length(), ' ');
+        if (column.length() < columnShowLength[i])column.append(columnShowLength[i] - column.length(), ' ');
         line.append(column);
     }
     return line;

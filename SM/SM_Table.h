@@ -80,6 +80,7 @@ private:
     RM_FileHandle rmFileHandle;
     SP_Handle spHandle;
     int columnOffset[MAX_COLUMN_NUM]{};
+    int columnShowLength[MAX_COLUMN_NUM]{};
 
     void init();
 

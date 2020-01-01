@@ -29,3 +29,5 @@ select C_CUSTKEY,C_NATIONKEY from test_customer;
 select C_CUSTKEY,C_NAME from test_customer;
 select O_ORDERKEY,C_CUSTKEY,C_NATIONKEY from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
 select O_ORDERKEY,C_CUSTKEY,C_NAME from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
+desc table test_customer;
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
