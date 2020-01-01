@@ -348,12 +348,12 @@ Select 		:	SELECT NameColumnList P_FROM TableList WhereClause ';'
 NameColumnList	:	NameColumnList ',' NamedColumn
 			{
 				$$ = $1;
-				$$->emplace_back($3);
+				$$->emplace_back(*$3);
 			}
 		|	NamedColumn
 			{
 				$$ = new std::vector<PS_Expr>;
-				$$->emplace_back($1);
+				$$->emplace_back(*$1);
 			}
 		;
 

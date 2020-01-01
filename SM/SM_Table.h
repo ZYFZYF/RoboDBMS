@@ -64,34 +64,30 @@ public:
 
     ~SM_Table();
 
-    RC getRecordFromRID(RM_RID rmRid, RM_Record rmRecord);
+    RC getRecordFromRID(RM_RID &rmRid, RM_Record &rmRecord);
 
     //从一系列限制中返回一个RM_RID list
     std::vector<RM_RID> filter(std::vector<PS_Expr> *conditionList);
+
+    int getRecordSize() const;
 
 private:
     TableId tableId;
     TableMeta &tableMeta;
     int recordSize{};
-
-    void init();
-
-public:
-    int getRecordSize() const;
-
-private:
     RM_FileHandle rmFileHandle;
     SP_Handle spHandle;
     int columnOffset[MAX_COLUMN_NUM]{};
 
+    void init();
+
     std::string formatRecordToString(char *record);
 
+    RC setColumnData(char *columnData, ColumnId columnId, AttrValue attrValue, bool alreadyComplete = false);
 
-    RC setColumnData(char *record, ColumnId columnId, AttrValue attrValue, bool alreadyComplete = false);
+    RC setColumnNull(char *columnData, ColumnId columnId);
 
-    RC setColumnNull(char *record, ColumnId columnId);
-
-    RC setColumnDataByExpr(char *record, ColumnId columnId, PS_Expr &expr);
+    RC setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &expr);
 };
 
 #endif //ROBODBMS_SM_TABLE_H

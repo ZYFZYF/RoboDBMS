@@ -10,7 +10,7 @@ RM_Record::RM_Record() {
 }
 
 RM_Record::~RM_Record() {
-
+    //delete data;
 }
 
 RM_Record::RM_Record(RM_RID &rmRid, char *bufferData, int size) {

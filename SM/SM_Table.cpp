@@ -54,7 +54,7 @@ RC SM_Table::setRecordData(char *record, std::vector<ColumnId> *columnIdList, st
         //检测给定参数个数是否与行数相同
         if (constValueList->size() != tableMeta.columnNum)return QL_COLUMNS_VALUES_DONT_MATCH;
         for (int i = 0; i < tableMeta.columnNum; i++) {
-            TRY(setColumnData(record, i, (*constValueList)[i]));
+            TRY(setColumnData(record + columnOffset[i], i, (*constValueList)[i]));
         }
     } else {
         //检测给定参数个数是否与行数相同
@@ -63,11 +63,11 @@ RC SM_Table::setRecordData(char *record, std::vector<ColumnId> *columnIdList, st
         for (int i = 0; i < tableMeta.columnNum; i++)hasValue[i] = false;
         for (int i = 0; i < columnIdList->size(); i++) {
             hasValue[(*columnIdList)[i]] = true;
-            TRY(setColumnData(record, (*columnIdList)[i], (*constValueList)[i]));
+            TRY(setColumnData(record + columnOffset[i], (*columnIdList)[i], (*constValueList)[i]));
         }
         for (int i = 0; i < tableMeta.columnNum; i++)
             if (!hasValue[i]) {
-                TRY(setColumnNull(record, i));
+                TRY(setColumnNull(record + columnOffset[i], i));
             }
     }
     return OK_RC;
@@ -145,15 +145,15 @@ std::string SM_Table::formatRecordToString(char *record) {
     return line;
 }
 
-RC SM_Table::setColumnData(char *record, ColumnId columnId, AttrValue attrValue, bool alreadyComplete) {
+RC SM_Table::setColumnData(char *columnData, ColumnId columnId, AttrValue attrValue, bool alreadyComplete) {
     //命令里有传该参数的值，但也有可能是null
     if (attrValue.isNull) {
-        TRY(setColumnNull(record, columnId))
+        TRY(setColumnNull(columnData, columnId))
         return OK_RC;
     }
     //先设为不是null
-    record[columnOffset[columnId]] = 0;
-    char *data = record + columnOffset[columnId] + 1;
+    columnData[0] = 0;
+    char *data = columnData + 1;
     if (!alreadyComplete)TRY(completeAttrValueByColumnId(columnId, attrValue));
     switch (tableMeta.columns[columnId].attrType) {
         case INT: {
@@ -180,14 +180,14 @@ RC SM_Table::setColumnData(char *record, ColumnId columnId, AttrValue attrValue,
     return OK_RC;
 }
 
-RC SM_Table::setColumnNull(char *record, ColumnId columnId) {
+RC SM_Table::setColumnNull(char *columnData, ColumnId columnId) {
     //命令里没传，所以认为是null，但要先看是不是有defaultValue
     if (tableMeta.columns[columnId].hasDefaultValue) {
-        TRY(setColumnData(record, columnId, tableMeta.columns[columnId].defaultValue, true))
+        TRY(setColumnData(columnData, columnId, tableMeta.columns[columnId].defaultValue, true))
         return OK_RC;
     }
     if (tableMeta.columns[columnId].allowNull) {
-        record[columnOffset[columnId]] = 1;
+        columnData[0] = 1;
         return OK_RC;
     }
     return QL_COLUMN_NOT_ALLOW_NULL;
@@ -492,7 +492,8 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
             //这里一定要先尝试赋值，因为先删再赋值有可能出错这样就凭白少了一条记录，如果更新不成功跳过这一条的
             bool updateSuccess = true;
             for (int i = 0; i < updateColumnIdList.size(); i++) {
-                if (setColumnDataByExpr(newRecord, updateColumnIdList[i], (*assignExprList)[i].second) !=
+                if (setColumnDataByExpr(newRecord + columnOffset[updateColumnIdList[i]], updateColumnIdList[i],
+                                        (*assignExprList)[i].second) !=
                     OK_RC) {
                     updateSuccess = false;
                     break;
@@ -509,16 +510,16 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
     return OK_RC;
 }
 
-RC SM_Table::setColumnDataByExpr(char *record, ColumnId columnId, PS_Expr &expr) {
-    TRY(expr.eval(*this, record))
+RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &expr) {
+    TRY(expr.eval(*this, columnData))
     //命令里有传该参数的值，但也有可能是null
     if (expr.value.isNull) {
-        TRY(setColumnNull(record, columnId))
+        TRY(setColumnNull(columnData, columnId))
         return OK_RC;
     }
     //先设为不是null
-    record[columnOffset[columnId]] = 0;
-    char *data = record + columnOffset[columnId] + 1;
+    columnData[0] = 0;
+    char *data = columnData + 1;
     switch (tableMeta.columns[columnId].attrType) {
         case INT: {
             if (expr.type == INT)*(int *) data = expr.value.intValue;
@@ -579,7 +580,7 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
     return ans;
 }
 
-RC SM_Table::getRecordFromRID(RM_RID rmRid, RM_Record rmRecord) {
+RC SM_Table::getRecordFromRID(RM_RID &rmRid, RM_Record &rmRecord) {
     TRY(rmFileHandle.GetRec(rmRid, rmRecord))
     return OK_RC;
 }

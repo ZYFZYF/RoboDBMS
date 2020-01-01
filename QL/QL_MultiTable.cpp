@@ -3,22 +3,32 @@
 //
 
 #include "QL_MultiTable.h"
-#include <tuple>
 #include "../PS/PS_Expr.h"
+#include "../utils/Utils.h"
 
 QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
     tableNum = tableMetaList->size();
-    for (auto &tableMeta:*tableMetaList)tableList.emplace_back(SM_Table(tableMeta));
+    for (auto &tableMeta:*tableMetaList) {
+        tableList.emplace_back(tableMeta);
+    }
 }
 
 TableMeta
 QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name) {
     valueList = _valueList;
     conditionList = _conditionList;
+//    printf("%d %d %d %d\n", valueList->size(), conditionList->size(), (*valueList)[0].isColumn,
+//           (*conditionList)[0].isColumn);
+
     name = _name;
     //先拿到所有遍历的节点
     ridListList.clear();
-    for (int i = 0; i < tableNum; i++)ridListList.emplace_back(tableList[i].filter(conditionList));
+    for (int i = 0; i < tableNum; i++) {
+        ridListList.push_back(tableList[i].filter(conditionList));
+        //printf("%d %d %d\n", ridListList.size(), ridListList[0].size(), ridListList[0][0].IsValidRID());
+    }
+    //printf("%d %d %d\n", ridListList.size(), ridListList[0].size(), ridListList[0][0].IsValidRID());
+
     recordList.clear();
     isFirstIterate = true;
     iterateTables(0);
@@ -26,15 +36,17 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     return targetMeta;
 }
 
-std::pair<SM_Table *, ColumnId> QL_MultiTable::getColumn(std::string &tbName, std::string &columnName) {
+std::pair<int, ColumnId> QL_MultiTable::getColumn(std::string &tbName, std::string &columnName) {
     if (tbName.length() > 0) {
-        for (auto &table:tableList)
+        for (int i = 0; i < tableNum; i++) {
+            SM_Table &table = tableList[i];
             if (strcmp(table.tableMeta.name, tbName.data()) == 0) {
-                for (int i = 0; i < MAX_COLUMN_NUM; i++)
-                    if (strcmp(table.tableMeta.columns[i].name, columnName.data()) == 0) {
-                        return std::make_pair(&table, i);
+                for (int j = 0; j < MAX_COLUMN_NUM; j++)
+                    if (strcmp(table.tableMeta.columns[j].name, columnName.data()) == 0) {
+                        return std::make_pair(i, j);
                     }
             }
+        }
         throw "Can't find " + tbName + "." + columnName;
     } else {
         int match = 0;
@@ -48,17 +60,19 @@ std::pair<SM_Table *, ColumnId> QL_MultiTable::getColumn(std::string &tbName, st
         } else if (match > 1) {
             throw "There are multi " + columnName;
         } else {
-            for (auto &table:tableList)
-                for (int i = 0; i < MAX_COLUMN_NUM; i++)
-                    if (strcmp(table.tableMeta.columns[i].name, columnName.data()) == 0) {
-                        return std::make_pair(&table, i);
+            for (int i = 0; i < tableNum; i++) {
+                SM_Table &table = tableList[i];
+                for (int j = 0; j < MAX_COLUMN_NUM; j++)
+                    if (strcmp(table.tableMeta.columns[j].name, columnName.data()) == 0) {
+                        return std::make_pair(i, j);
                     }
+            }
         }
     }
 }
 
 RC QL_MultiTable::iterateTables(int n) {
-    if (n == tableNum + 1) {
+    if (n == tableNum) {
         //枚举到头了
         if (isFirstIterate) {
             memset(&targetMeta, 0, sizeof(TableMeta));
@@ -95,12 +109,13 @@ RC QL_MultiTable::iterateTables(int n) {
         char record[smTable->getRecordSize()];
         for (int i = 0; i < targetMeta.columnNum; i++) {
             TRY(eval((*valueList)[i]))
-            TRY(smTable->setColumnDataByExpr(record, i, (*valueList)[i]))
+            TRY(smTable->setColumnDataByExpr(record + smTable->columnOffset[i], i, (*valueList)[i]))
         }
         TRY(smTable->insertRecord(record))
     } else {
         for (int i = 0; i < ridListList[n].size(); i++) {
             RM_Record rmRecord;
+            printf("%d\n", i);
             tableList[i].getRecordFromRID(ridListList[n][i], rmRecord);
             recordList.emplace_back(rmRecord);
             TRY(iterateTables(n + 1))
@@ -111,5 +126,58 @@ RC QL_MultiTable::iterateTables(int n) {
 }
 
 RC QL_MultiTable::eval(PS_Expr &value) {
-    return IX_INSERT_TWICE;
+    //常数直接返回
+    if (value.isConst)return OK_RC;
+    //从里面拿列的值
+    if (value.isColumn) {
+        //TODO 这里只考虑从当前表的列里面获取值，暂且不考虑多表
+        auto[i, j] = getColumn(value.tableName, value.columnName);
+        value.type = tableList[i].tableMeta.columns[j].attrType;
+        char *data = tableList[i].getColumnData(recordList[i].getData(), j);
+        if (data == nullptr) {
+            value.value.isNull = true;
+        } else {
+            value.value.isNull = false;
+            switch (value.type) {
+                case INT: {
+                    value.value.intValue = *(int *) data;
+                    break;
+                }
+                case FLOAT: {
+                    value.value.floatValue = *(float *) data;
+                    break;
+                }
+                case STRING: {
+                    value.string = std::string(data);
+                    break;
+                }
+                case DATE: {
+                    value.value.dateValue = *(Date *) data;
+                    break;
+                }
+                case VARCHAR: {
+                    char temp[tableList[i].tableMeta.columns[j].stringMaxLength];
+                    ((Varchar *) data)->getData(temp);
+                    value.string = temp;
+                    break;
+                }
+            }
+        }
+        //在计算时VARCHAR和STRING一视同仁，并且都转成std::string进行操作
+        if (value.type == VARCHAR)value.type = STRING;
+        return OK_RC;
+    }
+    if (value.left)TRY(eval(*value.left))
+    if (Utils::isLogic(value.op)) {
+        value.type = BOOL;
+        //短路操作
+        if (value.left && value.left->value.boolValue) {
+            value.value.boolValue = true;
+            return OK_RC;
+        }
+    }
+    if (value.right)TRY(eval(*value.right))
+    TRY(value.pushUp())
+    return OK_RC;
 }
+
