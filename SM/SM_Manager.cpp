@@ -573,4 +573,9 @@ AttrType SM_Manager::GetType(TableId tableId, ColumnId columnId) {
     return dbMeta.tableMetas[tableId].columns[columnId].attrType;
 }
 
+TableMeta &SM_Manager::GetTableMeta(const char *tbName) {
+    TableId tableId = GetTableIdFromName(tbName);
+    return GetTableMeta(tableId);
+}
+
 

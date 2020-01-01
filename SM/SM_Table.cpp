@@ -10,6 +10,7 @@
 #include "../IX/IX_Manager.h"
 #include "../IX/IX_IndexScan.h"
 #include "SM_Manager.h"
+#include "../PS/PS_Expr.h"
 
 SM_Table::SM_Table(TableId _tableId) : tableId(_tableId), tableMeta(SM_Manager::Instance().GetTableMeta(tableId)) {
     init();

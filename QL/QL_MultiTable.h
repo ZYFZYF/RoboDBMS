@@ -13,7 +13,7 @@ public:
     explicit QL_MultiTable(std::vector<TableMeta> *tableMetaList);
 
     TableMeta
-    select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name = "temp");
+    select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name);
 
     //从表名和列名获得表以及列id
     std::pair<SM_Table *, ColumnId> getColumn(std::string &tbName, std::string &columnName);

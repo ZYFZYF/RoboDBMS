@@ -13,10 +13,6 @@ QL_Manager &QL_Manager::Instance() {
 
 QL_Manager::~QL_Manager() = default;
 
-RC QL_Manager::Select() {
-    return PF_EOF;
-}
-
 QL_Manager::QL_Manager() : rmManager(RM_Manager::Instance()), ixManager(IX_Manager::Instance()),
                            smManager(SM_Manager::Instance()) {
 
@@ -95,5 +91,15 @@ RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
     SM_Table table(tableId);
     TRY(table.updateWhereConditionSatisfied(assignExprList, conditionList));
+    return OK_RC;
+}
+
+RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
+                      std::vector<PS_Expr> *conditionList) {
+    std::string name = "temp";
+    QL_MultiTable multiTable(tableMetaList);
+    TableMeta tableMeta = multiTable.select(valueList, conditionList, name);
+    SM_Table table(tableMeta);
+    table.showRecords(-1);
     return OK_RC;
 }

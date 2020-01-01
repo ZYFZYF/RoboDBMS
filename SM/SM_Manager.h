@@ -90,6 +90,8 @@ public:
 
     TableMeta &GetTableMeta(TableId tableId);
 
+    TableMeta &GetTableMeta(const char *tbName);
+
 private:
     SM_Manager();
 

@@ -10,9 +10,10 @@
 #include "SM_Constant.h"
 #include "../Attr.h"
 #include "../RM/RM_FileHandle.h"
-#include "../PS/PS_Expr.h"
 
 #define COLUMN_SHOW_LENGTH  30 //一列显示的时候占的宽度
+
+class PS_Expr;
 
 class SM_Table {
     friend class PS_Expr;

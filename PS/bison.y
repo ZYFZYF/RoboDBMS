@@ -20,7 +20,7 @@ void yyerror(const char *s, ...);
   enum Operator comparator;
   PS_Node *node;
   PS_Expr *expr;
-  std::vector<PS_Expr> *conditionList;
+  std::vector<PS_Expr> *exprList;
   ColumnDesc columnDesc;
   AttrValue attrValue;
   std::vector<AttrValue> *attrValueList;
@@ -28,6 +28,8 @@ void yyerror(const char *s, ...);
   std::vector<const char *> *identifierList;
   std::pair<std::string, PS_Expr> *assignExpr;
   std::vector<std::pair<std::string, PS_Expr> > *assignExprList;
+  TableMeta *tableMeta;
+  std::vector<TableMeta> *tableList;
 }
 
 //定义标识符
@@ -37,7 +39,7 @@ void yyerror(const char *s, ...);
 %token SHOW DESC USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
 %token COUNT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
-%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS
+%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
 %token C_AND C_OR
 
@@ -49,10 +51,12 @@ void yyerror(const char *s, ...);
 %type <attrValue> ConstValue
 %type <attrValueList> ConstValueList
 %type <identifierList> NameList
-%type <expr> BoolExpr ValueExpr LowerValueExpr LeafValueExpr
-%type <conditionList> WhereClause ConditionList
+%type <expr> BoolExpr ValueExpr LowerValueExpr LeafValueExpr NamedColumn
+%type <exprList> WhereClause ConditionList NameColumnList
 %type <assignExpr> AssignExpr
 %type <assignExprList> SetClause
+%type <tableMeta> Table
+%type <tableMetaList> TableList
 
 //定义语法
 %%
@@ -335,7 +339,57 @@ Update		:	UPDATE IDENTIFIER P_SET SetClause WhereClause ';'
 			}
 		;
 
-Select 		:	Select NamedColumnList
+Select 		:	Select NameColumnList P_FROM TableList WhereClause ';'
+			{
+				DO(QL_Manager::Instance().Select($2,$4,$5));
+			}
+		;
+
+NameColumnList	:	NameColumnList ',' NamedColumn
+			{
+				$$ = $1;
+				$$.emplace_back($3);
+			}
+		|	NamedColumn
+			{
+				$$ = new std::vector<PS_Expr>;
+				$$.emplace_back($1);
+			}
+		;
+
+NamedColumn	:	IDENTIFIER
+                        {
+                        	$$ = new PS_Expr(nullptr, $1);
+                       	}
+               	|	IDENTIFIER '.' IDENTIFIER
+                        {
+                        	$$ = new PS_Expr($1, $3);
+                        }
+                |	ValueExpr P_AS IDENTIFIER
+                	{
+                		$$ = $1;
+                		$$->setName(std::string($3));
+                	}
+                ;
+
+TableList	:	TableList ',' Table
+			{
+				$$ = $1;
+				$$->emplace_back(*$3);
+			}
+		|	Table
+			{
+				$$ = new std::vector<TableMeta>;
+				$$->emplace_back(*$1);
+			}
+		;
+
+Table		:	IDENTIFIER
+			{
+				$$ = &SM_Manager::GetTableMetaFromTbName($1);
+			}
+		;
+
 
 SetClause	:	SetClause ',' AssignExpr
 			{

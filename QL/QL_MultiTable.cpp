@@ -4,6 +4,7 @@
 
 #include "QL_MultiTable.h"
 #include <tuple>
+#include "../PS/PS_Expr.h"
 
 QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
     tableNum = tableMetaList->size();

@@ -50,6 +50,7 @@ NULL|null               return P_NULL;
 VALUES|values           return P_VALUES;
 FROM|from               return P_FROM;
 IS|is                   return P_IS;
+AS|as                   return P_AS;
 
 INT|int                 return T_INT;
 BIGINT|bigint           return T_BIGINT;
