@@ -96,10 +96,11 @@ RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_
 
 RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
                       std::vector<PS_Expr> *conditionList) {
-    std::string name = "temp";
-    QL_MultiTable multiTable(tableMetaList);
-    TableMeta tableMeta = multiTable.select(valueList, conditionList, name);
+    std::string name = "temp" + std::to_string(rand());
+    auto *multiTable = new QL_MultiTable(tableMetaList);
+    TableMeta tableMeta = multiTable->select(valueList, conditionList, name);
+    delete multiTable;
     SM_Table table(tableMeta);
-    table.showRecords(-1);
+    table.showRecords(50);
     return OK_RC;
 }

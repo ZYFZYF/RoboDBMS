@@ -12,6 +12,9 @@ create table select_one_table(  O_ORDERKEY      INT PRIMARY KEY,
                                 O_COMMENT		VARCHAR(79));
 insert into select_one_table from '../../dataset/orders.tbl';
 desc table select_one_table;
+select O_CUSTKEY from select_one_table;
 select O_ORDERKEY from select_one_table;
+select O_ORDERKEY, O_CUSTKEY from select_one_table;
+select O_ORDERKEY, O_CUSTKEY as TAT from select_one_table;
 select O_ORDERKEY from select_one_table where O_ORDERSTATUS == 'P';
 select O_ORDERKEY from select_one_table where O_ORDERKEY % 10 == 0;

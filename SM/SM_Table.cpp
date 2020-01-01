@@ -510,8 +510,8 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
     return OK_RC;
 }
 
-RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &expr) {
-    TRY(expr.eval(*this, columnData))
+RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &expr, bool alreadyComputed) {
+    if (!alreadyComputed)TRY(expr.eval(*this, columnData - columnOffset[columnId]))
     //命令里有传该参数的值，但也有可能是null
     if (expr.value.isNull) {
         TRY(setColumnNull(columnData, columnId))
@@ -583,4 +583,12 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
 RC SM_Table::getRecordFromRID(RM_RID &rmRid, RM_Record &rmRecord) {
     TRY(rmFileHandle.GetRec(rmRid, rmRecord))
     return OK_RC;
+}
+
+RC SM_Table::clear() {
+    std::string recordFileName = Utils::getRecordFileName(tableMeta.name);
+    TRY(RM_Manager::Instance().DestroyFile(recordFileName.c_str()))
+    std::string stringPoolFileName = Utils::getStringPoolFileName(tableMeta.name);
+    TRY(SP_Manager::DestroyStringPool(stringPoolFileName.c_str()))
+    //TODO 删除索引等
 }

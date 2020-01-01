@@ -64,6 +64,8 @@ public:
 
     ~SM_Table();
 
+    RC clear();
+
     RC getRecordFromRID(RM_RID &rmRid, RM_Record &rmRecord);
 
     //从一系列限制中返回一个RM_RID list
@@ -87,7 +89,7 @@ private:
 
     RC setColumnNull(char *columnData, ColumnId columnId);
 
-    RC setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &expr);
+    RC setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &expr, bool alreadyComputed = false);
 };
 
 #endif //ROBODBMS_SM_TABLE_H

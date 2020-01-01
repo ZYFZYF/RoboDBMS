@@ -10,6 +10,7 @@ QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
     tableNum = tableMetaList->size();
     for (auto &tableMeta:*tableMetaList) {
         tableList.emplace_back(tableMeta);
+        recordList.emplace_back();
     }
 }
 
@@ -29,7 +30,6 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     }
     //printf("%d %d %d\n", ridListList.size(), ridListList[0].size(), ridListList[0][0].IsValidRID());
 
-    recordList.clear();
     isFirstIterate = true;
     iterateTables(0);
     delete smTable;
@@ -79,9 +79,9 @@ RC QL_MultiTable::iterateTables(int n) {
             targetMeta.tableId = -1;
             targetMeta.columnNum = 0;
             strcpy(targetMeta.name, name.data());
+            strcpy(targetMeta.createName, name.data());
             for (auto &value:*valueList) {
                 TRY(eval(value))
-                targetMeta.columnNum++;
                 //TODO 注意，这样的转换会脱掉一些信息，比如float的位数信息
                 targetMeta.columns[targetMeta.columnNum].attrType = value.type;
                 switch (value.type) {
@@ -102,6 +102,7 @@ RC QL_MultiTable::iterateTables(int n) {
                         throw "it should not be here";
                 }
                 strcpy(targetMeta.columns[targetMeta.columnNum].name, value.name.data());
+                targetMeta.columnNum++;
             }
             smTable = new SM_Table(targetMeta);
             isFirstIterate = false;
@@ -109,17 +110,17 @@ RC QL_MultiTable::iterateTables(int n) {
         char record[smTable->getRecordSize()];
         for (int i = 0; i < targetMeta.columnNum; i++) {
             TRY(eval((*valueList)[i]))
-            TRY(smTable->setColumnDataByExpr(record + smTable->columnOffset[i], i, (*valueList)[i]))
+            TRY(smTable->setColumnDataByExpr(record + smTable->columnOffset[i], i, (*valueList)[i], true))
         }
+        int x = *(int *) (record + 1);
         TRY(smTable->insertRecord(record))
     } else {
         for (int i = 0; i < ridListList[n].size(); i++) {
-            RM_Record rmRecord;
-            printf("%d\n", i);
-            tableList[i].getRecordFromRID(ridListList[n][i], rmRecord);
-            recordList.emplace_back(rmRecord);
+            tableList[n].getRecordFromRID(ridListList[n][i], recordList[n]);
+            int z = *(int *) (recordList[0].getData() + 1);
+            int k = *(int *) (recordList[0].getData() + 6);
+            int w = recordList.size();
             TRY(iterateTables(n + 1))
-            recordList.pop_back();
         }
     }
     return OK_RC;
@@ -132,8 +133,13 @@ RC QL_MultiTable::eval(PS_Expr &value) {
     if (value.isColumn) {
         //TODO 这里只考虑从当前表的列里面获取值，暂且不考虑多表
         auto[i, j] = getColumn(value.tableName, value.columnName);
+//        printf("tableName = %s columnName = %s get tableIndex = %d columnsId = %d\n", value.tableName.data(),
+//               value.columnName.data(),
+//               i, j);
+        if (value.name.empty())value.name = tableList[i].tableMeta.columns[j].name;
         value.type = tableList[i].tableMeta.columns[j].attrType;
         char *data = tableList[i].getColumnData(recordList[i].getData(), j);
+        int z = *(int *) data;
         if (data == nullptr) {
             value.value.isNull = true;
         } else {
