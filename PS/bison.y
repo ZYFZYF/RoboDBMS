@@ -29,7 +29,7 @@ void yyerror(const char *s, ...);
   std::pair<std::string, PS_Expr> *assignExpr;
   std::vector<std::pair<std::string, PS_Expr> > *assignExprList;
   TableMeta *tableMeta;
-  std::vector<TableMeta> *tableList;
+  std::vector<TableMeta> *tableMetaList;
 }
 
 //定义标识符
@@ -339,7 +339,7 @@ Update		:	UPDATE IDENTIFIER P_SET SetClause WhereClause ';'
 			}
 		;
 
-Select 		:	Select NameColumnList P_FROM TableList WhereClause ';'
+Select 		:	SELECT NameColumnList P_FROM TableList WhereClause ';'
 			{
 				DO(QL_Manager::Instance().Select($2,$4,$5));
 			}
@@ -348,12 +348,12 @@ Select 		:	Select NameColumnList P_FROM TableList WhereClause ';'
 NameColumnList	:	NameColumnList ',' NamedColumn
 			{
 				$$ = $1;
-				$$.emplace_back($3);
+				$$->emplace_back($3);
 			}
 		|	NamedColumn
 			{
 				$$ = new std::vector<PS_Expr>;
-				$$.emplace_back($1);
+				$$->emplace_back($1);
 			}
 		;
 
@@ -386,10 +386,9 @@ TableList	:	TableList ',' Table
 
 Table		:	IDENTIFIER
 			{
-				$$ = &SM_Manager::GetTableMetaFromTbName($1);
+				$$ = &(SM_Manager::Instance().GetTableMeta($1));
 			}
 		;
-
 
 SetClause	:	SetClause ',' AssignExpr
 			{
