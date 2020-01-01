@@ -398,10 +398,13 @@ int SM_Table::getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDes
 }
 
 RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) {
+    clock_t start_time = clock();
     //打开一个无条件遍历
     RM_FileScan rmFileScan;
     TRY(rmFileScan.OpenScan(rmFileHandle))
     RM_Record rmRecord;
+    int totalCount = 0;
+    int deleteCount = 0;
     while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
         char *record;
         rmRecord.GetData(record);
@@ -414,9 +417,15 @@ RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) 
             conditionSatisfied &= condition.value.boolValue;
             if (!conditionSatisfied)break;
         }
-        if (conditionSatisfied) TRY(deleteRecord(record, rmRid))
+        totalCount++;
+        if (conditionSatisfied) {
+            deleteCount++;
+            TRY(deleteRecord(record, rmRid))
+        }
     }
     TRY(rmFileScan.CloseScan())
+    auto cost_time = clock() - start_time;
+    printf("删除: 共计%d条，成功删除%d条，花费%.3f秒\n", totalCount, deleteCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
@@ -462,6 +471,7 @@ int SM_Table::count() {
 
 RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS_Expr> > *assignExprList,
                                            std::vector<PS_Expr> *conditionList) {
+    clock_t start_time = clock();
     bool influencePrimaryKey = false;
     std::vector<ColumnId> updateColumnIdList;
     for (auto &assignExpr: *assignExprList) {
@@ -471,6 +481,7 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
             if (tableMeta.primaryKey.columnId[i] == columnId)influencePrimaryKey = true;
         updateColumnIdList.push_back(columnId);
     }
+    int totalCount = 0, updateCount = 0, updateSuccessCount = 0;
     RM_FileScan rmFileScan;
     TRY(rmFileScan.OpenScan(rmFileHandle))
     RM_Record rmRecord;
@@ -486,7 +497,9 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
             conditionSatisfied &= condition.value.boolValue;
             if (!conditionSatisfied)break;
         }
+        totalCount++;
         if (conditionSatisfied) {
+            updateCount++;
             //拷贝一个新的出来，因为不能直接修改原来的值
             memcpy(newRecord, record, recordSize);
             //这里一定要先尝试赋值，因为先删再赋值有可能出错这样就凭白少了一条记录，如果更新不成功跳过这一条的
@@ -500,6 +513,7 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
                 }
             }
             if (updateSuccess) {
+                updateSuccessCount++;
                 //这些基本不会出错
                 TRY(deleteRecord(record, rmRid, influencePrimaryKey))
                 TRY(insertRecord(newRecord, influencePrimaryKey));
@@ -507,6 +521,9 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
         }
     }
     TRY(rmFileScan.CloseScan())
+    auto cost_time = clock() - start_time;
+    printf("更新: 共计%d条，需要更新%d条，成功更新%d条，花费%.3f秒\n", totalCount, updateCount, updateSuccessCount,
+           (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 

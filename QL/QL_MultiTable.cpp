@@ -16,6 +16,8 @@ QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
 
 TableMeta
 QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name) {
+    auto start_time = clock();
+    totalCount = 0;
     valueList = _valueList;
     conditionList = _conditionList;
     name = _name;
@@ -27,6 +29,8 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     isFirstIterate = true;
     iterateTables(0);
     delete smTable;
+    auto cost_time = clock() - start_time;
+    printf("查询: 结果共计%d条，花费%.3f秒\n", totalCount, (float) cost_time / CLOCKS_PER_SEC);
     return targetMeta;
 }
 
@@ -108,6 +112,7 @@ RC QL_MultiTable::iterateTables(int n) {
             if (!conditionSatisfied)break;
         }
         if (conditionSatisfied) {
+            totalCount++;
             char record[smTable->getRecordSize()];
             for (int i = 0; i < targetMeta.columnNum; i++) {
                 TRY(eval((*valueList)[i]))

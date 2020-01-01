@@ -33,6 +33,7 @@ private:
     SM_Table *smTable;
     bool isFirstIterate{};
     std::string name;
+    int totalCount{};
 };
 
 

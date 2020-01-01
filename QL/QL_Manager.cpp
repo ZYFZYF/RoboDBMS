@@ -42,13 +42,16 @@ char line[MAX_LINE_LENGTH];
 char *test[100];
 
 RC QL_Manager::Insert(const char *tbName, const char *fileName) {
+    auto start_time = clock();
     //这里很奇怪，这里所处的位置是cmake-build-debug/QL下，所以要注意文件的路径书写方式
     FILE *fp;
     fp = fopen(fileName, "r");
     if (fp == nullptr)return QL_FILE_NOT_EXIST;
     //构造ConstValueList，手动来分割字符串
     //TODO 效率问题，不知道strtok会不会更快
+    int totalCount = 0, insertCount = 0;
     while (fgets(line, MAX_LINE_LENGTH, fp) != nullptr) {
+        totalCount++;
         auto constValueList = new std::vector<AttrValue>;
         int length = strlen(line);
         for (int l = 0, r; l < length; l = r + 1) {
@@ -63,10 +66,17 @@ RC QL_Manager::Insert(const char *tbName, const char *fileName) {
             }
         }
         //以行为单位插入，某一行可以不成功
-        DO(Insert(tbName, nullptr, constValueList))
+        RC rc;
+        if ((rc = Insert(tbName, nullptr, constValueList)) == OK_RC) {
+            insertCount++;
+        } else {
+            printError(rc);
+        }
         delete constValueList;
     }
     fclose(fp);
+    auto cost_time = clock() - start_time;
+    printf("插入: 共计%d条，成功%d条，花费%.3f秒\n", totalCount, insertCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
