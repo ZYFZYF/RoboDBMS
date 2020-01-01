@@ -101,12 +101,20 @@ RC QL_MultiTable::iterateTables(int n) {
             smTable = new SM_Table(targetMeta);
             isFirstIterate = false;
         }
-        char record[smTable->getRecordSize()];
-        for (int i = 0; i < targetMeta.columnNum; i++) {
-            TRY(eval((*valueList)[i]))
-            TRY(smTable->setColumnDataByExpr(record + smTable->columnOffset[i], i, (*valueList)[i], true))
+        bool conditionSatisfied = true;
+        for (auto &condition:*conditionList) {
+            TRY(eval(condition))
+            conditionSatisfied &= condition.value.boolValue;
+            if (!conditionSatisfied)break;
         }
-        TRY(smTable->insertRecord(record))
+        if (conditionSatisfied) {
+            char record[smTable->getRecordSize()];
+            for (int i = 0; i < targetMeta.columnNum; i++) {
+                TRY(eval((*valueList)[i]))
+                TRY(smTable->setColumnDataByExpr(record + smTable->columnOffset[i], i, (*valueList)[i], true))
+            }
+            TRY(smTable->insertRecord(record))
+        }
     } else {
         for (int i = 0; i < ridListList[n].size(); i++) {
             tableList[n].getRecordFromRID(ridListList[n][i], recordList[n]);

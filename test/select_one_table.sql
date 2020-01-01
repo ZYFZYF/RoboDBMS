@@ -18,3 +18,4 @@ select O_ORDERKEY, O_CUSTKEY from select_one_table;
 select O_ORDERKEY, O_CUSTKEY as TAT from select_one_table;
 select O_ORDERKEY from select_one_table where O_ORDERSTATUS == 'P';
 select O_ORDERKEY from select_one_table where O_ORDERKEY % 10 == 0;
+select O_ORDERKEY from select_one_table where O_ORDERKEY % 10 == 0 or O_ORDERSTATUS == 'P';
