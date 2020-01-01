@@ -9,6 +9,7 @@
 QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
     tableNum = tableMetaList->size();
     tableList.reserve(tableNum);
+    recordList.reserve(tableNum);
     for (auto &tableMeta:*tableMetaList) {
         tableList.emplace_back(tableMeta);
         recordList.emplace_back();

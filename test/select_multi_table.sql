@@ -1,8 +1,8 @@
 create database test;
 use database test;
 
-drop table select_multi_table_order;
-create table select_multi_table_order(  O_ORDERKEY      INT PRIMARY KEY,
+drop table test_order;
+create table test_order(  O_ORDERKEY      INT PRIMARY KEY,
                                 O_CUSTKEY		INT NOT NULL,
                                 O_ORDERSTATUS	CHAR(1),
                                 O_TOTALPRICE	DECIMAL,
@@ -11,10 +11,10 @@ create table select_multi_table_order(  O_ORDERKEY      INT PRIMARY KEY,
                                 O_CLERK			CHAR(15),
                                 O_SHIPPRIORITY	INT,
                                 O_COMMENT		VARCHAR(79));
-insert into select_multi_table_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
 
-drop table select_multi_table_customer;
-create table select_multi_table_customer (
+drop table test_customer;
+create table test_customer (
 		C_CUSTKEY		INT PRIMARY KEY,
 		C_NAME			VARCHAR(25),
 		C_ADDRESS		VARCHAR(40),
@@ -24,6 +24,8 @@ create table select_multi_table_customer (
 		C_MKTSEGMENT	CHAR(10),
 		C_COMMENT		VARCHAR(117)
 	);
-insert into select_multi_table_customer from '../../dataset/customer.tbl';
-
-select * from select_multi_table_order, select_multi_table_customer where select_multi_table_order.O_CUSTKEY == select_multi_table_customer.C_CUSTKEY;
+insert into test_customer from '../../dataset/customer.tbl';
+select C_CUSTKEY,C_NATIONKEY from test_customer;
+select C_CUSTKEY,C_NAME from test_customer;
+select O_ORDERKEY,C_CUSTKEY,C_NATIONKEY from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
+select O_ORDERKEY,C_CUSTKEY,C_NAME from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
