@@ -343,6 +343,10 @@ Select 		:	SELECT NameColumnList P_FROM TableList WhereClause ';'
 			{
 				DO(QL_Manager::Instance().Select($2,$4,$5));
 			}
+		|	SELECT '*' P_FROM TableList WhereClause ';'
+			{
+				DO(QL_Manager::Instance().Select(nullptr, $4,$5));
+			}
 		;
 
 NameColumnList	:	NameColumnList ',' NamedColumn

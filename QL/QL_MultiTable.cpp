@@ -89,7 +89,7 @@ RC QL_MultiTable::iterateTables(int n) {
                         break;
                     }
                     case DATE: {
-                        targetMeta.columns[targetMeta.columnNum].attrLength = sizeof(DATE);
+                        targetMeta.columns[targetMeta.columnNum].attrLength = sizeof(Date);
                         break;
                     }
                     default:

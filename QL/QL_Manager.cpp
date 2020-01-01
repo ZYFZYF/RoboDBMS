@@ -99,6 +99,13 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
                       std::vector<PS_Expr> *conditionList) {
     std::string name = "temp";
     auto *multiTable = new QL_MultiTable(tableMetaList);
+    if (valueList == nullptr) {
+        valueList = new std::vector<PS_Expr>;
+        for (auto &tableMeat: *tableMetaList)
+            for (int i = 0; i < tableMeat.columnNum; i++) {
+                valueList->emplace_back(tableMeat.name, tableMeat.columns[i].name);
+            }
+    }
     TableMeta tableMeta = multiTable->select(valueList, conditionList, name);
     delete multiTable;
     auto *table = new SM_Table(tableMeta);
