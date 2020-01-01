@@ -18,18 +18,12 @@ TableMeta
 QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name) {
     valueList = _valueList;
     conditionList = _conditionList;
-//    printf("%d %d %d %d\n", valueList->size(), conditionList->size(), (*valueList)[0].isColumn,
-//           (*conditionList)[0].isColumn);
-
     name = _name;
     //先拿到所有遍历的节点
     ridListList.clear();
     for (int i = 0; i < tableNum; i++) {
         ridListList.push_back(tableList[i].filter(conditionList));
-        //printf("%d %d %d\n", ridListList.size(), ridListList[0].size(), ridListList[0][0].IsValidRID());
     }
-    //printf("%d %d %d\n", ridListList.size(), ridListList[0].size(), ridListList[0][0].IsValidRID());
-
     isFirstIterate = true;
     iterateTables(0);
     delete smTable;
@@ -112,14 +106,10 @@ RC QL_MultiTable::iterateTables(int n) {
             TRY(eval((*valueList)[i]))
             TRY(smTable->setColumnDataByExpr(record + smTable->columnOffset[i], i, (*valueList)[i], true))
         }
-        int x = *(int *) (record + 1);
         TRY(smTable->insertRecord(record))
     } else {
         for (int i = 0; i < ridListList[n].size(); i++) {
             tableList[n].getRecordFromRID(ridListList[n][i], recordList[n]);
-            int z = *(int *) (recordList[0].getData() + 1);
-            int k = *(int *) (recordList[0].getData() + 6);
-            int w = recordList.size();
             TRY(iterateTables(n + 1))
         }
     }

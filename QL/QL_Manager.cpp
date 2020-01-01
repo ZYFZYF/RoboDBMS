@@ -5,6 +5,7 @@
 #include "QL_Manager.h"
 #include "../SM/SM_Table.h"
 #include "../utils/PrintError.h"
+#include "../utils/Utils.h"
 
 QL_Manager &QL_Manager::Instance() {
     static QL_Manager instance;
@@ -96,11 +97,17 @@ RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_
 
 RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
                       std::vector<PS_Expr> *conditionList) {
-    std::string name = "temp" + std::to_string(rand());
+    std::string name = "temp";
     auto *multiTable = new QL_MultiTable(tableMetaList);
     TableMeta tableMeta = multiTable->select(valueList, conditionList, name);
     delete multiTable;
-    SM_Table table(tableMeta);
-    table.showRecords(50);
+    auto *table = new SM_Table(tableMeta);
+    table->showRecords(5);
+    delete table;
+    //把这个临时表删掉
+    std::string recordFileName = Utils::getRecordFileName(tableMeta.createName);
+    RM_Manager::Instance().DestroyFile(recordFileName.c_str());
+    std::string stringPoolFileName = Utils::getStringPoolFileName(tableMeta.createName);
+    SP_Manager::DestroyStringPool(stringPoolFileName.c_str());
     return OK_RC;
 }
