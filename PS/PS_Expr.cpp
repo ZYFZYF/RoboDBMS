@@ -110,10 +110,12 @@ PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right) {
     op = _op;
     left = _left;
     right = _right;
-    if (left && left->type != UNKNOWN && right->type != UNKNOWN)pushUp();
+    pushUp();
 }
 
 RC PS_Expr::pushUp() {
+    //如果没得更新立马返回
+    if (right->type == UNKNOWN) return OK_RC;
     if (left && left->isConst && right && right->isConst)isConst = true;
     switch (op) {
         case EQ_OP: {

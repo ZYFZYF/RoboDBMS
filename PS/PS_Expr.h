@@ -61,6 +61,7 @@ private:
     Operator op{NO_OP};
     std::string name;
     int stringMaxLength{};
+    int aggregationIndex{-1};
 
 private:
 

@@ -37,11 +37,11 @@ void yyerror(const char *s, ...);
 %token <comparator> OP
 
 %token SHOW DESC USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
-%token COUNT
+%token C_COUNT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
 %token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
-%token C_AND C_OR
+%token C_AND C_OR C_MAX C_MIN C_AVG C_SUM C_COUNT
 
 //定义语法中需要的节点的类型
 %type <integer> INTEGER
@@ -100,7 +100,7 @@ HELP 	: 	SHOW DATABASES ';'{
 	|	SHOW TABLE IDENTIFIER';' {
 			DO(SM_Manager::Instance().ShowTable($3));
 		}
-	| 	COUNT TABLE IDENTIFIER ';' {
+	| 	C_COUNT TABLE IDENTIFIER ';' {
 			DO(QL_Manager::Instance().Count($3));
 		}
 	|	QUIT ';'{
@@ -371,6 +371,7 @@ NamedColumn	:	IDENTIFIER
                         }
                 |	ValueExpr P_AS IDENTIFIER
                 	{
+                		//printf("%s\n",$3);
                 		$$ = $1;
                 		$$->setName(std::string($3));
                 	}
@@ -513,6 +514,7 @@ LowerValueExpr	:	LowerValueExpr '*' LeafValueExpr
 			}
 		|	LeafValueExpr
 			{
+				//printf("REDUCE\n");
 				$$ = $1;
 			}
 		;
@@ -544,6 +546,32 @@ LeafValueExpr	:	P_NULL
 		|	'(' ValueExpr ')'
                 	{
                 		$$ = $2;
+                	}
+                |	C_MAX '(' ValueExpr ')'
+                	{
+                		$$ = new PS_Expr(nullptr, MAX_OP,$3);
+                	}
+                |	C_MIN '(' ValueExpr ')'
+                	{
+				$$ = new PS_Expr(nullptr, MIN_OP,$3);
+                	}
+                |	C_AVG '(' ValueExpr ')'
+                	{
+				$$ = new PS_Expr(nullptr, AVG_OP,$3);
+                	}
+                |	C_SUM '(' ValueExpr ')'
+                	{
+                		//printf("SUM\n");
+				$$ = new PS_Expr(nullptr, SUM_OP,$3);
+                	}
+                |	C_COUNT '(' ValueExpr ')'
+                	{
+                	        //printf("COUNT\n");
+				$$ = new PS_Expr(nullptr, COUNT_OP,$3);
+                	}
+                |	C_COUNT '(' '*' ')'
+                	{
+                		$$ = new PS_Expr(nullptr, COUNT_OP, new PS_Expr(0));
                 	}
 		;
 

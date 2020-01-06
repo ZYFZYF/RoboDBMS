@@ -27,8 +27,6 @@ SELECT|select           return SELECT;
 DELETE|delete           return DELETE;
 QUIT|quit               return QUIT;
 
-COUNT|count             return COUNT;
-
 DATABASES|databases     return DATABASES;
 DATABASE|database       return DATABASE;
 TABLES|tables           return TABLES;
@@ -62,6 +60,11 @@ DECIMAL|decimal         return T_DECIMAL;
 
 AND|and                 return C_AND;
 OR|or                   return C_OR;
+MAX|max                 return C_MAX;
+MIN|min                 return C_MIN;
+AVG|avg                 return C_AVG;
+SUM|sum                 return C_SUM;
+COUNT|count             return C_COUNT;
 
 [a-zA-Z][a-zA-Z0-9_]*   yylval.str = strdup(yytext); return IDENTIFIER;
 '[^']*'                 {yylval.str = new char[strlen(yytext)-1];memcpy(yylval.str,yytext+1,strlen(yytext)-2);yylval.str[strlen(yytext)-2]='\0';return STR;}

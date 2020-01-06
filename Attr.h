@@ -69,7 +69,10 @@ enum Operator {
     NO_OP, EQ_OP, NE_OP, LT_OP, GT_OP, LE_OP, GE_OP,
 
     PLUS_OP, MINUS_OP, MUL_OP, DIV_OP, MOD_OP,
-    NOT_OP, AND_OP, OR_OP
+
+    NOT_OP, AND_OP, OR_OP,
+
+    MAX_OP, MIN_OP, AVG_OP, SUM_OP, COUNT_OP,
 };
 
 #endif //ROBODBMS_TYPE_H
