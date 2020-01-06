@@ -60,6 +60,7 @@ private:
     PS_Expr *left{nullptr}, *right{nullptr};
     Operator op{NO_OP};
     std::string name;
+    int stringMaxLength{};
 
 private:
 

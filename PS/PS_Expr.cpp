@@ -36,6 +36,7 @@ PS_Expr::PS_Expr(char *_value) {
     isConst = true;
     type = STRING;
     string = std::string(_value);
+    stringMaxLength = string.size();
 }
 
 PS_Expr::PS_Expr(char *tbName, char *colName) {
@@ -181,7 +182,6 @@ RC PS_Expr::pushUp() {
         case PLUS_OP: {
             if (left->type == INT && right->type == INT) {
                 type = INT;
-                //if (left->value.intValue == 7000 && right->value.intValue == 73)printf("compute\n");
                 value.intValue = left->value.intValue + right->value.intValue;
             } else if (left->type == INT && right->type == FLOAT) {
                 type = FLOAT;
@@ -195,6 +195,7 @@ RC PS_Expr::pushUp() {
             } else if (left->type == STRING && right->type == STRING) {
                 type = STRING;
                 string = left->string + right->string;
+                stringMaxLength = left->stringMaxLength + right->stringMaxLength;
             } else return QL_UNSUPPORTED_OPERATION_TYPE;
             break;
         }
@@ -254,10 +255,12 @@ RC PS_Expr::pushUp() {
             break;
         }
         case NOT_OP: {
+            type = BOOL;
             value.boolValue = !right->value.boolValue;
             break;
         }
         case OR_OP: {
+            type = BOOL;
             value.boolValue = left->value.boolValue || right->value.boolValue;
             break;
         }

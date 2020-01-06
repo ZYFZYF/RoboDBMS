@@ -93,7 +93,8 @@ RC QL_MultiTable::iterateTables(int n) {
                         break;
                     }
                     case STRING: {
-                        targetMeta.columns[targetMeta.columnNum].attrLength = MAX_CHAR_LENGTH;
+                        targetMeta.columns[targetMeta.columnNum].attrLength = value.stringMaxLength;
+                        //printf("%s length = %d\n", value.name.data(), value.stringMaxLength);
                         break;
                     }
                     case DATE: {
@@ -146,7 +147,6 @@ RC QL_MultiTable::eval(PS_Expr &value) {
         if (value.name.empty())value.name = tableList[i].tableMeta.columns[j].name;
         value.type = tableList[i].tableMeta.columns[j].attrType;
         char *data = tableList[i].getColumnData(recordList[i].getData(), j);
-        int z = *(int *) data;
         if (data == nullptr) {
             value.value.isNull = true;
         } else {
@@ -162,6 +162,7 @@ RC QL_MultiTable::eval(PS_Expr &value) {
                 }
                 case STRING: {
                     value.string = std::string(data);
+                    value.stringMaxLength = tableList[i].tableMeta.columns[j].attrLength;
                     break;
                 }
                 case DATE: {
@@ -172,6 +173,7 @@ RC QL_MultiTable::eval(PS_Expr &value) {
                     char temp[tableList[i].tableMeta.columns[j].stringMaxLength];
                     ((Varchar *) data)->getData(temp);
                     value.string = temp;
+                    value.stringMaxLength = tableList[i].tableMeta.columns[j].stringMaxLength;
                     break;
                 }
             }

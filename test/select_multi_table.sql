@@ -27,6 +27,9 @@ create table test_customer (
 insert into test_customer from '../../dataset/customer.tbl';
 select C_CUSTKEY,C_NATIONKEY from test_customer;
 select C_CUSTKEY,C_NAME from test_customer;
+select C_CUSTKEY + 1 as C_CUSTKEY,C_NAME from test_customer;
+select C_CUSTKEY + 1 as C_CUSTKEY,C_NAME + 'testtesttesttesttesttesttesttestttesttetstt' as C_NEW_NAME from test_customer;
+
 select O_ORDERKEY,C_CUSTKEY,C_NATIONKEY from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
 select O_ORDERKEY,C_CUSTKEY,C_NAME from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
 desc table test_customer;
