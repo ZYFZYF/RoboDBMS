@@ -13,7 +13,7 @@ create table test_group(  O_ORDERKEY      INT PRIMARY KEY,
                                 O_COMMENT		VARCHAR(79));
 insert into test_group from '../../dataset/orders.tbl';
 
-select max(O_CUSTKEY+1) + 1 as MAX_VALUE_PLUS from test_group;
+select 2 * max(O_CUSTKEY + 1) + 1 * 3 as MAX_VALUE_PLUS from test_group;
 select avg(O_CUSTKEY) as AVG_VALUE_1 from test_group;
 select max(O_CUSTKEY) as MAX_VALUE from test_group;
 select max(O_CUSTKEY) as MAX_VALUE, min(O_CUSTKEY) as MIN_VALUE from test_group;

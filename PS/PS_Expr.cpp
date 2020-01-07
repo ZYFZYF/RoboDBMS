@@ -122,6 +122,7 @@ PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right) {
 RC PS_Expr::pushUp(std::string group) {
     //如果没得更新立马返回，或者右边没有计算完毕
     if (right->type == UNKNOWN) return OK_RC;
+    if (left && left->type == UNKNOWN) return OK_RC;
     if (left && left->isConst && right && right->isConst)isConst = true;
     switch (op) {
         case EQ_OP: {
