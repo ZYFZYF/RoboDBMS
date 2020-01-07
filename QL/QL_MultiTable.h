@@ -20,7 +20,7 @@ public:
 
     RC iterateTables(int n);
 
-    RC eval(PS_Expr &value);
+    RC eval(PS_Expr &value, std::string group);
 
 private:
     int tableNum;

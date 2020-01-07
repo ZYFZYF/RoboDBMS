@@ -8,6 +8,12 @@
 #include "../utils/Utils.h"
 #include "../SM/SM_Table.h"
 
+//第一次循环用来计算聚合函数的值
+bool is_first_iteration = true;
+int aggregation_count = 0;
+std::map<std::pair<std::string, int>, PS_Expr> group_aggregation_expr{};
+
+
 PS_Expr::PS_Expr() {
     isConst = true;
     type = UNKNOWN;
@@ -113,8 +119,8 @@ PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right) {
     pushUp();
 }
 
-RC PS_Expr::pushUp() {
-    //如果没得更新立马返回
+RC PS_Expr::pushUp(std::string group) {
+    //如果没得更新立马返回，或者右边没有计算完毕
     if (right->type == UNKNOWN) return OK_RC;
     if (left && left->isConst && right && right->isConst)isConst = true;
     switch (op) {
@@ -266,6 +272,40 @@ RC PS_Expr::pushUp() {
             value.boolValue = left->value.boolValue || right->value.boolValue;
             break;
         }
+        case MAX_OP:
+        case MIN_OP:
+        case SUM_OP:
+        case AVG_OP:
+        case COUNT_OP: {
+            //第一次的时候算到这儿卡住，上面的计算就不要了
+            if (is_first_iteration) {
+                type = UNKNOWN;
+                if (aggregationIndex < 0)aggregationIndex = aggregation_count++;
+                auto key = std::make_pair(group, aggregationIndex);
+                //头一次的话用来init
+                if (group_aggregation_expr.find(key) == group_aggregation_expr.end()) {
+                    if (!right->value.isNull) {
+                        group_aggregation_expr[key] = PS_Expr();
+                        group_aggregation_expr[key].initAggregation(op, right);
+                    }
+                } else {
+                    group_aggregation_expr[key].updateAggregation(op, right);
+                }
+            } else {
+                //第二次的时候就给定type，可以往上规约
+                type = right->type;
+                auto key = std::make_pair(group, aggregationIndex);
+                auto expr = group_aggregation_expr[key];
+                value = expr.value;
+                string = expr.string;
+                stringMaxLength = expr.stringMaxLength;
+                //只有这一种特殊情况需要改type
+                if (op == AVG_OP && type == INT) {
+                    type = FLOAT;
+                }
+            }
+            break;
+        }
         default:
             return QL_UNSUPPORTED_OPERATION_TYPE;
     }
@@ -339,4 +379,110 @@ bool PS_Expr::isComparable() {
 
 void PS_Expr::setName(const std::string &_name) {
     name = _name;
+}
+
+//avg的话直接变成float
+RC PS_Expr::initAggregation(Operator op, PS_Expr *expr) {
+    value.isNull = false;
+    updateCount = 1;
+    switch (op) {
+        case MAX_OP:
+        case MIN_OP: {
+            if (expr->type != INT && expr->type != FLOAT && expr->type != STRING)
+                throw "Not supported aggregation column";
+            value = expr->value;
+            string = expr->string;
+            break;
+        }
+        case AVG_OP:
+        case SUM_OP: {
+            if (expr->type == INT)value.floatValue = expr->value.intValue;
+            else if (expr->type == FLOAT)value.floatValue = expr->value.floatValue;
+            else
+                throw "Not supported aggregation column";
+            break;
+        }
+        case COUNT_OP: {
+            value.intValue = 1;
+            break;
+        }
+        default:
+            throw "Not aggregation function";
+    }
+    stringMaxLength = expr->stringMaxLength;
+    return OK_RC;
+}
+
+RC PS_Expr::updateAggregation(Operator op, PS_Expr *expr) {
+    if (expr->value.isNull)return OK_RC;
+    switch (op) {
+        case MAX_OP: {
+            switch (expr->type) {
+                case INT: {
+                    value.intValue = std::max(value.intValue, expr->value.intValue);
+                    break;
+                }
+                case FLOAT: {
+                    value.floatValue = std::max(value.floatValue, expr->value.floatValue);
+                    break;
+                }
+                case STRING: {
+                    string = std::max(string, expr->string);
+                    break;
+                }
+            }
+            break;
+        }
+        case MIN_OP: {
+            switch (expr->type) {
+                case INT: {
+                    value.intValue = std::min(value.intValue, expr->value.intValue);
+                    break;
+                }
+                case FLOAT: {
+                    value.floatValue = std::min(value.floatValue, expr->value.floatValue);
+                    break;
+                }
+                case STRING: {
+                    string = std::min(string, expr->string);
+                    break;
+                }
+            }
+            break;
+        }
+        case AVG_OP: {
+            switch (expr->type) {
+                case INT: {
+                    value.floatValue = (value.floatValue * updateCount + expr->value.intValue) / (updateCount + 1);
+                    break;
+                }
+                case FLOAT: {
+                    value.floatValue = (value.floatValue * updateCount + expr->value.floatValue) / (updateCount + 1);
+                    break;
+                }
+            }
+            break;
+        }
+        case SUM_OP: {
+            switch (expr->type) {
+                case INT: {
+                    value.intValue += expr->value.intValue;
+                    break;
+                }
+                case FLOAT: {
+                    value.floatValue += expr->value.floatValue;
+                    break;
+                }
+            }
+            break;
+        }
+        case COUNT_OP: {
+            value.intValue++;
+            break;
+        }
+        default:
+            throw "Not aggregation function";
+    }
+    updateCount++;
+    return OK_RC;
 }

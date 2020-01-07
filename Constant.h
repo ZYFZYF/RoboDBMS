@@ -40,6 +40,7 @@ const int ALL_PAGES = -1;
 #define MAX_NAME_LENGTH 30  //一切名字的最长长度
 #define MAX_LINE_LENGTH 100000 //最长的一行长度
 #define ATTR_TYPE_LENGTH (sizeof(AttrType))
+#define MAX_AGGREGATION_COUNT 100
 #define ATTR_ITEM_LENGTH (sizeof(AttrType) + sizeof(AttrValue))
 
 

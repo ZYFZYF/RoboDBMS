@@ -201,6 +201,7 @@ NotNull		:	/* empty */
 			{
 				$$.allowNull = false;
 			};
+
 DefaultValue 	:	/* empty */
 			{
 				$$.hasDefaultValue = false;

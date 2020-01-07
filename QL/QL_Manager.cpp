@@ -6,6 +6,7 @@
 #include "../SM/SM_Table.h"
 #include "../utils/PrintError.h"
 #include "../utils/Utils.h"
+#include "QL_MultiTable.h"
 
 QL_Manager &QL_Manager::Instance() {
     static QL_Manager instance;

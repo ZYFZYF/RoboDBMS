@@ -8,7 +8,11 @@
 
 #include "../Attr.h"
 #include "../SM/SM_Constant.h"
-#include "../QL/QL_MultiTable.h"
+#include<map>
+
+extern bool is_first_iteration;
+extern int aggregation_count;
+
 
 class SM_Table;
 
@@ -36,7 +40,7 @@ public:
 
     RC eval(SM_Table &table, char *record);
 
-    RC pushUp();
+    RC pushUp(std::string group = "NULL");
 
     //获取左边的值减去右边的值的差
     int cmp();
@@ -61,12 +65,18 @@ private:
     Operator op{NO_OP};
     std::string name;
     int stringMaxLength{};
+    //聚合相关
     int aggregationIndex{-1};
+    int updateCount{0};
 
-private:
+    RC initAggregation(Operator op, PS_Expr *expr);
+
+    RC updateAggregation(Operator op, PS_Expr *expr);
 
     bool isComparable();
 };
+
+extern std::map<std::pair<std::string, int>, PS_Expr> group_aggregation_expr;
 
 
 #endif //ROBODBMS_PS_EXPR_H
