@@ -362,6 +362,8 @@ int PS_Expr::cmp() {
                 } else return date1.day - date2.day;
             }
         }
+        default:
+            throw "unsupported cmp type";
     }
 }
 
