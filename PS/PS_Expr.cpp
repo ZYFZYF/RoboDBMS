@@ -116,6 +116,8 @@ PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right) {
     op = _op;
     left = _left;
     right = _right;
+    //聚合函数不pushup，否则可能会计算aggregation_cnt
+    if (op == MAX_OP || op == MIN_OP || op == AVG_OP || op == SUM_OP || op == COUNT_OP)return;
     pushUp();
 }
 
@@ -281,7 +283,7 @@ RC PS_Expr::pushUp(std::string group) {
             //第一次的时候算到这儿卡住，上面的计算就不要了
             if (is_first_iteration) {
                 type = UNKNOWN;
-                if (aggregationIndex < 0)aggregationIndex = aggregation_count++;
+                if (aggregationIndex == 0)aggregationIndex = ++aggregation_count;
                 auto key = std::make_pair(group, aggregationIndex);
                 //头一次的话用来init
                 if (group_aggregation_expr.find(key) == group_aggregation_expr.end()) {
@@ -297,13 +299,14 @@ RC PS_Expr::pushUp(std::string group) {
                 type = right->type;
                 auto key = std::make_pair(group, aggregationIndex);
                 auto expr = group_aggregation_expr[key];
+                //std::cout << group << std::endl;
                 value = expr.value;
                 string = expr.string;
                 stringMaxLength = expr.stringMaxLength;
                 //只有这一种特殊情况需要改type
-                if (op == AVG_OP && type == INT) {
-                    type = FLOAT;
-                }
+                if (op == AVG_OP && type == INT) type = FLOAT;
+                //还有一种情况_(:з」∠)_
+                if (op == COUNT_OP)type = INT;
             }
             break;
         }
@@ -502,17 +505,16 @@ RC PS_Expr::updateAggregation(Operator op, PS_Expr *expr) {
 
 std::string PS_Expr::to_string() {
     switch (type) {
-        case INT: {
-            break;
-        }
+        case INT:
+            return std::to_string(value.intValue);
         case FLOAT:
-            break;
+            return std::to_string(value.floatValue);
         case STRING:
-            break;
+            return string;
         case DATE:
-            break;
+            return std::to_string(value.dateValue.year) + std::to_string(value.dateValue.month) +
+                   std::to_string(value.dateValue.day);
         default:
             throw "not supported to string";
     }
-    return std::string();
 }

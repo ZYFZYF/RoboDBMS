@@ -5,7 +5,7 @@ extern FILE *yyin;
 extern int yyparse();
 
 int main() {
-    const char test_sql[] = "../test/select_aggregation.sql";
+    const char test_sql[] = "../test/select_group.sql";
     yyin = fopen(test_sql, "r");
     if (yyin == nullptr) {
         printf("Open file  %s\n failed", test_sql);

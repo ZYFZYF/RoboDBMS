@@ -89,8 +89,15 @@ std::pair<int, ColumnId> QL_MultiTable::getColumn(std::string &tbName, std::stri
 
 RC QL_MultiTable::iterateTables(int n) {
     if (n == tableNum) {
-        //TODO 从已有的信息中获得所属的组的信息
-        std::string group = "NULL";
+        //获取所属组的信息
+        std::string group{};
+        if (groupByList) {
+            for (auto &groupColumn:*groupByList) {
+                eval(groupColumn);
+                group += groupColumn.to_string();
+            }
+        } else group = "NULL";
+
         bool canInsert = !is_first_iteration || aggregation_count == 0;;
         //枚举到头了
         if (isFirstIterate) {
@@ -218,7 +225,7 @@ RC QL_MultiTable::eval(PS_Expr &value, std::string group) {
         }
     }
     if (value.right)TRY(eval(*value.right, group))
-    TRY(value.pushUp())
+    TRY(value.pushUp(group))
     return OK_RC;
 }
 

@@ -68,7 +68,7 @@ private:
     std::string name;
     int stringMaxLength{};
     //聚合相关
-    int aggregationIndex{-1};
+    int aggregationIndex{0};
     int updateCount{0};
 
     RC initAggregation(Operator op, PS_Expr *expr);

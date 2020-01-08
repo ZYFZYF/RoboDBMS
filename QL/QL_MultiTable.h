@@ -21,7 +21,7 @@ public:
 
     RC iterateTables(int n);
 
-    RC eval(PS_Expr &value, std::string group);
+    RC eval(PS_Expr &value, std::string group = "NULL");
 
 private:
     int tableNum;
