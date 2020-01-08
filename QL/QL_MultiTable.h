@@ -13,7 +13,8 @@ public:
     explicit QL_MultiTable(std::vector<TableMeta> *tableMetaList);
 
     TableMeta
-    select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name);
+    select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name,
+           std::vector<PS_Expr> *_groupByList);
 
     //从表名和列名获得表以及列id
     std::pair<int, ColumnId> getColumn(std::string &tbName, std::string &columnName);
@@ -29,6 +30,7 @@ private:
     std::vector<std::vector<RM_RID> > ridListList{};
     std::vector<PS_Expr> *valueList{};
     std::vector<PS_Expr> *conditionList{};
+    std::vector<PS_Expr> *groupByList{};
     TableMeta targetMeta{};
     SM_Table *smTable;
     bool isFirstIterate{};

@@ -23,11 +23,13 @@ QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
 }
 
 TableMeta
-QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name) {
+QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_conditionList, std::string &_name,
+                      std::vector<PS_Expr> *_groupByList) {
     auto start_time = clock();
     totalCount = 0;
     valueList = _valueList;
     conditionList = _conditionList;
+    groupByList = _groupByList;
     name = _name;
     //先拿到所有遍历的节点
     ridListList.clear();

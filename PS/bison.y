@@ -37,9 +37,8 @@ void yyerror(const char *s, ...);
 %token <comparator> OP
 
 %token SHOW DESC USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
-%token C_COUNT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
-%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS
+%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS P_GROUP P_BY
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
 %token C_AND C_OR C_MAX C_MIN C_AVG C_SUM C_COUNT
 
@@ -348,6 +347,10 @@ Select 		:	SELECT NameColumnList P_FROM TableList WhereClause ';'
 			{
 				DO(QL_Manager::Instance().Select(nullptr, $4,$5));
 			}
+		|	SELECT NameColumnList P_FROM TableList WhereClause P_GROUP P_BY NameColumnList ';'
+		 	{
+				DO(QL_Manager::Instance().Select($2,$4,$5,$8));
+		 	}
 		;
 
 NameColumnList	:	NameColumnList ',' NamedColumn

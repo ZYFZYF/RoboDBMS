@@ -107,7 +107,7 @@ RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_
 }
 
 RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
-                      std::vector<PS_Expr> *conditionList) {
+                      std::vector<PS_Expr> *conditionList, std::vector<PS_Expr> *groupByList) {
     std::string name = "temp";
     auto *multiTable = new QL_MultiTable(tableMetaList);
     if (valueList == nullptr) {
@@ -117,7 +117,7 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
                 valueList->emplace_back(tableMeat.name, tableMeat.columns[i].name);
             }
     }
-    TableMeta tableMeta = multiTable->select(valueList, conditionList, name);
+    TableMeta tableMeta = multiTable->select(valueList, conditionList, name, groupByList);
     delete multiTable;
     auto *table = new SM_Table(tableMeta);
     table->showRecords(5);

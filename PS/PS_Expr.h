@@ -47,6 +47,8 @@ public:
 
     void setName(const std::string &_name);
 
+    std::string to_string();
+
 
 private:
     //是否是常量，无需和列数据挂钩

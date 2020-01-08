@@ -389,7 +389,7 @@ RC PS_Expr::initAggregation(Operator op, PS_Expr *expr) {
     switch (op) {
         case MAX_OP:
         case MIN_OP: {
-            if (expr->type != INT && expr->type != FLOAT && expr->type != STRING)
+            if (expr->type != INT && expr->type != FLOAT && expr->type != STRING && expr->type != DATE)
                 throw "Not supported aggregation column";
             value = expr->value;
             string = expr->string;
@@ -431,6 +431,12 @@ RC PS_Expr::updateAggregation(Operator op, PS_Expr *expr) {
                     string = std::max(string, expr->string);
                     break;
                 }
+                case DATE: {
+                    if (value.dateValue < expr->value.dateValue) {
+                        value.dateValue = expr->value.dateValue;
+                    }
+                    break;
+                }
             }
             break;
         }
@@ -446,6 +452,12 @@ RC PS_Expr::updateAggregation(Operator op, PS_Expr *expr) {
                 }
                 case STRING: {
                     string = std::min(string, expr->string);
+                    break;
+                }
+                case DATE: {
+                    if (expr->value.dateValue < value.dateValue) {
+                        value.dateValue = expr->value.dateValue;
+                    }
                     break;
                 }
             }
@@ -486,4 +498,21 @@ RC PS_Expr::updateAggregation(Operator op, PS_Expr *expr) {
     }
     updateCount++;
     return OK_RC;
+}
+
+std::string PS_Expr::to_string() {
+    switch (type) {
+        case INT: {
+            break;
+        }
+        case FLOAT:
+            break;
+        case STRING:
+            break;
+        case DATE:
+            break;
+        default:
+            throw "not supported to string";
+    }
+    return std::string();
 }

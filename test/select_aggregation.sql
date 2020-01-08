@@ -22,3 +22,4 @@ select max(O_CUSTKEY) as MAX_VALUE, min(O_CUSTKEY) as MIN_VALUE, avg(O_CUSTKEY) 
 select max(O_CUSTKEY) as MAX_VALUE, min(O_CUSTKEY) as MIN_VALUE, avg(O_CUSTKEY) as AVG_VALUE_1, count(O_CUSTKEY) as COUNT_VALUE, sum(O_CUSTKEY) as SUM_VALUE from test_group;
 select max(O_CUSTKEY) as MAX_VALUE, min(O_CUSTKEY) as MIN_VALUE, avg(O_CUSTKEY) as AVG_VALUE_1, count(O_CUSTKEY) as COUNT_VALUE, sum(O_CUSTKEY) as SUM_VALUE, sum(O_CUSTKEY) / count(O_CUSTKEY) as AVG_VALUE_2 from test_group;
 select max(O_CLERK) as MAX_O_CLERK, min(O_CLERK) as MIN_O_CLERK from test_group;
+select max(O_ORDERDATE) as MAX_O_DATE, min(O_ORDERDATE) as MIN_O_DATE from test_group;

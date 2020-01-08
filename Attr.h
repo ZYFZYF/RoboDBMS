@@ -27,6 +27,12 @@ struct Date {
     bool operator==(Date &date) {
         return year == date.year && month == date.month && day == date.day;
     }
+
+    bool operator<(Date &date) {
+        if (year != date.year)return year < date.year;
+        else if (month != date.month)return month < date.month;
+        else return day < date.day;
+    }
 };
 
 struct Varchar {
