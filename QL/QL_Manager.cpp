@@ -109,8 +109,6 @@ RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_
 RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
                       std::vector<PS_Expr> *conditionList, std::vector<PS_Expr> *groupByList,
                       std::vector<const char *> *orderByColumn, bool increaseOrder, int limitOffset, int limitLength) {
-    auto x = (*conditionList)[0];
-    int z = 1;
     std::string name = "zyfdsb";
     auto *multiTable = new QL_MultiTable(tableMetaList);
 
@@ -144,8 +142,6 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
     }
     table->showRecords(5);
     delete table;
-    x = (*conditionList)[0];
-    z = 1;
     //把这个临时表删掉
     DestroyTable(tableMeta.createName);
     return OK_RC;

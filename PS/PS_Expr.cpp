@@ -60,6 +60,18 @@ PS_Expr::PS_Expr(std::vector<PS_Expr> *_exprList) {
     exprList = _exprList;
 }
 
+PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, bool _isAny, std::vector<PS_Expr> *_exprList) {
+    isConst = false;
+    isColumn = false;
+    left = _left;
+    op = _op;
+    type = UNKNOWN;
+    isAny = _isAny;
+    exprList = _exprList;
+    right = nullptr;
+    pushUp();
+}
+
 RC PS_Expr::eval(SM_Table &table, char *record) {
     //常数直接返回
     if (isConst)return OK_RC;
@@ -130,253 +142,308 @@ PS_Expr::PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right) {
 
 RC PS_Expr::pushUp(std::string group) {
     //如果没得更新立马返回，或者右边没有计算完毕
-    if (right->type == UNKNOWN) return OK_RC;
+    if (right && right->type == UNKNOWN) return OK_RC;
     if (left && left->type == UNKNOWN) return OK_RC;
     if (left && left->isConst && right && right->isConst)isConst = true;
-    switch (op) {
-        case EQ_OP: {
-            type = BOOL;
-            if (left->value.isNull && right->value.isNull) {
-                value.boolValue = true;
-                return OK_RC;
+    //这是嵌套子查询
+    if (exprList != nullptr) {
+        type = BOOL;
+        int cnt = 0;
+        for (auto &expr:*exprList) {
+            right = &expr;
+            switch (op) {
+                case EQ_OP: {
+                    if (left->value.isNull && right->value.isNull) {
+                        cnt++;
+                    } else if (left->value.isNull != right->value.isNull) {
+                    } else
+                        cnt += isComparable() && cmp() == 0;
+                    break;
+                }
+                case NE_OP: {
+                    if (left->value.isNull && right->value.isNull) {
+                    }
+                    if (left->value.isNull != right->value.isNull) {
+                        cnt++;
+                    } else
+                        cnt += isComparable() && cmp() == 0;
+                    break;
+                }
+                case LT_OP: {
+                    if (left->value.isNull or right->value.isNull) {
+                    } else cnt += isComparable() && cmp() < 0;
+                    break;
+                }
+                case GT_OP: {
+                    if (left->value.isNull or right->value.isNull) {
+                    } else cnt += isComparable() && cmp() > 0;
+                    break;
+                }
+                case LE_OP: {
+                    if (left->value.isNull or right->value.isNull) {
+                    } else cnt += isComparable() && cmp() <= 0;
+                    break;
+                }
+                case GE_OP: {
+                    if (left->value.isNull or right->value.isNull) {
+                    } else cnt += value.boolValue = isComparable() && cmp() >= 0;
+                    break;
+                }
+                default:
+                    throw "unsupported compare with a array";
             }
-            if (left->value.isNull != right->value.isNull) {
-                value.boolValue = false;
-                return OK_RC;
+        }
+        right = nullptr;
+        value.boolValue = (isAny && cnt) || (!isAny && cnt == exprList->size());
+    } else {
+        //下面是正常的
+        switch (op) {
+            case EQ_OP: {
+                type = BOOL;
+                if (left->value.isNull && right->value.isNull) {
+                    value.boolValue = true;
+                    return OK_RC;
+                }
+                if (left->value.isNull != right->value.isNull) {
+                    value.boolValue = false;
+                    return OK_RC;
+                }
+                value.boolValue = isComparable() && cmp() == 0;
+                break;
             }
-            value.boolValue = isComparable() && cmp() == 0;
-            break;
-        }
-        case NE_OP: {
-            type = BOOL;
-            //printf("%s %d\n", left->string.c_str(), left->value.isNull);
-            if (left->value.isNull && right->value.isNull) {
-                value.boolValue = false;
-                return OK_RC;
+            case NE_OP: {
+                type = BOOL;
+                //printf("%s %d\n", left->string.c_str(), left->value.isNull);
+                if (left->value.isNull && right->value.isNull) {
+                    value.boolValue = false;
+                    return OK_RC;
+                }
+                if (left->value.isNull != right->value.isNull) {
+                    value.boolValue = true;
+                    return OK_RC;
+                }
+                value.boolValue = isComparable() && cmp() == 0;
+                break;
             }
-            if (left->value.isNull != right->value.isNull) {
-                value.boolValue = true;
-                return OK_RC;
+            case LT_OP: {
+                type = BOOL;
+                if (left->value.isNull or right->value.isNull) {
+                    value.boolValue = false;
+                    return OK_RC;
+                }
+                value.boolValue = isComparable() && cmp() < 0;
+                break;
             }
-            value.boolValue = isComparable() && cmp() == 0;
-            break;
-        }
-        case LT_OP: {
-            type = BOOL;
-            if (left->value.isNull or right->value.isNull) {
-                value.boolValue = false;
-                return OK_RC;
+            case GT_OP: {
+                type = BOOL;
+                if (left->value.isNull or right->value.isNull) {
+                    value.boolValue = false;
+                    return OK_RC;
+                }
+                value.boolValue = isComparable() && cmp() > 0;
+                break;
             }
-            value.boolValue = isComparable() && cmp() < 0;
-            break;
-        }
-        case GT_OP: {
-            type = BOOL;
-            if (left->value.isNull or right->value.isNull) {
-                value.boolValue = false;
-                return OK_RC;
+            case LE_OP: {
+                type = BOOL;
+                if (left->value.isNull or right->value.isNull) {
+                    value.boolValue = false;
+                    return OK_RC;
+                }
+                value.boolValue = isComparable() && cmp() <= 0;
+                break;
             }
-            value.boolValue = isComparable() && cmp() > 0;
-            break;
-        }
-        case LE_OP: {
-            type = BOOL;
-            if (left->value.isNull or right->value.isNull) {
-                value.boolValue = false;
-                return OK_RC;
+            case GE_OP: {
+                type = BOOL;
+                if (left->value.isNull or right->value.isNull) {
+                    value.boolValue = false;
+                    return OK_RC;
+                }
+                value.boolValue = isComparable() && cmp() >= 0;
+                break;
             }
-            value.boolValue = isComparable() && cmp() <= 0;
-            break;
-        }
-        case GE_OP: {
-            type = BOOL;
-            if (left->value.isNull or right->value.isNull) {
-                value.boolValue = false;
-                return OK_RC;
+            case PLUS_OP: {
+                if (left->type == INT && right->type == INT) {
+                    type = INT;
+                    value.intValue = left->value.intValue + right->value.intValue;
+                } else if (left->type == INT && right->type == FLOAT) {
+                    type = FLOAT;
+                    value.floatValue = float(left->value.intValue) + right->value.floatValue;
+                } else if (left->type == FLOAT && right->type == INT) {
+                    type = FLOAT;
+                    value.floatValue = left->value.floatValue + float(right->value.intValue);
+                } else if (left->type == FLOAT && right->type == FLOAT) {
+                    type = FLOAT;
+                    value.floatValue = left->value.floatValue + right->value.floatValue;
+                } else if (left->type == STRING && right->type == STRING) {
+                    type = STRING;
+                    string = left->string + right->string;
+                    stringMaxLength = left->stringMaxLength + right->stringMaxLength;
+                } else return QL_UNSUPPORTED_OPERATION_TYPE;
+                break;
             }
-            value.boolValue = isComparable() && cmp() >= 0;
-            break;
-        }
-        case PLUS_OP: {
-            if (left->type == INT && right->type == INT) {
-                type = INT;
-                value.intValue = left->value.intValue + right->value.intValue;
-            } else if (left->type == INT && right->type == FLOAT) {
-                type = FLOAT;
-                value.floatValue = float(left->value.intValue) + right->value.floatValue;
-            } else if (left->type == FLOAT && right->type == INT) {
-                type = FLOAT;
-                value.floatValue = left->value.floatValue + float(right->value.intValue);
-            } else if (left->type == FLOAT && right->type == FLOAT) {
-                type = FLOAT;
-                value.floatValue = left->value.floatValue + right->value.floatValue;
-            } else if (left->type == STRING && right->type == STRING) {
-                type = STRING;
-                string = left->string + right->string;
-                stringMaxLength = left->stringMaxLength + right->stringMaxLength;
-            } else return QL_UNSUPPORTED_OPERATION_TYPE;
-            break;
-        }
-        case MINUS_OP: {
-            if (left->type == INT && right->type == INT) {
-                type = INT;
-                value.intValue = left->value.intValue - right->value.intValue;
-            } else if (left->type == INT && right->type == FLOAT) {
-                type = FLOAT;
-                value.floatValue = float(left->value.intValue) - right->value.floatValue;
-            } else if (left->type == FLOAT && right->type == INT) {
-                type = FLOAT;
-                value.floatValue = left->value.floatValue - float(right->value.intValue);
-            } else if (left->type == FLOAT && right->type == FLOAT) {
-                type = FLOAT;
-                value.floatValue = left->value.floatValue - right->value.floatValue;
-            } else return QL_UNSUPPORTED_OPERATION_TYPE;
-            break;
-        }
-        case MUL_OP: {
-            if (left->type == INT && right->type == INT) {
-                type = INT;
-                value.intValue = left->value.intValue * right->value.intValue;
-            } else if (left->type == INT && right->type == FLOAT) {
-                type = FLOAT;
-                value.floatValue = float(left->value.intValue) * right->value.floatValue;
-            } else if (left->type == FLOAT && right->type == INT) {
-                type = FLOAT;
-                value.floatValue = left->value.floatValue * float(right->value.intValue);
-            } else if (left->type == FLOAT && right->type == FLOAT) {
-                type = FLOAT;
-                value.floatValue = left->value.floatValue * right->value.floatValue;
-            } else return QL_UNSUPPORTED_OPERATION_TYPE;
-            break;
-        }
-        case DIV_OP: {
-            if (left->type == INT && right->type == INT) {
-                type = INT;
-                value.intValue = left->value.intValue / right->value.intValue;
-            } else if (left->type == INT && right->type == FLOAT) {
-                type = FLOAT;
-                value.floatValue = float(left->value.intValue) / right->value.floatValue;
-            } else if (left->type == FLOAT && right->type == INT) {
-                type = FLOAT;
-                value.floatValue = left->value.floatValue / float(right->value.intValue);
-            } else if (left->type == FLOAT && right->type == FLOAT) {
-                type = FLOAT;
-                value.floatValue = left->value.floatValue / right->value.floatValue;
-            } else return QL_UNSUPPORTED_OPERATION_TYPE;
-            break;
-        }
-        case MOD_OP: {
-            if (left->type == INT && right->type == INT) {
-                type = INT;
-                value.intValue = left->value.intValue % right->value.intValue;
-            } else return QL_UNSUPPORTED_OPERATION_TYPE;
-            break;
-        }
-        case NOT_OP: {
-            type = BOOL;
-            value.boolValue = !right->value.boolValue;
-            break;
-        }
-        case OR_OP: {
-            type = BOOL;
-            value.boolValue = left->value.boolValue || right->value.boolValue;
-            break;
-        }
-        case MAX_OP:
-        case MIN_OP:
-        case SUM_OP:
-        case AVG_OP:
-        case COUNT_OP: {
-            //第一次的时候算到这儿卡住，上面的计算就不要了
-            if (is_first_iteration) {
-                type = UNKNOWN;
-                if (aggregationIndex == 0)aggregationIndex = ++aggregation_count;
-                auto key = std::make_pair(group, aggregationIndex);
-                //头一次的话用来init
-                if (group_aggregation_expr.find(key) == group_aggregation_expr.end()) {
-                    if (!right->value.isNull) {
-                        group_aggregation_expr[key] = PS_Expr();
-                        group_aggregation_expr[key].initAggregation(op, right);
+            case MINUS_OP: {
+                if (left->type == INT && right->type == INT) {
+                    type = INT;
+                    value.intValue = left->value.intValue - right->value.intValue;
+                } else if (left->type == INT && right->type == FLOAT) {
+                    type = FLOAT;
+                    value.floatValue = float(left->value.intValue) - right->value.floatValue;
+                } else if (left->type == FLOAT && right->type == INT) {
+                    type = FLOAT;
+                    value.floatValue = left->value.floatValue - float(right->value.intValue);
+                } else if (left->type == FLOAT && right->type == FLOAT) {
+                    type = FLOAT;
+                    value.floatValue = left->value.floatValue - right->value.floatValue;
+                } else return QL_UNSUPPORTED_OPERATION_TYPE;
+                break;
+            }
+            case MUL_OP: {
+                if (left->type == INT && right->type == INT) {
+                    type = INT;
+                    value.intValue = left->value.intValue * right->value.intValue;
+                } else if (left->type == INT && right->type == FLOAT) {
+                    type = FLOAT;
+                    value.floatValue = float(left->value.intValue) * right->value.floatValue;
+                } else if (left->type == FLOAT && right->type == INT) {
+                    type = FLOAT;
+                    value.floatValue = left->value.floatValue * float(right->value.intValue);
+                } else if (left->type == FLOAT && right->type == FLOAT) {
+                    type = FLOAT;
+                    value.floatValue = left->value.floatValue * right->value.floatValue;
+                } else return QL_UNSUPPORTED_OPERATION_TYPE;
+                break;
+            }
+            case DIV_OP: {
+                if (left->type == INT && right->type == INT) {
+                    type = INT;
+                    value.intValue = left->value.intValue / right->value.intValue;
+                } else if (left->type == INT && right->type == FLOAT) {
+                    type = FLOAT;
+                    value.floatValue = float(left->value.intValue) / right->value.floatValue;
+                } else if (left->type == FLOAT && right->type == INT) {
+                    type = FLOAT;
+                    value.floatValue = left->value.floatValue / float(right->value.intValue);
+                } else if (left->type == FLOAT && right->type == FLOAT) {
+                    type = FLOAT;
+                    value.floatValue = left->value.floatValue / right->value.floatValue;
+                } else return QL_UNSUPPORTED_OPERATION_TYPE;
+                break;
+            }
+            case MOD_OP: {
+                if (left->type == INT && right->type == INT) {
+                    type = INT;
+                    value.intValue = left->value.intValue % right->value.intValue;
+                } else return QL_UNSUPPORTED_OPERATION_TYPE;
+                break;
+            }
+            case NOT_OP: {
+                type = BOOL;
+                value.boolValue = !right->value.boolValue;
+                break;
+            }
+            case OR_OP: {
+                type = BOOL;
+                value.boolValue = left->value.boolValue || right->value.boolValue;
+                break;
+            }
+            case MAX_OP:
+            case MIN_OP:
+            case SUM_OP:
+            case AVG_OP:
+            case COUNT_OP: {
+                //第一次的时候算到这儿卡住，上面的计算就不要了
+                if (is_first_iteration) {
+                    type = UNKNOWN;
+                    if (aggregationIndex == 0)aggregationIndex = ++aggregation_count;
+                    auto key = std::make_pair(group, aggregationIndex);
+                    //头一次的话用来init
+                    if (group_aggregation_expr.find(key) == group_aggregation_expr.end()) {
+                        if (!right->value.isNull) {
+                            group_aggregation_expr[key] = PS_Expr();
+                            group_aggregation_expr[key].initAggregation(op, right);
+                        }
+                    } else {
+                        group_aggregation_expr[key].updateAggregation(op, right);
                     }
                 } else {
-                    group_aggregation_expr[key].updateAggregation(op, right);
+                    //第二次的时候就给定type，可以往上规约
+                    type = right->type;
+                    auto key = std::make_pair(group, aggregationIndex);
+                    auto expr = group_aggregation_expr[key];
+                    //std::cout << group << std::endl;
+                    value = expr.value;
+                    string = expr.string;
+                    stringMaxLength = expr.stringMaxLength;
+                    //只有这一种特殊情况需要改type
+                    if (op == AVG_OP && type == INT) type = FLOAT;
+                    //还有一种情况_(:з」∠)_
+                    if (op == COUNT_OP)type = INT;
                 }
-            } else {
-                //第二次的时候就给定type，可以往上规约
-                type = right->type;
-                auto key = std::make_pair(group, aggregationIndex);
-                auto expr = group_aggregation_expr[key];
-                //std::cout << group << std::endl;
-                value = expr.value;
-                string = expr.string;
-                stringMaxLength = expr.stringMaxLength;
-                //只有这一种特殊情况需要改type
-                if (op == AVG_OP && type == INT) type = FLOAT;
-                //还有一种情况_(:з」∠)_
-                if (op == COUNT_OP)type = INT;
+                break;
             }
-            break;
-        }
-        case IN_OP: {
-            type = BOOL;
-            value.boolValue = false;
-            for (auto &expr:*right->exprList) {
-                if (left->type == expr.type || (left->type == DATE && right->type == STRING)) {
-                    switch (left->type) {
-                        case INT: {
-                            value.boolValue |= (left->value.intValue == expr.value.intValue);
-                            break;
+            case IN_OP: {
+                type = BOOL;
+                value.boolValue = false;
+                for (auto &expr:*right->exprList) {
+                    if (left->type == expr.type || (left->type == DATE && right->type == STRING)) {
+                        switch (left->type) {
+                            case INT: {
+                                value.boolValue |= (left->value.intValue == expr.value.intValue);
+                                break;
+                            }
+                            case FLOAT: {
+                                value.boolValue |= (left->value.floatValue == expr.value.floatValue);
+                                break;
+                            }
+                            case STRING: {
+                                value.boolValue |= (left->string == expr.string);
+                                break;
+                            }
+                            case DATE: {
+                                value.boolValue |= (Utils::transferDateToString(left->value.dateValue) ==
+                                                    expr.string);
+                                break;
+                            }
+                            default:
+                                break;
                         }
-                        case FLOAT: {
-                            value.boolValue |= (left->value.floatValue == expr.value.floatValue);
-                            break;
-                        }
-                        case STRING: {
-                            value.boolValue |= (left->string == expr.string);
-                            break;
-                        }
-                        case DATE: {
-                            value.boolValue |= (Utils::transferDateToString(left->value.dateValue) == expr.string);
-                            break;
-                        }
-                        default:
-                            break;
                     }
                 }
+                break;
             }
-            break;
-        }
-        case NIN_OP: {
-            type = BOOL;
-            value.boolValue = true;
-            for (auto &expr:*right->exprList) {
-                if (left->type == expr.type || (left->type == DATE && right->type == STRING)) {
-                    switch (left->type) {
-                        case INT: {
-                            value.boolValue &= (left->value.intValue != expr.value.intValue);
-                            break;
+            case NIN_OP: {
+                type = BOOL;
+                value.boolValue = true;
+                for (auto &expr:*right->exprList) {
+                    if (left->type == expr.type || (left->type == DATE && right->type == STRING)) {
+                        switch (left->type) {
+                            case INT: {
+                                value.boolValue &= (left->value.intValue != expr.value.intValue);
+                                break;
+                            }
+                            case FLOAT: {
+                                value.boolValue &= (left->value.floatValue != expr.value.floatValue);
+                                break;
+                            }
+                            case STRING: {
+                                value.boolValue &= (left->string != expr.string);
+                                break;
+                            }
+                            case DATE: {
+                                value.boolValue &= !(Utils::transferDateToString(left->value.dateValue) ==
+                                                     expr.string);
+                                break;
+                            }
+                            default:
+                                break;
                         }
-                        case FLOAT: {
-                            value.boolValue &= (left->value.floatValue != expr.value.floatValue);
-                            break;
-                        }
-                        case STRING: {
-                            value.boolValue &= (left->string != expr.string);
-                            break;
-                        }
-                        case DATE: {
-                            value.boolValue &= !(Utils::transferDateToString(left->value.dateValue) == expr.string);
-                            break;
-                        }
-                        default:
-                            break;
                     }
                 }
+                break;
             }
-            break;
+            default:
+                return QL_UNSUPPORTED_OPERATION_TYPE;
         }
-        default:
-            return QL_UNSUPPORTED_OPERATION_TYPE;
     }
     return OK_RC;
 }
@@ -540,7 +607,8 @@ RC PS_Expr::updateAggregation(Operator op, PS_Expr *expr) {
                     break;
                 }
                 case FLOAT: {
-                    value.floatValue = (value.floatValue * updateCount + expr->value.floatValue) / (updateCount + 1);
+                    value.floatValue =
+                            (value.floatValue * updateCount + expr->value.floatValue) / (updateCount + 1);
                     break;
                 }
             }

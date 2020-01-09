@@ -55,6 +55,8 @@ DESC|desc               return P_DESC;
 ASC|asc                 return P_ASC;
 LIMIT|limit             return P_LIMIT;
 IN|in                   return P_IN;
+ANY|any                 return P_ANY;
+ALL|all                 return P_MYALL;
 
 INT|int                 return T_INT;
 BIGINT|bigint           return T_BIGINT;

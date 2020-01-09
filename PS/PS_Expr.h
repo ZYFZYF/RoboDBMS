@@ -37,6 +37,8 @@ public:
 
     PS_Expr(std::vector<PS_Expr> *_exprList);
 
+    PS_Expr(PS_Expr *_left, Operator _op, bool _isAny, std::vector<PS_Expr> *_exprList);
+
     PS_Expr(char *tbName, char *colName);
 
     //运算得到的类型
@@ -76,6 +78,7 @@ private:
     int updateCount{0};
     //存一个list，用来解决in
     std::vector<PS_Expr> *exprList{nullptr};
+    bool isAny{false};
 
     RC initAggregation(Operator op, PS_Expr *expr);
 

@@ -40,6 +40,7 @@ TableMeta tableTemp;
 %token SHOW USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
 %token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS P_GROUP P_BY P_DESC P_ASC P_LIMIT P_ORDER P_IN
+%token P_ANY P_MYALL
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
 %token C_AND C_OR C_MAX C_MIN C_AVG C_SUM C_COUNT
 
@@ -58,6 +59,7 @@ TableMeta tableTemp;
 %type <tableMeta> Table
 %type <tableMetaList> TableList
 %type <boolean> SelectOrderPart
+%type <comparator> CompareOp
 
 //定义语法
 %%
@@ -506,37 +508,21 @@ BoolExpr	:	BoolExpr C_OR BoolExpr
 			{
 				$$ = new PS_Expr($1, OR_OP, $3);
 			}
-		|	ValueExpr '=' '=' ValueExpr
+		|	ValueExpr CompareOp ValueExpr
 			{
-				$$ = new PS_Expr($1, EQ_OP, $4);
+				$$ = new PS_Expr($1, $2, $3);
 			}
-		|	ValueExpr '=' ValueExpr
+		|	ValueExpr CompareOp '(' ConstExprList ')'
 			{
-				$$ = new PS_Expr($1, EQ_OP, $3);
+				$$ = new PS_Expr($1, $2, false, $4);
 			}
-		|	ValueExpr '!' '=' ValueExpr
+		|	ValueExpr CompareOp P_ANY '(' ConstExprList ')'
 			{
-				$$ = new PS_Expr($1, NE_OP, $4);
+				$$ = new PS_Expr($1, $2, true, $5);
 			}
-		|	ValueExpr '<' '>' ValueExpr
+		|	ValueExpr CompareOp P_MYALL '(' ConstExprList ')'
 			{
-				$$ = new PS_Expr($1, NE_OP, $4);
-			}
-		|	ValueExpr '<' ValueExpr
-			{
-				$$ = new PS_Expr($1, LT_OP, $3);
-			}
-		|	ValueExpr '<' '=' ValueExpr
-			{
-				$$ = new PS_Expr($1, LE_OP, $4);
-			}
-		|	ValueExpr '>' ValueExpr
-			{
-				$$ = new PS_Expr($1, GT_OP, $3);
-			}
-		|	ValueExpr '>' '=' ValueExpr
-			{
-				$$ = new PS_Expr($1, GE_OP, $4);
+				$$ = new PS_Expr($1, $2, false, $5);
 			}
 		|	P_NOT '(' BoolExpr ')'
                  	{
@@ -559,6 +545,40 @@ BoolExpr	:	BoolExpr C_OR BoolExpr
                 	{
 				$$ = new PS_Expr($1, NIN_OP, new PS_Expr($5));
                 	}
+		;
+
+CompareOp	:	'<'
+			{
+				$$ = LT_OP;
+			}
+		|	'<' '='
+			{
+				$$ = LE_OP;
+			}
+		|	'>'
+			{
+				$$ = GT_OP;
+			}
+		|	'>' '='
+			{
+				$$ = GE_OP;
+			}
+		|	'=' '='
+			{
+				$$ = EQ_OP;
+			}
+		|	'='
+			{
+				$$ = EQ_OP;
+			}
+		|	'!' '='
+			{
+				$$ = NE_OP;
+			}
+		|	'<' '>'
+			{
+				$$ = NE_OP;
+			}
 		;
 
 ConstExprList	:	RealConstExprList
