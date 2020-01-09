@@ -143,10 +143,7 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
     table->showRecords(5);
     delete table;
     //把这个临时表删掉
-    std::string recordFileName = Utils::getRecordFileName(tableMeta.createName);
-    RM_Manager::Instance().DestroyFile(recordFileName.c_str());
-    std::string stringPoolFileName = Utils::getStringPoolFileName(tableMeta.createName);
-    SP_Manager::DestroyStringPool(stringPoolFileName.c_str());
+    DestroyTable(tableMeta.createName);
     return OK_RC;
 }
 
@@ -156,6 +153,7 @@ QL_Manager::getTableFromSelect(const char *name, std::vector<PS_Expr> *valueList
                                std::vector<const char *> *orderByColumn, bool increaseOrder,
                                int limitOffset, int limitLength) {
     std::string tableName = name;
+    DestroyTable(tableName.data());
     auto *multiTable = new QL_MultiTable(tableMetaList);
 
     if (groupByList != nullptr) {
@@ -188,4 +186,11 @@ QL_Manager::getTableFromSelect(const char *name, std::vector<PS_Expr> *valueList
     }
     delete table;
     return tableMeta;
+}
+
+void QL_Manager::DestroyTable(const char *tbName) {
+    std::string recordFileName = Utils::getRecordFileName(tbName);
+    RM_Manager::Instance().DestroyFile(recordFileName.c_str());
+    std::string stringPoolFileName = Utils::getStringPoolFileName(tbName);
+    SP_Manager::DestroyStringPool(stringPoolFileName.c_str());
 }

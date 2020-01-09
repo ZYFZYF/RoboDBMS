@@ -45,6 +45,9 @@ public:
     //输出表的行数
     RC Count(const char *tbName);
 
+    //只删record和stringpool，主要是为了删除查询过程中的中间结果
+    void DestroyTable(const char *tbName);
+
 private:
     QL_Manager();
 
