@@ -40,7 +40,7 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     aggregation_count = 0;
     iterateTables(0);
     //如果发现了聚合函数，那么需要进行第二遍扫描
-    if (aggregation_count > 0) {
+    if (aggregation_count > 0 || groupByList != nullptr) {
         insertGroups.clear();
         is_first_iteration = false;
         isFirstIterate = true;
@@ -98,7 +98,7 @@ RC QL_MultiTable::iterateTables(int n) {
             }
         } else group = "NULL";
 
-        bool canInsert = !is_first_iteration || aggregation_count == 0;;
+        bool canInsert = !is_first_iteration || (aggregation_count == 0 && groupByList == nullptr);
         //枚举到头了
         if (isFirstIterate) {
             memset(&targetMeta, 0, sizeof(TableMeta));
@@ -109,7 +109,7 @@ RC QL_MultiTable::iterateTables(int n) {
             for (auto &value:*valueList) {
                 TRY(eval(value, group))
             }
-            canInsert = !is_first_iteration || aggregation_count == 0;
+            canInsert = !is_first_iteration || (aggregation_count == 0 && groupByList == nullptr);
             if (canInsert) {
                 for (auto &value:*valueList) {
                     //TODO 注意，这样的转换会脱掉一些信息，比如float的位数信息
@@ -157,7 +157,8 @@ RC QL_MultiTable::iterateTables(int n) {
                     TRY(smTable->setColumnDataByExpr(record + smTable->columnOffset[i], i, (*valueList)[i], true))
                 }
                 totalCount++;
-                if (aggregation_count > 0)insertGroups.insert(group);//如果有聚合的话，每个group只插入一次，否则插入多次
+                if (aggregation_count > 0 || groupByList != nullptr)
+                    insertGroups.insert(group);//如果有聚合的话，每个group只插入一次，否则插入多次
                 TRY(smTable->insertRecord(record))
             }
         }

@@ -110,12 +110,28 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
                       std::vector<PS_Expr> *conditionList, std::vector<PS_Expr> *groupByList) {
     std::string name = "temp";
     auto *multiTable = new QL_MultiTable(tableMetaList);
+
+    if (groupByList != nullptr) {
+        for (auto &value: *groupByList) {
+            if (!value.isColumn) {
+                throw "unsupported group by non-column data";
+            }
+        }
+    }
+
     if (valueList == nullptr) {
         valueList = new std::vector<PS_Expr>;
-        for (auto &tableMeat: *tableMetaList)
-            for (int i = 0; i < tableMeat.columnNum; i++) {
-                valueList->emplace_back(tableMeat.name, tableMeat.columns[i].name);
+        //如果没有分组那么就是所有列，否则应该是被分组的所有列
+        if (groupByList == nullptr) {
+            for (auto &tableMeat: *tableMetaList)
+                for (int i = 0; i < tableMeat.columnNum; i++) {
+                    valueList->emplace_back(tableMeat.name, tableMeat.columns[i].name);
+                }
+        } else {
+            for (auto &value:*groupByList) {
+                valueList->emplace_back(value.tableName.data(), value.columnName.data());
             }
+        }
     }
     TableMeta tableMeta = multiTable->select(valueList, conditionList, name, groupByList);
     delete multiTable;

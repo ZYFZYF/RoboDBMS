@@ -20,7 +20,7 @@ public:
 
     RC
     Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList, std::vector<PS_Expr> *conditionList,
-           std::vector<PS_Expr> *groupByList = nullptr);
+           std::vector<PS_Expr> *groupByList);
 
     //从文件一次性插入一大堆
     RC Insert(const char *tbName, const char *fileName);

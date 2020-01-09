@@ -514,7 +514,7 @@ std::string PS_Expr::to_string() {
         case STRING:
             return string;
         case DATE:
-            return std::to_string(value.dateValue.year) + std::to_string(value.dateValue.month) +
+            return std::to_string(value.dateValue.year) + '-' + std::to_string(value.dateValue.month) + '-' +
                    std::to_string(value.dateValue.day);
         default:
             throw "not supported to string";

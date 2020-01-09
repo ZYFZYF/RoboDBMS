@@ -51,7 +51,7 @@ void yyerror(const char *s, ...);
 %type <attrValueList> ConstValueList
 %type <identifierList> NameList
 %type <expr> BoolExpr ValueExpr LowerValueExpr LeafValueExpr NamedColumn
-%type <exprList> WhereClause ConditionList NameColumnList
+%type <exprList> WhereClause ConditionList NameColumnList SelectGroupPart SelectValuePart
 %type <assignExpr> AssignExpr
 %type <assignExprList> SetClause
 %type <tableMeta> Table
@@ -210,7 +210,8 @@ DefaultValue 	:	/* empty */
 			{
 				$$.hasDefaultValue = true;
 				$$.defaultValue = $2;
-			};
+			}
+		;
 
 ConstValueList	:	ConstValueList ',' ConstValue
 			{
@@ -222,6 +223,7 @@ ConstValueList	:	ConstValueList ',' ConstValue
 				$$ = new std::vector<AttrValue>;
 				$$->push_back($1);
 			}
+		;
 
 ConstValue	:	/* empty */
 			{
@@ -339,18 +341,30 @@ Update		:	UPDATE IDENTIFIER P_SET SetClause WhereClause ';'
 			}
 		;
 
-Select 		:	SELECT NameColumnList P_FROM TableList WhereClause ';'
+Select 		:	SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart ';'
 			{
-				DO(QL_Manager::Instance().Select($2,$4,$5));
+				DO(QL_Manager::Instance().Select($2,$4,$5, $6));
 			}
-		|	SELECT '*' P_FROM TableList WhereClause ';'
+		;
+
+SelectValuePart	:	NameColumnList
 			{
-				DO(QL_Manager::Instance().Select(nullptr, $4,$5));
+				$$ = $1;
 			}
-		|	SELECT NameColumnList P_FROM TableList WhereClause P_GROUP P_BY NameColumnList ';'
-		 	{
-				DO(QL_Manager::Instance().Select($2,$4,$5,$8));
-		 	}
+		|	'*'
+			{
+				$$ = nullptr;
+			}
+		;
+
+SelectGroupPart :	P_GROUP P_BY NameColumnList
+			{
+				$$ = $3;
+			}
+		|
+			{
+				$$ = nullptr;
+			}
 		;
 
 NameColumnList	:	NameColumnList ',' NamedColumn
