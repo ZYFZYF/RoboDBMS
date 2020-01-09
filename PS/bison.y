@@ -39,7 +39,7 @@ TableMeta tableTemp;
 
 %token SHOW USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
-%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS P_GROUP P_BY P_DESC P_ASC P_LIMIT P_ORDER
+%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS P_GROUP P_BY P_DESC P_ASC P_LIMIT P_ORDER P_IN
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
 %token C_AND C_OR C_MAX C_MIN C_AVG C_SUM C_COUNT
 
@@ -51,8 +51,8 @@ TableMeta tableTemp;
 %type <attrValue> ConstValue
 %type <attrValueList> ConstValueList
 %type <identifierList> NameList
-%type <expr> BoolExpr ValueExpr LowerValueExpr LeafValueExpr NamedColumn
-%type <exprList> WhereClause ConditionList NameColumnList SelectGroupPart SelectValuePart
+%type <expr> BoolExpr ValueExpr LowerValueExpr LeafValueExpr NamedColumn ConstExpr
+%type <exprList> WhereClause ConditionList NameColumnList SelectGroupPart SelectValuePart ConstExprList
 %type <assignExpr> AssignExpr
 %type <assignExprList> SetClause
 %type <tableMeta> Table
@@ -550,6 +550,40 @@ BoolExpr	:	BoolExpr C_OR BoolExpr
                         {
                         	$$ = new PS_Expr($1, NE_OP, new PS_Expr());
                         }
+                |	ValueExpr P_IN '(' ConstExprList ')'
+                	{
+				$$ = new PS_Expr($1, IN_OP, new PS_Expr($4));
+                	}
+                |	ValueExpr P_NOT P_IN '(' ConstExprList ')'
+                	{
+				$$ = new PS_Expr($1, NIN_OP, new PS_Expr($5));
+                	}
+		;
+
+ConstExprList	:	ConstExprList ',' ConstExpr
+			{
+				$$ = $1;
+				$$->emplace_back(*$3);
+			}
+		|	ConstExpr
+			{
+				$$ = new std::vector<PS_Expr>();
+				$$->emplace_back(*$1);
+			}
+		;
+
+ConstExpr	:	INTEGER
+			{
+				$$ = new PS_Expr($1);
+			}
+		|	REAL
+			{
+				$$ = new PS_Expr($1);
+			}
+		|	STR
+			{
+				$$ = new PS_Expr($1);
+			}
 		;
 
 ValueExpr	:	ValueExpr '+' LowerValueExpr

@@ -74,6 +74,8 @@ struct AttrValue {
 enum Operator {
     NO_OP, EQ_OP, NE_OP, LT_OP, GT_OP, LE_OP, GE_OP,
 
+    IN_OP, NIN_OP,
+
     PLUS_OP, MINUS_OP, MUL_OP, DIV_OP, MOD_OP,
 
     NOT_OP, AND_OP, OR_OP,

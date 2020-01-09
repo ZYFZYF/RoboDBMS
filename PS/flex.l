@@ -54,6 +54,7 @@ ORDER|order             return P_ORDER;
 DESC|desc               return P_DESC;
 ASC|asc                 return P_ASC;
 LIMIT|limit             return P_LIMIT;
+IN|in                   return P_IN;
 
 INT|int                 return T_INT;
 BIGINT|bigint           return T_BIGINT;

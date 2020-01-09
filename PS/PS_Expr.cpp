@@ -53,6 +53,13 @@ PS_Expr::PS_Expr(char *tbName, char *colName) {
     columnName = std::string(colName);
 }
 
+PS_Expr::PS_Expr(std::vector<PS_Expr> *_exprList) {
+    isColumn = false;
+    isConst = true;
+    type = ATTRARRAY;
+    exprList = _exprList;
+}
+
 RC PS_Expr::eval(SM_Table &table, char *record) {
     //常数直接返回
     if (isConst)return OK_RC;
@@ -307,6 +314,64 @@ RC PS_Expr::pushUp(std::string group) {
                 if (op == AVG_OP && type == INT) type = FLOAT;
                 //还有一种情况_(:з」∠)_
                 if (op == COUNT_OP)type = INT;
+            }
+            break;
+        }
+        case IN_OP: {
+            type = BOOL;
+            value.boolValue = false;
+            for (auto &expr:*right->exprList) {
+                if (left->type == expr.type || (left->type == DATE && right->type == STRING)) {
+                    switch (left->type) {
+                        case INT: {
+                            value.boolValue |= (left->value.intValue == expr.value.intValue);
+                            break;
+                        }
+                        case FLOAT: {
+                            value.boolValue |= (left->value.floatValue == expr.value.floatValue);
+                            break;
+                        }
+                        case STRING: {
+                            value.boolValue |= (left->string == expr.string);
+                            break;
+                        }
+                        case DATE: {
+                            value.boolValue |= (Utils::transferDateToString(left->value.dateValue) == expr.string);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
+            }
+            break;
+        }
+        case NIN_OP: {
+            type = BOOL;
+            value.boolValue = true;
+            for (auto &expr:*right->exprList) {
+                if (left->type == expr.type || (left->type == DATE && right->type == STRING)) {
+                    switch (left->type) {
+                        case INT: {
+                            value.boolValue &= (left->value.intValue != expr.value.intValue);
+                            break;
+                        }
+                        case FLOAT: {
+                            value.boolValue &= (left->value.floatValue != expr.value.floatValue);
+                            break;
+                        }
+                        case STRING: {
+                            value.boolValue &= (left->string != expr.string);
+                            break;
+                        }
+                        case DATE: {
+                            value.boolValue &= !(Utils::transferDateToString(left->value.dateValue) == expr.string);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
             }
             break;
         }

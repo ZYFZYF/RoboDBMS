@@ -221,9 +221,7 @@ std::string SM_Table::formatColumnToString(ColumnId columnId, char *data) {
         }
         case DATE: {
             Date date = *(Date *) data;
-            char temp[100];
-            sprintf(temp, "%04d-%02d-%02d", date.year, date.month, date.day);
-            column = temp;
+            column = Utils::transferDateToString(date);
             break;
         }
         case STRING: {

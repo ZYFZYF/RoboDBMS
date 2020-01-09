@@ -35,6 +35,8 @@ public:
 
     explicit PS_Expr(char *_value);
 
+    PS_Expr(std::vector<PS_Expr> *_exprList);
+
     PS_Expr(char *tbName, char *colName);
 
     //运算得到的类型
@@ -72,6 +74,8 @@ private:
     //聚合相关
     int aggregationIndex{0};
     int updateCount{0};
+    //存一个list，用来解决in
+    std::vector<PS_Expr> *exprList{nullptr};
 
     RC initAggregation(Operator op, PS_Expr *expr);
 

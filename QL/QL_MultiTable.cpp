@@ -5,6 +5,7 @@
 #include "QL_MultiTable.h"
 #include "../PS/PS_Expr.h"
 #include "../utils/Utils.h"
+#include "../utils/PrintError.h"
 #include <set>
 
 extern bool is_first_iteration;
@@ -38,13 +39,13 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     is_first_iteration = true;
     isFirstIterate = true;
     aggregation_count = 0;
-    iterateTables(0);
+    DO(iterateTables(0))
     //如果发现了聚合函数，那么需要进行第二遍扫描
     if (aggregation_count > 0 || groupByList != nullptr) {
         insertGroups.clear();
         is_first_iteration = false;
         isFirstIterate = true;
-        iterateTables(0);
+        DO(iterateTables(0))
     }
     delete smTable;
     auto cost_time = clock() - start_time;

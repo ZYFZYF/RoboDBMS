@@ -140,3 +140,9 @@ RC Utils::transferStringToDate(const char *data, Date &date) {
     if (!date.isValid())return QL_DATE_IS_NOT_VALID;
     return OK_RC;
 }
+
+std::string Utils::transferDateToString(Date date) {
+    char temp[100];
+    sprintf(temp, "%04d-%02d-%02d", date.year, date.month, date.day);
+    return std::string(temp);
+}
