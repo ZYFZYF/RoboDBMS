@@ -19,3 +19,6 @@ select * from test_order order by O_ORDERKEY,O_CUSTKEY DESC limit 1000;
 select * from test_order order by O_ORDERSTATUS,O_ORDERKEY DESC limit 1000;
 select * from test_order order by O_ORDERSTATUS,O_ORDERKEY DESC limit 1000,1000;
 select * from test_order order by O_ORDERSTATUS,O_ORDERKEY DESC limit 1000,-1;
+select O_ORDERSTATUS, MIN(O_ORDERKEY) as MIN_VALUE, MAX(O_ORDERKEY) as MAX_VALUE from test_order group by O_ORDERSTATUS order by MIN_VALUE;
+select O_ORDERSTATUS, MIN(O_ORDERKEY) as MIN_VALUE, MAX(O_ORDERKEY) as MAX_VALUE from test_order group by O_ORDERSTATUS order by MIN_VALUE limit 2;
+select O_ORDERSTATUS, MIN(O_ORDERKEY) as MIN_VALUE, MAX(O_ORDERKEY) as MAX_VALUE from test_order group by O_ORDERSTATUS order by MIN_VALUE limit 1,-1;
