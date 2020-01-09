@@ -24,6 +24,14 @@ public:
            bool increaseOrder = true,
            int limitOffset = 0, int limitLength = -1);
 
+    TableMeta
+    getTableFromSelect(const char *name, std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
+                       std::vector<PS_Expr> *conditionList,
+                       std::vector<PS_Expr> *groupByList,
+                       std::vector<const char *> *orderByColumn = nullptr,
+                       bool increaseOrder = true,
+                       int limitOffset = 0, int limitLength = -1);
+
     //从文件一次性插入一大堆
     RC Insert(const char *tbName, const char *fileName);
 

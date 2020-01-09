@@ -617,6 +617,7 @@ RC SM_Table::clear() {
     //TODO 删除索引等
 }
 
+//必须保证该table是刚一条一条插入进来的，该操作结果才正确
 RC SM_Table::orderBy(std::vector<const char *> *orderByColumn, bool increasingOrder, int limitOffset, int limitLength) {
     clock_t start_time = clock();
     int totalCount = 0;

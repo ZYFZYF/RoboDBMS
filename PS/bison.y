@@ -10,7 +10,7 @@
 #include "../QL/QL_Manager.h"
 extern int yylex (void);
 void yyerror(const char *s, ...);
-
+TableMeta tableTemp;
 %}
 //让yylval不仅返回int数据
 %union{
@@ -438,6 +438,26 @@ TableList	:	TableList ',' Table
 Table		:	IDENTIFIER
 			{
 				$$ = &(SM_Manager::Instance().GetTableMeta($1));
+			}
+		|	'(' SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart ')' P_AS IDENTIFIER
+			{
+				tableTemp = QL_Manager::Instance().getTableFromSelect($10,$3,$5,$6,$7);
+				$$ = &tableTemp;
+			}
+		|	'(' SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart P_ORDER P_BY NameList SelectOrderPart ')' P_AS IDENTIFIER
+			{
+				tableTemp = QL_Manager::Instance().getTableFromSelect($14,$3,$5,$6,$7,$10,$11);
+				$$ = &tableTemp;
+			}
+		|	'(' SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart P_ORDER P_BY NameList SelectOrderPart P_LIMIT INTEGER ')' P_AS IDENTIFIER
+                        {
+                        	tableTemp = QL_Manager::Instance().getTableFromSelect($16,$3,$5,$6,$7,$10,$11,0,$13);
+                        	$$ = &tableTemp;
+                        }
+                |	'(' SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart P_ORDER P_BY NameList SelectOrderPart P_LIMIT INTEGER ',' INTEGER ')' P_AS IDENTIFIER
+			{
+				tableTemp = QL_Manager::Instance().getTableFromSelect($18,$3,$5,$6,$7,$10,$11,$13,$15);
+				$$ = &tableTemp;
 			}
 		;
 
