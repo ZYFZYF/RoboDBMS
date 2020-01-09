@@ -35,6 +35,7 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     //先拿到所有遍历的节点
     ridListList.clear();
     for (int i = 0; i < tableNum; i++)ridListList.emplace_back(tableList[i].filter(conditionList));
+    insertGroups.clear();
     group_aggregation_expr.clear();
     is_first_iteration = true;
     isFirstIterate = true;

@@ -52,7 +52,7 @@ TableMeta tableTemp;
 %type <attrValueList> ConstValueList
 %type <identifierList> NameList
 %type <expr> BoolExpr ValueExpr LowerValueExpr LeafValueExpr NamedColumn ConstExpr
-%type <exprList> WhereClause ConditionList NameColumnList SelectGroupPart SelectValuePart ConstExprList
+%type <exprList> WhereClause ConditionList NameColumnList SelectGroupPart SelectValuePart ConstExprList RealConstExprList
 %type <assignExpr> AssignExpr
 %type <assignExprList> SetClause
 %type <tableMeta> Table
@@ -552,6 +552,7 @@ BoolExpr	:	BoolExpr C_OR BoolExpr
                         }
                 |	ValueExpr P_IN '(' ConstExprList ')'
                 	{
+                		//printf("%d\n",$4->size());
 				$$ = new PS_Expr($1, IN_OP, new PS_Expr($4));
                 	}
                 |	ValueExpr P_NOT P_IN '(' ConstExprList ')'
@@ -560,7 +561,29 @@ BoolExpr	:	BoolExpr C_OR BoolExpr
                 	}
 		;
 
-ConstExprList	:	ConstExprList ',' ConstExpr
+ConstExprList	:	RealConstExprList
+			{
+				$$ = $1;
+			}
+		|	SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart
+			{
+				$$ = QL_Manager::Instance().getExprListFromSelect($2,$4,$5,$6);
+			}
+		|	SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart P_ORDER P_BY NameList SelectOrderPart
+			{
+				$$ = QL_Manager::Instance().getExprListFromSelect($2,$4,$5,$6,$9,$10);
+			}
+		|	SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart P_ORDER P_BY NameList SelectOrderPart P_LIMIT INTEGER
+                        {
+                        	$$ = QL_Manager::Instance().getExprListFromSelect($2,$4,$5,$6,$9,$10,0,$12);
+                        }
+                |	SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart P_ORDER P_BY NameList SelectOrderPart P_LIMIT INTEGER ',' INTEGER
+			{
+				$$ = QL_Manager::Instance().getExprListFromSelect($2,$4,$5,$6,$9,$10,$12,$14);
+			}
+		;
+
+RealConstExprList:	RealConstExprList ',' ConstExpr
 			{
 				$$ = $1;
 				$$->emplace_back(*$3);

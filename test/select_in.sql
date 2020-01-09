@@ -17,3 +17,6 @@ select * from test_orders where O_ORDERSTATUS not in ('O', 'P');
 select * from test_orders where O_CUSTKEY in ('1', 1, 188, 'O', '20202020', 0999.000);
 select * from test_orders where O_CUSTKEY not in ('1', 1, 188, 'O', '20202020', 0999.000);
 select O_ORDERSTATUS, count(*) as NUM from test_orders group by O_ORDERSTATUS;
+select * from test_orders where O_CUSTKEY in (select O_CUSTKEY from test_orders where O_CUSTKEY < 100);
+select * from test_orders where O_CUSTKEY in (149);
+select * from test_orders where O_CUSTKEY in (select MAX(O_CUSTKEY) as CUSTKEY from test_orders);

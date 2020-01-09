@@ -77,6 +77,8 @@ public:
 
     RC orderBy(std::vector<const char *> *orderByColumn, bool increasingOrder, int limitOffset, int limitLength);
 
+    std::vector<PS_Expr> *extractValueInRecords();
+
 private:
     TableId tableId;
     TableMeta &tableMeta;

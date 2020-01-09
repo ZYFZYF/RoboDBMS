@@ -109,7 +109,9 @@ RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_
 RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
                       std::vector<PS_Expr> *conditionList, std::vector<PS_Expr> *groupByList,
                       std::vector<const char *> *orderByColumn, bool increaseOrder, int limitOffset, int limitLength) {
-    std::string name = "temp";
+    auto x = (*conditionList)[0];
+    int z = 1;
+    std::string name = "zyfdsb";
     auto *multiTable = new QL_MultiTable(tableMetaList);
 
     if (groupByList != nullptr) {
@@ -142,6 +144,8 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
     }
     table->showRecords(5);
     delete table;
+    x = (*conditionList)[0];
+    z = 1;
     //把这个临时表删掉
     DestroyTable(tableMeta.createName);
     return OK_RC;
@@ -190,7 +194,59 @@ QL_Manager::getTableFromSelect(const char *name, std::vector<PS_Expr> *valueList
 
 void QL_Manager::DestroyTable(const char *tbName) {
     std::string recordFileName = Utils::getRecordFileName(tbName);
-    RM_Manager::Instance().DestroyFile(recordFileName.c_str());
+    DO(RM_Manager::Instance().DestroyFile(recordFileName.c_str()))
     std::string stringPoolFileName = Utils::getStringPoolFileName(tbName);
-    SP_Manager::DestroyStringPool(stringPoolFileName.c_str());
+    DO(SP_Manager::DestroyStringPool(stringPoolFileName.c_str()))
+}
+
+std::vector<PS_Expr> *
+QL_Manager::getExprListFromSelect(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
+                                  std::vector<PS_Expr> *conditionList, std::vector<PS_Expr> *groupByList,
+                                  std::vector<const char *> *orderByColumn, bool increaseOrder, int limitOffset,
+                                  int limitLength) {
+    std::string name = "zyfdsb";
+    auto multiTable = new QL_MultiTable(tableMetaList);
+
+    if (groupByList != nullptr) {
+        for (auto &value: *groupByList) {
+            if (!value.isColumn) {
+                throw "unsupported group by non-column data";
+            }
+        }
+    }
+
+    if (valueList == nullptr) {
+        valueList = new std::vector<PS_Expr>;
+        //如果没有分组那么就是所有列，否则应该是被分组的所有列
+        if (groupByList == nullptr) {
+            for (auto &tableMeat: *tableMetaList)
+                for (int i = 0; i < tableMeat.columnNum; i++) {
+                    valueList->emplace_back(tableMeat.name, tableMeat.columns[i].name);
+                }
+        } else {
+            for (auto &value:*groupByList) {
+                valueList->emplace_back(value.tableName.data(), value.columnName.data());
+            }
+        }
+    }
+    //只能选一列成list
+    if (valueList->size() != 1) {
+        throw "only support select one column in recursive\n";
+    }
+
+    TableMeta tableMeta = multiTable->select(valueList, conditionList, name, groupByList);
+    delete multiTable;
+    auto *table = new SM_Table(tableMeta);
+    if (orderByColumn != nullptr) {
+        table->orderBy(orderByColumn, increaseOrder, limitOffset, limitLength);
+    }
+    auto ret = table->extractValueInRecords();
+//    int cnt = 0;
+//    for (auto &expr:*ret) {
+//        printf("%d %d\n", ++cnt, expr.value.intValue);
+//    }
+    delete table;
+    //把这个临时表删掉
+    DestroyTable(tableMeta.createName);
+    return ret;
 }

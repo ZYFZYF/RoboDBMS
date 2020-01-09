@@ -665,3 +665,21 @@ RC SM_Table::orderBy(std::vector<const char *> *orderByColumn, bool increasingOr
     printf("排序: 共计%d条，成功按序选取%d条，花费%.3f秒\n", totalCount, orderCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
+
+std::vector<PS_Expr> *SM_Table::extractValueInRecords() {
+    auto ret = new std::vector<PS_Expr>();
+    RM_FileScan rmFileScan;
+    rmFileScan.OpenScan(rmFileHandle);
+    RM_Record rmRecord;
+    auto expr = new PS_Expr(nullptr, tableMeta.columns[0].name);
+    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        expr->eval(*this, rmRecord.getData());
+        ret->push_back(*expr);
+    }
+    for (auto www:*ret) {
+        int x = ret->size();
+        int y = 1;
+    }
+    rmFileScan.CloseScan();
+    return ret;
+}
