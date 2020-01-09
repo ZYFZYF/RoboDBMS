@@ -19,8 +19,10 @@ IX_IndexScan::~IX_IndexScan() {
 RC IX_IndexScan::OpenScan(const IX_IndexHandle &indexHandle, Operator compOp, void *value) {
     this->ixIndexHandle = const_cast<IX_IndexHandle *>(&indexHandle);
     this->compareOp = compOp;
-    this->compareKey = (void *) malloc(ixIndexHandle->ixFileHeader.attrLength);
-    memcpy(compareKey, value, ixIndexHandle->ixFileHeader.attrLength);
+    if (compOp != NO_OP) {
+        this->compareKey = (void *) malloc(ixIndexHandle->ixFileHeader.attrLength);
+        memcpy(compareKey, value, ixIndexHandle->ixFileHeader.attrLength);
+    }
     currentKey = (void *) malloc(ixIndexHandle->ixFileHeader.attrLength);
     isFirst = true;
     isOpen = true;

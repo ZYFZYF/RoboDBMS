@@ -616,3 +616,53 @@ RC SM_Table::clear() {
     TRY(SP_Manager::DestroyStringPool(stringPoolFileName.c_str()))
     //TODO 删除索引等
 }
+
+RC SM_Table::orderBy(std::vector<const char *> *orderByColumn, bool increasingOrder, int limitOffset, int limitLength) {
+    clock_t start_time = clock();
+    int totalCount = 0;
+    int orderCount = 0;
+    //先构造出索引的meta，然后把index设为-1
+    IndexDesc indexDesc;
+    indexDesc.keyNum = orderByColumn->size();
+    for (int i = 0; i < indexDesc.keyNum; i++) {
+        ColumnId columnId = tableMeta.getColumnIdByName((*orderByColumn)[i]);
+        if (columnId < 0)return SM_COLUMN_NOT_EXIST;
+        indexDesc.columnId[i] = columnId;
+    }
+    TRY(createIndex(-1, indexDesc, true))
+    IX_IndexHandle ixIndexHandle;
+    TRY(IX_Manager::Instance().OpenIndex(tableMeta.createName, -1, ixIndexHandle))
+    IX_IndexScan ixIndexScan;
+    //打开一个无条件的遍历
+    TRY(ixIndexScan.OpenScan(ixIndexHandle, NO_OP, nullptr))
+    //先把顺序存下来
+    std::vector<RM_RID> ridList;
+    RM_RID rid;
+    while (ixIndexScan.GetNextEntry(rid) == OK_RC)ridList.push_back(rid);
+    if (!increasingOrder)std::reverse(ridList.begin(), ridList.end());
+    //关掉扫描，关掉索引，删掉索引
+    TRY(ixIndexScan.CloseScan())
+    TRY(IX_Manager::Instance().CloseIndex(ixIndexHandle))
+    TRY(IX_Manager::Instance().DestroyIndex(tableMeta.createName, -1))
+    //把这期间的都再次插入
+    int limitEnd;
+    if (limitLength == -1)limitEnd = ridList.size();
+    else limitEnd = std::min(int(ridList.size()), limitOffset + limitLength);
+    for (int i = limitOffset; i < limitEnd; i++) {
+        orderCount++;
+        RM_Record rmRecord;
+        TRY(rmFileHandle.GetRec(ridList[i], rmRecord))
+        RM_RID rmRid;
+        TRY(rmFileHandle.InsertRec(rmRecord.getData(), rmRid))
+        //printf("insert rid is (%d %d)\n", rmRid.getPageNum(), rmRid.getSlotNum());
+    }
+    //然后把之前的全部删掉
+    for (auto &rmRid:ridList) {
+        totalCount++;
+        //printf("delete rid is (%d %d)\n", rmRid.getPageNum(), rmRid.getSlotNum());
+        TRY(rmFileHandle.DeleteRec(rmRid))
+    }
+    auto cost_time = clock() - start_time;
+    printf("排序: 共计%d条，成功按序选取%d条，花费%.3f秒\n", totalCount, orderCount, (float) cost_time / CLOCKS_PER_SEC);
+    return OK_RC;
+}

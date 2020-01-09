@@ -45,6 +45,10 @@ public:
 private:
     PageNum pageNum;
     SlotNum slotNum;
+public:
+    PageNum getPageNum() const;
+
+    SlotNum getSlotNum() const;
 };
 
 

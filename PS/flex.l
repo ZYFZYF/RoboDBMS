@@ -15,7 +15,6 @@
 [+-]?[0-9]+\.[0-9]*     yylval.str = strdup(yytext); return STR_REAL;
 
 SHOW|show               return SHOW;
-DESC|desc               return DESC;
 USE|use                 return USE;
 CREATE|create           return CREATE;
 ADD|add                 return ADD;
@@ -51,6 +50,10 @@ IS|is                   return P_IS;
 AS|as                   return P_AS;
 GROUP|group             return P_GROUP;
 BY|by                   return P_BY;
+ORDER|order             return P_ORDER;
+DESC|desc               return P_DESC;
+ASC|asc                 return P_ASC;
+LIMIT|limit             return P_LIMIT;
 
 INT|int                 return T_INT;
 BIGINT|bigint           return T_BIGINT;

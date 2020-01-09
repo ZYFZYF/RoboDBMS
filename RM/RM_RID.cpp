@@ -79,3 +79,11 @@ bool RM_RID::operator>(const RM_RID &rhs) const {
 bool RM_RID::operator>=(const RM_RID &rhs) const {
     return !(*this < rhs);
 }
+
+PageNum RM_RID::getPageNum() const {
+    return pageNum;
+}
+
+SlotNum RM_RID::getSlotNum() const {
+    return slotNum;
+}

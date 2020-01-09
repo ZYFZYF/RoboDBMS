@@ -14,6 +14,7 @@ void yyerror(const char *s, ...);
 %}
 //让yylval不仅返回int数据
 %union{
+  bool boolean;
   int integer;
   float real;
   char * str;
@@ -36,9 +37,9 @@ void yyerror(const char *s, ...);
 %token <str> IDENTIFIER STR STR_INTEGER STR_REAL
 %token <comparator> OP
 
-%token SHOW DESC USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
+%token SHOW USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
-%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS P_GROUP P_BY
+%token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS P_GROUP P_BY P_DESC P_ASC P_LIMIT P_ORDER
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
 %token C_AND C_OR C_MAX C_MIN C_AVG C_SUM C_COUNT
 
@@ -56,6 +57,7 @@ void yyerror(const char *s, ...);
 %type <assignExprList> SetClause
 %type <tableMeta> Table
 %type <tableMetaList> TableList
+%type <boolean> SelectOrderPart
 
 //定义语法
 %%
@@ -93,7 +95,7 @@ HELP 	: 	SHOW DATABASES ';'{
 	|	SHOW TABLES ';' {
 			DO(SM_Manager::Instance().ShowTables());
 		}
-	|	DESC TABLE IDENTIFIER';' {
+	|	P_DESC TABLE IDENTIFIER';' {
 			DO(SM_Manager::Instance().DescTable($3));
 		}
 	|	SHOW TABLE IDENTIFIER';' {
@@ -343,7 +345,19 @@ Update		:	UPDATE IDENTIFIER P_SET SetClause WhereClause ';'
 
 Select 		:	SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart ';'
 			{
-				DO(QL_Manager::Instance().Select($2,$4,$5, $6));
+				DO(QL_Manager::Instance().Select($2,$4,$5,$6));
+			}
+		|	SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart P_ORDER P_BY NameList SelectOrderPart ';'
+			{
+				DO(QL_Manager::Instance().Select($2,$4,$5,$6,$9,$10));
+			}
+		|	SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart P_ORDER P_BY NameList SelectOrderPart P_LIMIT INTEGER ';'
+                        {
+                        	DO(QL_Manager::Instance().Select($2,$4,$5,$6,$9,$10,0,$12));
+                        }
+                |	SELECT SelectValuePart P_FROM TableList WhereClause SelectGroupPart P_ORDER P_BY NameList SelectOrderPart P_LIMIT INTEGER ',' INTEGER ';'
+			{
+				DO(QL_Manager::Instance().Select($2,$4,$5,$6,$9,$10,$12,$14));
 			}
 		;
 
@@ -364,6 +378,20 @@ SelectGroupPart :	P_GROUP P_BY NameColumnList
 		|
 			{
 				$$ = nullptr;
+			}
+		;
+
+SelectOrderPart	:
+			{
+				$$ = true;
+			}
+		|	P_ASC
+			{
+				$$ = true;
+			}
+		|	P_DESC
+			{
+				$$ = false;
 			}
 		;
 

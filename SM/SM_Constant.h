@@ -89,6 +89,11 @@ struct TableMeta {
     //列描述，列的存储必须是从下标0到columnNum-1
     int columnNum{};
     ColumnDesc columns[MAX_COLUMN_NUM]{};
+
+    int getColumnIdByName(const char *columnName) {
+        for (int i = 0; i < columnNum; i++)if (strcmp(columns[i].name, columnName) == 0)return i;
+        return -1;
+    }
 };
 
 struct DbMeta {

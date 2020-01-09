@@ -12,8 +12,10 @@ create table test_order(  O_ORDERKEY      INT PRIMARY KEY,
                                 O_SHIPPRIORITY	INT,
                                 O_COMMENT		VARCHAR(79));
 insert into test_order from '../../dataset/orders.tbl';
+select * from test_order order by O_CUSTKEY;
 select * from test_order order by O_CUSTKEY limit 1000;
-select * from test_order order by O_CUSTKEY,O_ORDERKEY limit 1000;
-select * from test_order order by O_CUSTKEY,O_ORDERKEY DESC limit 1000;
-select * from test_order order by O_ORDERDATE,O_ORDERKEY DESC limit 1000,1000;
-select * from test_order order by O_ORDERDATE,O_ORDERKEY DESC limit 1000,-1;
+select * from test_order order by O_ORDERKEY,O_CUSTKEY limit 1000;
+select * from test_order order by O_ORDERKEY,O_CUSTKEY DESC limit 1000;
+select * from test_order order by O_ORDERSTATUS,O_ORDERKEY DESC limit 1000;
+select * from test_order order by O_ORDERSTATUS,O_ORDERKEY DESC limit 1000,1000;
+select * from test_order order by O_ORDERSTATUS,O_ORDERKEY DESC limit 1000,-1;

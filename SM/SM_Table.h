@@ -75,6 +75,8 @@ public:
 
     int getRecordSize() const;
 
+    RC orderBy(std::vector<const char *> *orderByColumn, bool increasingOrder, int limitOffset, int limitLength);
+
 private:
     TableId tableId;
     TableMeta &tableMeta;

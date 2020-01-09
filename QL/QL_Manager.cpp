@@ -107,7 +107,8 @@ RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_
 }
 
 RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
-                      std::vector<PS_Expr> *conditionList, std::vector<PS_Expr> *groupByList) {
+                      std::vector<PS_Expr> *conditionList, std::vector<PS_Expr> *groupByList,
+                      std::vector<const char *> *orderByColumn, bool increaseOrder, int limitOffset, int limitLength) {
     std::string name = "temp";
     auto *multiTable = new QL_MultiTable(tableMetaList);
 
@@ -136,6 +137,9 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
     TableMeta tableMeta = multiTable->select(valueList, conditionList, name, groupByList);
     delete multiTable;
     auto *table = new SM_Table(tableMeta);
+    if (orderByColumn != nullptr) {
+        table->orderBy(orderByColumn, increaseOrder, limitOffset, limitLength);
+    }
     table->showRecords(5);
     delete table;
     //把这个临时表删掉
