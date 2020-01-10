@@ -2,7 +2,7 @@ create database test;
 use database test;
 
 drop table test_order;
-create table test_order(  O_ORDERKEY      INT PRIMARY KEY,
+create table test_order(  O_ORDERKEY      INT,
                                 O_CUSTKEY		INT NOT NULL,
                                 O_ORDERSTATUS	CHAR(1),
                                 O_TOTALPRICE	DECIMAL,
@@ -12,6 +12,16 @@ create table test_order(  O_ORDERKEY      INT PRIMARY KEY,
                                 O_SHIPPRIORITY	INT,
                                 O_COMMENT		VARCHAR(79));
 insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
+
 
 drop table test_customer;
 create table test_customer (
@@ -25,8 +35,14 @@ create table test_customer (
 		C_COMMENT		VARCHAR(117)
 	);
 insert into test_customer from '../../dataset/customer.tbl';
-
-select O_ORDERKEY,C_CUSTKEY,C_NATIONKEY from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
-select O_ORDERKEY,C_CUSTKEY,C_NAME from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_CUSTKEY < 100;
-select O_ORDERKEY,C_CUSTKEY,C_NAME from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERSTATUS == 'P';
-select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERSTATUS == 'P';
+alter table test_order add index statusindex(O_ORDERSTATUS);
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERSTATUS == 'P';
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERDATE == '1997-06-23';
+alter table test_order add index dateindex(O_ORDERDATE);
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERDATE == '1997-06-23';
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_CUSTKEY == 1;
+alter table test_order add index custkeyindex(O_CUSTKEY);
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_CUSTKEY == 1;
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_CUSTKEY < 100;
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERSTATUS == 'P';

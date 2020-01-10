@@ -99,6 +99,8 @@ private:
     RC setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &expr, bool alreadyComputed = false);
 
     Operator composeIndexKeyByExprList(std::vector<PS_Expr> *exprList, IndexDesc indexDesc, char *key);
+
+    Operator findAndCopy(ColumnId columnId, std::vector<PS_Expr> *exprList, char *key);
 };
 
 #endif //ROBODBMS_SM_TABLE_H

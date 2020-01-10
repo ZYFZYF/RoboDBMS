@@ -589,6 +589,7 @@ RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &e
 }
 
 std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
+    clock_t start_time = clock();
     auto myCondition = new std::vector<PS_Expr>;
     for (auto it = conditionList->begin(); it != conditionList->end();) {
         auto expr = *it;
@@ -601,16 +602,20 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
     }
     //尝试用每个索引来检索，看哪个效果更好
     int optimizeIndex = -1;
-    int maxSolvedColumn = 0;
-    for (int i = 0; i < MAX_INDEX_NUM; i++) {
-        IndexDesc &index = tableMeta.indexes[i];
-        if (index.keyNum) {
-            char key[getIndexKeyLength(index)];
-            if (composeIndexKeyByExprList(conditionList, index, key) != NO_OP && index.keyNum > maxSolvedColumn) {
-                optimizeIndex = i;
+    //如果没有和自己有关的，那么就不用了
+    if (myCondition->size()) {
+        int maxSolvedColumn = 0;
+        for (int i = 0; i < MAX_INDEX_NUM; i++) {
+            IndexDesc &index = tableMeta.indexes[i];
+            if (index.keyNum) {
+                char key[getIndexKeyLength(index)];
+                if (composeIndexKeyByExprList(myCondition, index, key) != NO_OP && index.keyNum > maxSolvedColumn) {
+                    optimizeIndex = i;
+                }
             }
         }
     }
+
     std::vector<RM_RID> ans;
     //如果没找到索引，则遍历全局找到满足条件的
     if (optimizeIndex == -1) {
@@ -653,6 +658,8 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
         DO(ixIndexScan.CloseScan())
         DO(IX_Manager::Instance().CloseIndex(ixIndexHandle))
     }
+    auto cost_time = clock() - start_time;
+    printf("过滤: 获得%zu条，花费%.3f秒\n", ans.size(), (float) cost_time / CLOCKS_PER_SEC);
     return ans;
 }
 
@@ -735,5 +742,64 @@ std::vector<PS_Expr> *SM_Table::extractValueInRecords() {
 }
 
 Operator SM_Table::composeIndexKeyByExprList(std::vector<PS_Expr> *exprList, IndexDesc indexDesc, char *key) {
+    if (indexDesc.keyNum == 1) {
+        ColumnId columnId = indexDesc.columnId[0];
+        return findAndCopy(columnId, exprList, key);
+    } else {
+        //联合索引的key组成形式为attrType1 + attrLength1 + attrValue1 + attrType2 + attrLength2 + attrValue2.....
+        int length = 0;
+        for (int i = 0; i < indexDesc.keyNum; i++) {
+            ColumnId columnId = indexDesc.columnId[i];
+            *(AttrType *) (key + length) = tableMeta.columns[columnId].attrType;
+            *(int *) (key + length + ATTR_TYPE_LENGTH) = tableMeta.columns[columnId].attrLength;
+            if (findAndCopy(columnId, exprList, key + length + ATTR_TYPE_LENGTH + 4) != EQ_OP) {
+                return NO_OP;
+            }
+            length += tableMeta.columns[columnId].attrLength + ATTR_TYPE_LENGTH + 4;
+        }
+        return EQ_OP;
+    }
+}
+
+Operator SM_Table::findAndCopy(ColumnId columnId, std::vector<PS_Expr> *exprList, char *key) {
+    for (auto &expr: *exprList)
+        if (tableMeta.getColumnIdByName(expr.left->columnName.data()) == columnId) {
+            switch (tableMeta.columns[columnId].attrType) {
+                case INT: {
+                    memcpy(key, &expr.right->value.intValue, tableMeta.columns[columnId].attrLength);
+                    break;
+                }
+                case FLOAT: {
+                    memcpy(key, &expr.right->value.floatValue, tableMeta.columns[columnId].attrLength);
+                    break;
+                }
+                case STRING: {
+                    memcpy(key, expr.right->string.data(), tableMeta.columns[columnId].attrLength);
+                    break;
+                }
+                case DATE: {
+                    Date date;
+                    date.year = date.month = date.day = -1;
+                    Utils::transferStringToDate(expr.right->string.data(), date);
+                    memcpy(key, &date, tableMeta.columns[columnId].attrLength);
+                    break;
+                }
+                case VARCHAR: {
+                    //只存一次，防止多存
+                    if (expr.right->value.varcharValue.length == 0) {
+                        Varchar varchar{};
+                        varchar.length = expr.right->string.size();
+                        strcpy(varchar.spName, Utils::getStringPoolFileName(tableMeta.createName).c_str());
+                        spHandle.InsertString(expr.right->string.data(), varchar.length, varchar.offset);
+                        expr.right->value.varcharValue = varchar;
+                    }
+                    memcpy(key, &expr.right->value.varcharValue, tableMeta.columns[columnId].attrLength);
+                    break;
+                }
+                default:
+                    throw "unsupported index type";
+            }
+            return expr.op;
+        }
     return NO_OP;
 }

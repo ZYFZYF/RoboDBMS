@@ -48,7 +48,9 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
         isFirstIterate = true;
         DO(iterateTables(0))
     }
+
     delete smTable;
+    smTable = nullptr;
     auto cost_time = clock() - start_time;
     printf("查询: 结果共计%d条，花费%.3f秒\n", totalCount, (float) cost_time / CLOCKS_PER_SEC);
     return targetMeta;
