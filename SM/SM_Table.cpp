@@ -410,33 +410,16 @@ int SM_Table::getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDes
 
 RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) {
     clock_t start_time = clock();
-    //打开一个无条件遍历
-    RM_FileScan rmFileScan;
-    TRY(rmFileScan.OpenScan(rmFileHandle))
     RM_Record rmRecord;
-    int totalCount = 0;
     int deleteCount = 0;
-    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
-        char *record;
-        rmRecord.GetData(record);
-        RM_RID rmRid;
-        rmRecord.GetRid(rmRid);
-        //用这行的值去计算表达式的值
-        bool conditionSatisfied = true;
-        for (auto &condition:*conditionList) {
-            TRY(condition.eval(*this, record))
-            conditionSatisfied &= condition.value.boolValue;
-            if (!conditionSatisfied)break;
-        }
-        totalCount++;
-        if (conditionSatisfied) {
-            deleteCount++;
-            TRY(deleteRecord(record, rmRid))
-        }
+    auto ridList = filter(conditionList);
+    for (auto &rid:ridList) {
+        rmFileHandle.GetRec(rid, rmRecord);
+        deleteCount++;
+        TRY(deleteRecord(rmRecord.getData(), rid))
     }
-    TRY(rmFileScan.CloseScan())
     auto cost_time = clock() - start_time;
-    printf("删除: 共计%d条，成功删除%d条，花费%.3f秒\n", totalCount, deleteCount, (float) cost_time / CLOCKS_PER_SEC);
+    printf("删除: 成功删除%d条，花费%.3f秒\n", deleteCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
@@ -470,15 +453,6 @@ RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid, bool influencePrima
 
 int SM_Table::count() {
     return rmFileHandle.GetRecordCount();
-//    RM_FileScan rmFileScan;
-//    rmFileScan.OpenScan(rmFileHandle);
-//    RM_Record rmRecord;
-//    int cnt = 0;
-//    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
-//        cnt++;
-//    }
-//    rmFileScan.CloseScan();
-//    return cnt;
 }
 
 RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS_Expr> > *assignExprList,
@@ -583,8 +557,7 @@ RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &e
 std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
     clock_t start_time = clock();
     auto myCondition = new std::vector<PS_Expr>;
-    for (auto it = conditionList->begin(); it != conditionList->end(); it++) {
-        auto expr = *it;
+    for (const auto &expr : *conditionList) {
         //如果左边是该表里的列，右边是常数
         if (expr.left && expr.left->isColumn &&
             (expr.left->tableName.empty() || expr.left->tableName == tableMeta.name) &&
