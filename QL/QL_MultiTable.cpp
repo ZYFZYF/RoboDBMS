@@ -29,8 +29,7 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     auto start_time = clock();
     totalCount = 0;
     valueList = _valueList;
-    originCondition = _conditionList;
-    conditionList = new std::vector<PS_Expr>;
+    conditionList = _conditionList;
     groupByList = _groupByList;
     name = _name;
     insertGroups.clear();
@@ -166,16 +165,10 @@ RC QL_MultiTable::iterateTables(int n) {
         }
         isFirstIterate = false;
     } else {
-        //得把当前状态的expr存下来
-        auto temp = std::vector<PS_Expr>();
-        for (auto &expr: n == 0 ? *originCondition : *conditionList) temp.push_back(expr);
-
         //每次看情况拿下一次的节点
         auto ridList = tableList[n].filter(conditionList);
         for (auto &rid : ridList) {
             tableList[n].getRecordFromRID(rid, recordList[n]);
-            conditionList->clear();
-            for (const auto &expr: temp)conditionList->push_back(expr);
             for (auto &condition: *conditionList) {
                 eval(condition, "NULL", n);
             }
@@ -192,7 +185,11 @@ RC QL_MultiTable::eval(PS_Expr &value, std::string group, int maxI) {
     //从里面拿列的值
     if (value.isColumn) {
         auto[i, j] = getColumn(value.tableName, value.columnName);
-        if (i > maxI)return OK_RC;
+        if (i > maxI) {
+            //如果这列是后面的，那么置为不知道
+            value.type = UNKNOWN;
+            return OK_RC;
+        }
         if (value.name.empty())value.name = tableList[i].tableMeta.columns[j].name;
         value.type = tableList[i].tableMeta.columns[j].attrType;
         char *data = tableList[i].getColumnData(recordList[i].getData(), j);

@@ -29,7 +29,6 @@ private:
     std::vector<RM_Record> recordList{};
     std::vector<PS_Expr> *valueList{};
     std::vector<PS_Expr> *conditionList{};
-    std::vector<PS_Expr> *originCondition{};
     std::vector<PS_Expr> *groupByList{};
     TableMeta targetMeta{};
     SM_Table *smTable;

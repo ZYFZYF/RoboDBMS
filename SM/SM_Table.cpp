@@ -591,20 +591,20 @@ RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &e
 std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
     clock_t start_time = clock();
     auto myCondition = new std::vector<PS_Expr>;
-    for (auto it = conditionList->begin(); it != conditionList->end();) {
+    for (auto it = conditionList->begin(); it != conditionList->end(); it++) {
         auto expr = *it;
         //如果左边是该表里的列，右边是常数
         if (expr.left->isColumn && (expr.left->tableName.empty() || expr.left->tableName == tableMeta.name) &&
             tableMeta.getColumnIdByName(expr.left->columnName.data()) >= 0 &&
             expr.right->type != UNKNOWN) {
             myCondition->push_back(expr);
-            it = conditionList->erase(it);
-        } else it++;
+            //it = conditionList->erase(it);
+        }
     }
     //尝试用每个索引来检索，看哪个效果更好
     int optimizeIndex = -1;
     //如果没有和自己有关的，那么就不用了
-    if (myCondition->size()) {
+    if (!myCondition->empty()) {
         int maxSolvedColumn = 0;
         for (int i = 0; i < MAX_INDEX_NUM; i++) {
             IndexDesc &index = tableMeta.indexes[i];
@@ -661,6 +661,7 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
     }
     auto cost_time = clock() - start_time;
     //printf("过滤: 获得%zu条，花费%.3f秒\n", ans.size(), (float) cost_time / CLOCKS_PER_SEC);
+    delete myCondition;
     return ans;
 }
 

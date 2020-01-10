@@ -31,7 +31,7 @@ insert into test_customer from '../../dataset/customer.tbl';
 insert into test_customer from '../../dataset/customer.tbl';
 insert into test_customer from '../../dataset/customer.tbl';
 
-alter table test_customer add index custkeyIndex(C_CUSTKEY);
-select * from test_customer,test_order where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
 alter table test_order add index custkeyIndex(O_CUSTKEY);
+select * from test_customer,test_order where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
+alter table test_customer add index custkeyIndex(C_CUSTKEY);
 select * from test_order,test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
