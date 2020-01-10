@@ -586,15 +586,17 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
     for (auto it = conditionList->begin(); it != conditionList->end(); it++) {
         auto expr = *it;
         //如果左边是该表里的列，右边是常数
-        if (expr.left->isColumn && (expr.left->tableName.empty() || expr.left->tableName == tableMeta.name) &&
+        if (expr.left && expr.left->isColumn &&
+            (expr.left->tableName.empty() || expr.left->tableName == tableMeta.name) &&
             tableMeta.getColumnIdByName(expr.left->columnName.data()) >= 0 &&
-            expr.right->type != UNKNOWN) {
+            expr.right && expr.right->type != UNKNOWN) {
             myCondition->push_back(expr);
         }
         //如果列在右边，需要转换
-        if (expr.right->isColumn && (expr.right->tableName.empty() || expr.right->tableName == tableMeta.name) &&
+        if (expr.right && expr.right->isColumn &&
+            (expr.right->tableName.empty() || expr.right->tableName == tableMeta.name) &&
             tableMeta.getColumnIdByName(expr.right->columnName.data()) >= 0 &&
-            expr.left->type != UNKNOWN) {
+            expr.left && expr.left->type != UNKNOWN) {
             PS_Expr reverseExpr = expr;
             std::swap(reverseExpr.left, reverseExpr.right);
             switch (expr.op) {

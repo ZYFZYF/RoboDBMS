@@ -111,7 +111,7 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
                       std::vector<const char *> *orderByColumn, bool increaseOrder, int limitOffset, int limitLength) {
     std::string name = "zyfdsb";
     auto *multiTable = new QL_MultiTable(tableMetaList);
-
+    if (conditionList == nullptr)conditionList = new std::vector<PS_Expr>;
     if (groupByList != nullptr) {
         for (auto &value: *groupByList) {
             if (!value.isColumn) {
@@ -141,7 +141,7 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
         if (orderByColumn != nullptr) {
             table->orderBy(orderByColumn, increaseOrder, limitOffset, limitLength);
         }
-        table->showRecords(5);
+        table->showRecords(100);
         delete table;
         //把这个临时表删掉
         DestroyTable(tableMeta.createName);
@@ -157,7 +157,7 @@ QL_Manager::getTableFromSelect(const char *name, std::vector<PS_Expr> *valueList
     std::string tableName = name;
     DestroyTable(tableName.data());
     auto *multiTable = new QL_MultiTable(tableMetaList);
-
+    if (conditionList == nullptr)conditionList = new std::vector<PS_Expr>;
     if (groupByList != nullptr) {
         for (auto &value: *groupByList) {
             if (!value.isColumn) {
@@ -204,7 +204,7 @@ QL_Manager::getExprListFromSelect(std::vector<PS_Expr> *valueList, std::vector<T
                                   int limitLength) {
     std::string name = "zyfdsb";
     auto multiTable = new QL_MultiTable(tableMetaList);
-
+    if (conditionList == nullptr)conditionList = new std::vector<PS_Expr>;
     if (groupByList != nullptr) {
         for (auto &value: *groupByList) {
             if (!value.isColumn) {
