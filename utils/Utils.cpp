@@ -159,6 +159,8 @@ bool dfs(std::string &a, std::string &b, int x, int y) {
         dp[key] = true;
     } else if (y == b.size()) {
         dp[key] = false;
+    } else if (x > a.size()) {
+        dp[key] = false;
     } else {
         bool ans = false;
         std::set<char> validSet;

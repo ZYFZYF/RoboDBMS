@@ -189,6 +189,20 @@ RC PS_Expr::pushUp(std::string group) {
                     } else cnt += value.boolValue = isComparable() && cmp() >= 0;
                     break;
                 }
+                case LIKE_OP: {
+                    if (left->value.isNull or right->value.isNull) {
+                    }
+                    if (right->type == STRING) {
+                        if (left->type == DATE) {
+                            std::string temp = Utils::transferDateToString(left->value.dateValue);
+                            cnt += Utils::like(temp, right->string);
+                        }
+                        if (left->type == STRING) {
+                            cnt += Utils::like(left->string, right->string);
+                        }
+                    }
+                    break;
+                }
                 default:
                     throw "unsupported compare with a array";
             }
@@ -259,6 +273,24 @@ RC PS_Expr::pushUp(std::string group) {
                     return OK_RC;
                 }
                 value.boolValue = isComparable() && cmp() >= 0;
+                break;
+            }
+            case LIKE_OP: {
+                type = BOOL;
+                if (left->value.isNull or right->value.isNull) {
+                    value.boolValue = false;
+                    return OK_RC;
+                }
+                value.boolValue = false;
+                if (right->type == STRING) {
+                    if (left->type == DATE) {
+                        std::string temp = Utils::transferDateToString(left->value.dateValue);
+                        value.boolValue = Utils::like(temp, right->string);
+                    }
+                    if (left->type == STRING) {
+                        value.boolValue = Utils::like(left->string, right->string);
+                    }
+                }
                 break;
             }
             case PLUS_OP: {
