@@ -18,5 +18,7 @@ select * from test_like where O_CLERK like '%[^13]1';
 select * from test_like where O_CLERK like ('%1', '%2');
 select * from test_like where O_CLERK like ('%1', '%3_');
 select * from test_like where O_CLERK like any('%1', '%2');
+select * from test_like where O_COMMENT like any('%about%', '%2');
+
 
 

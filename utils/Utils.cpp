@@ -150,6 +150,7 @@ std::string Utils::transferDateToString(Date date) {
 }
 
 std::map<std::pair<int, int>, bool> dp;
+std::map<int, std::set<char> > preparedValidSet;
 
 bool dfs(std::string &a, std::string &b, int x, int y) {
     auto key = std::make_pair(x, y);
@@ -163,32 +164,17 @@ bool dfs(std::string &a, std::string &b, int x, int y) {
         dp[key] = false;
     } else {
         bool ans = false;
-        std::set<char> validSet;
         int z = y + 1;//z指向下一个应该匹配的位置
         if (b[y] == '[') {
             while (z != b.size() && b[z] != ']')z++;
-            if (z == b.size()) {
-                printf("can't find ], invalid format\n");
-                dp[key] = false;
-                return dp[key];
-            }
-            if (b[y + 1] == '^') {
-                std::set<char> invalidSet;
-                for (int i = y + 2; i < z; i++)invalidSet.insert(b[i]);
-                for (int i = 0; i < 128; i++)if (invalidSet.find(i) == invalidSet.end())validSet.insert(i);
-            } else {
-                for (int i = y + 1; i < z; i++)validSet.insert(b[i]);
-            }
             z++;
-        } else {
-
         }
         if (z < b.size() && b[z] == '?') {
             z++;
             ans |= dfs(a, b, x, z);
         }
         if (b[y] == '[') {
-            if (x < a.size() && validSet.find(a[x]) != validSet.end())ans |= dfs(a, b, x + 1, z);
+            if (x < a.size() && preparedValidSet[y].find(a[x]) != preparedValidSet[y].end())ans |= dfs(a, b, x + 1, z);
         } else if (b[y] == '%') ans |= dfs(a, b, x, z) || dfs(a, b, x + 1, y) || dfs(a, b, x + 1, z);
         else if (x < a.size() && b[y] == '_') ans |= dfs(a, b, x + 1, z);
         else if (x < a.size() && a[x] == b[y])ans |= dfs(a, b, x + 1, z);
@@ -199,6 +185,27 @@ bool dfs(std::string &a, std::string &b, int x, int y) {
 
 bool Utils::like(std::string &a, std::string &b) {
     dp.clear();
+    preparedValidSet.clear();
+    //检查一下[是否总有]配对
+    for (int l = 0, r; l < b.size(); l = r + 1) {
+        while (l < b.size() && b[l] != '[')l++;
+        if (b[l] != '[')break;
+        r = l + 1;
+        while (r < b.size() && b[r] != ']')r++;
+        if (b[r] != ']') {
+            printf("can't find ], invalid format");
+            return false;
+        }
+        std::set<char> validSet;
+        if (b[l + 1] == '^') {
+            std::set<char> invalidSet;
+            for (int i = l + 2; i < r; i++)invalidSet.insert(b[i]);
+            for (int i = 0; i < 128; i++)if (invalidSet.find(i) == invalidSet.end())validSet.insert(i);
+        } else {
+            for (int i = l + 1; i < r; i++)validSet.insert(b[i]);
+        }
+        preparedValidSet[l] = validSet;
+    }
     return dfs(a, b, 0, 0);
 }
 
