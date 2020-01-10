@@ -21,15 +21,15 @@ public:
 
     RC iterateTables(int n);
 
-    RC eval(PS_Expr &value, std::string group = "NULL");
+    RC eval(PS_Expr &value, std::string group = "NULL", int maxI = 100000);
 
 private:
     int tableNum;
     std::vector<SM_Table> tableList;
     std::vector<RM_Record> recordList{};
-    std::vector<std::vector<RM_RID> > ridListList{};
     std::vector<PS_Expr> *valueList{};
     std::vector<PS_Expr> *conditionList{};
+    std::vector<PS_Expr> *originCondition{};
     std::vector<PS_Expr> *groupByList{};
     TableMeta targetMeta{};
     SM_Table *smTable;

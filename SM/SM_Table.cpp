@@ -594,8 +594,9 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
     for (auto it = conditionList->begin(); it != conditionList->end();) {
         auto expr = *it;
         //如果左边是该表里的列，右边是常数
-        if (expr.left->isColumn && tableMeta.getColumnIdByName(expr.left->columnName.data()) >= 0 &&
-            expr.right->isConst) {
+        if (expr.left->isColumn && (expr.left->tableName.empty() || expr.left->tableName == tableMeta.name) &&
+            tableMeta.getColumnIdByName(expr.left->columnName.data()) >= 0 &&
+            expr.right->type != UNKNOWN) {
             myCondition->push_back(expr);
             it = conditionList->erase(it);
         } else it++;
@@ -659,7 +660,7 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
         DO(IX_Manager::Instance().CloseIndex(ixIndexHandle))
     }
     auto cost_time = clock() - start_time;
-    printf("过滤: 获得%zu条，花费%.3f秒\n", ans.size(), (float) cost_time / CLOCKS_PER_SEC);
+    //printf("过滤: 获得%zu条，花费%.3f秒\n", ans.size(), (float) cost_time / CLOCKS_PER_SEC);
     return ans;
 }
 

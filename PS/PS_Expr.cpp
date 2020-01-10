@@ -115,7 +115,9 @@ RC PS_Expr::eval(SM_Table &table, char *record) {
                 if (type == VARCHAR)type = STRING;
                 return OK_RC;
             }
-        return SM_COLUMN_NOT_EXIST;
+        //有一种情况是这是其他表的column
+        return OK_RC;
+        //return SM_COLUMN_NOT_EXIST;
     }
     if (left)TRY(left->eval(table, record))
     if (Utils::isLogic(op)) {

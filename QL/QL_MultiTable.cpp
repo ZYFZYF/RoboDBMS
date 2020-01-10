@@ -29,12 +29,10 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     auto start_time = clock();
     totalCount = 0;
     valueList = _valueList;
-    conditionList = _conditionList;
+    originCondition = _conditionList;
+    conditionList = new std::vector<PS_Expr>;
     groupByList = _groupByList;
     name = _name;
-    //先拿到所有遍历的节点
-    ridListList.clear();
-    for (int i = 0; i < tableNum; i++)ridListList.emplace_back(tableList[i].filter(conditionList));
     insertGroups.clear();
     group_aggregation_expr.clear();
     is_first_iteration = true;
@@ -168,20 +166,33 @@ RC QL_MultiTable::iterateTables(int n) {
         }
         isFirstIterate = false;
     } else {
-        for (int i = 0; i < ridListList[n].size(); i++) {
-            tableList[n].getRecordFromRID(ridListList[n][i], recordList[n]);
+        //得把当前状态的expr存下来
+        auto temp = std::vector<PS_Expr>();
+        for (auto &expr: n == 0 ? *originCondition : *conditionList) temp.push_back(expr);
+
+        //每次看情况拿下一次的节点
+        auto ridList = tableList[n].filter(conditionList);
+        for (auto &rid : ridList) {
+            tableList[n].getRecordFromRID(rid, recordList[n]);
+            conditionList->clear();
+            for (const auto &expr: temp)conditionList->push_back(expr);
+            for (auto &condition: *conditionList) {
+                eval(condition, "NULL", n);
+            }
             TRY(iterateTables(n + 1))
         }
     }
     return OK_RC;
 }
 
-RC QL_MultiTable::eval(PS_Expr &value, std::string group) {
+//maxI用来限制只能选择前多少个枚举的表
+RC QL_MultiTable::eval(PS_Expr &value, std::string group, int maxI) {
     //常数直接返回
     if (value.isConst)return OK_RC;
     //从里面拿列的值
     if (value.isColumn) {
         auto[i, j] = getColumn(value.tableName, value.columnName);
+        if (i > maxI)return OK_RC;
         if (value.name.empty())value.name = tableList[i].tableMeta.columns[j].name;
         value.type = tableList[i].tableMeta.columns[j].attrType;
         char *data = tableList[i].getColumnData(recordList[i].getData(), j);
@@ -220,7 +231,7 @@ RC QL_MultiTable::eval(PS_Expr &value, std::string group) {
         if (value.type == VARCHAR)value.type = STRING;
         return OK_RC;
     }
-    if (value.left)TRY(eval(*value.left, group))
+    if (value.left)TRY(eval(*value.left, group, maxI))
     if (Utils::isLogic(value.op)) {
         value.type = BOOL;
         //短路操作
@@ -229,7 +240,7 @@ RC QL_MultiTable::eval(PS_Expr &value, std::string group) {
             return OK_RC;
         }
     }
-    if (value.right)TRY(eval(*value.right, group))
+    if (value.right)TRY(eval(*value.right, group, maxI))
     TRY(value.pushUp(group))
     return OK_RC;
 }
