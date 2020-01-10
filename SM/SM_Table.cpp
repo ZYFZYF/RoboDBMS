@@ -11,6 +11,7 @@
 #include "../IX/IX_IndexScan.h"
 #include "SM_Manager.h"
 #include "../PS/PS_Expr.h"
+#include "../utils/PrintError.h"
 
 SM_Table::SM_Table(TableId _tableId) : tableId(_tableId), tableMeta(SM_Manager::Instance().GetTableMeta(tableId)) {
     init();
@@ -84,7 +85,7 @@ RC SM_Table::insertRecord(char *record, bool influencePrimaryKey) {
         IndexDesc &indexDesc = tableMeta.indexes[indexNo];
         int indexKeyLength = getIndexKeyLength(indexDesc);
         char key[indexKeyLength];
-        TRY(composeIndexKey(record, indexDesc, key))
+        TRY(composeIndexKeyByRecord(record, indexDesc, key))
         if (getIndexKeyDuplicateNum(key, indexNo, indexDesc))return QL_PRIMARY_KEY_DUPLICATE;
     }
     //TODO 插入之前判断外键是否存在
@@ -94,7 +95,7 @@ RC SM_Table::insertRecord(char *record, bool influencePrimaryKey) {
         IndexDesc &index = tableMeta.indexes[i];
         if (index.keyNum) {
             char keyData[getIndexKeyLength(index)];
-            TRY(composeIndexKey(record, index, keyData));
+            TRY(composeIndexKeyByRecord(record, index, keyData));
             IX_IndexHandle ixIndexHandle;
             TRY(IX_Manager::Instance().OpenIndex(tableMeta.createName, i, ixIndexHandle))
             TRY(ixIndexHandle.InsertEntry(keyData, rmRid))
@@ -330,7 +331,7 @@ RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) 
         RM_RID rmRid;
         char *record;
         TRY(rmRecord.GetData(record))
-        composeIndexKey(record, indexDesc, key);
+        composeIndexKeyByRecord(record, indexDesc, key);
         TRY(rmRecord.GetRid(rmRid))
         TRY(ixIndexHandle.InsertEntry(key, rmRid))
     }
@@ -343,7 +344,7 @@ RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) 
             RM_RID rmRid;
             char *record;
             TRY(rmRecord.GetData(record))
-            composeIndexKey(record, indexDesc, key);
+            composeIndexKeyByRecord(record, indexDesc, key);
             TRY(rmRecord.GetRid(rmRid))
             if (getIndexKeyDuplicateNum(key, indexNo, indexDesc) > 1) {
                 TRY(rmFileScan.CloseScan())
@@ -366,7 +367,7 @@ int SM_Table::getIndexKeyLength(IndexDesc indexDesc) {
     return length;
 }
 
-RC SM_Table::composeIndexKey(char *record, IndexDesc indexDesc, char *key) {
+RC SM_Table::composeIndexKeyByRecord(char *record, IndexDesc indexDesc, char *key) {
     if (indexDesc.keyNum == 1) {
         ColumnId columnId = indexDesc.columnId[0];
         char *data = getColumnData(record, columnId);
@@ -441,7 +442,7 @@ RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid, bool influencePrima
         IndexDesc &indexDesc = tableMeta.indexes[indexNo];
         int indexKeyLength = getIndexKeyLength(indexDesc);
         char key[indexKeyLength];
-        TRY(composeIndexKey(record, indexDesc, key))
+        TRY(composeIndexKeyByRecord(record, indexDesc, key))
         if (influencePrimaryKey) {
             //TODO 判断这个主键是否外链了存在的外键
         }
@@ -452,7 +453,7 @@ RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid, bool influencePrima
         IndexDesc &index = tableMeta.indexes[i];
         if (index.keyNum) {
             char keyData[getIndexKeyLength(index)];
-            TRY(composeIndexKey(record, index, keyData));
+            TRY(composeIndexKeyByRecord(record, index, keyData));
             IX_IndexHandle ixIndexHandle;
             TRY(IX_Manager::Instance().OpenIndex(tableMeta.createName, i, ixIndexHandle))
             TRY(ixIndexHandle.DeleteEntry(keyData, rmRid))
@@ -588,17 +589,70 @@ RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &e
 }
 
 std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
-    //TODO 根据表的索引来优化返回的RM_RID list
-    std::vector<RM_RID> ans;
-    RM_FileScan rmFileScan;
-    rmFileScan.OpenScan(rmFileHandle);
-    RM_Record rmRecord;
-    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
-        RM_RID rmRid;
-        rmRecord.GetRid(rmRid);
-        ans.emplace_back(rmRid);
+    auto myCondition = new std::vector<PS_Expr>;
+    for (auto it = conditionList->begin(); it != conditionList->end();) {
+        auto expr = *it;
+        //如果左边是该表里的列，右边是常数
+        if (expr.left->isColumn && tableMeta.getColumnIdByName(expr.left->columnName.data()) >= 0 &&
+            expr.right->isConst) {
+            myCondition->push_back(expr);
+            it = conditionList->erase(it);
+        } else it++;
     }
-    rmFileScan.CloseScan();
+    //尝试用每个索引来检索，看哪个效果更好
+    int optimizeIndex = -1;
+    int maxSolvedColumn = 0;
+    for (int i = 0; i < MAX_INDEX_NUM; i++) {
+        IndexDesc &index = tableMeta.indexes[i];
+        if (index.keyNum) {
+            char key[getIndexKeyLength(index)];
+            if (composeIndexKeyByExprList(conditionList, index, key) != NO_OP && index.keyNum > maxSolvedColumn) {
+                optimizeIndex = i;
+            }
+        }
+    }
+    std::vector<RM_RID> ans;
+    //如果没找到索引，则遍历全局找到满足条件的
+    if (optimizeIndex == -1) {
+        RM_FileScan rmFileScan;
+        DO(rmFileScan.OpenScan(rmFileHandle))
+        RM_Record rmRecord;
+        while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+            RM_RID rmRid;
+            rmRecord.GetRid(rmRid);
+            bool conditionSatisfied = true;
+            for (auto &condition:*myCondition) {
+                DO(condition.eval(*this, rmRecord.getData()))
+                conditionSatisfied &= condition.value.boolValue;
+                if (!conditionSatisfied)break;
+            }
+            if (conditionSatisfied)ans.emplace_back(rmRid);
+        }
+        DO(rmFileScan.CloseScan())
+    } else {
+        //否则用索引来获取满足部分条件的列表，再重新filter满足所有条件的列表
+        IndexDesc &index = tableMeta.indexes[optimizeIndex];
+        IX_IndexHandle ixIndexHandle;
+        DO(IX_Manager::Instance().OpenIndex(tableMeta.createName, optimizeIndex, ixIndexHandle))
+        char key[getIndexKeyLength(index)];
+        Operator op = composeIndexKeyByExprList(myCondition, index, key);
+        IX_IndexScan ixIndexScan;
+        DO(ixIndexScan.OpenScan(ixIndexHandle, op, key))
+        RM_RID rmRid;
+        while (ixIndexScan.GetNextEntry(rmRid) == OK_RC) {
+            RM_Record rmRecord;
+            rmFileHandle.GetRec(rmRid, rmRecord);
+            bool conditionSatisfied = true;
+            for (auto &condition:*myCondition) {
+                DO(condition.eval(*this, rmRecord.getData()))
+                conditionSatisfied &= condition.value.boolValue;
+                if (!conditionSatisfied)break;
+            }
+            if (conditionSatisfied)ans.emplace_back(rmRid);
+        }
+        DO(ixIndexScan.CloseScan())
+        DO(IX_Manager::Instance().CloseIndex(ixIndexHandle))
+    }
     return ans;
 }
 
@@ -676,10 +730,10 @@ std::vector<PS_Expr> *SM_Table::extractValueInRecords() {
         expr->eval(*this, rmRecord.getData());
         ret->push_back(*expr);
     }
-    for (auto www:*ret) {
-        int x = ret->size();
-        int y = 1;
-    }
     rmFileScan.CloseScan();
     return ret;
+}
+
+Operator SM_Table::composeIndexKeyByExprList(std::vector<PS_Expr> *exprList, IndexDesc indexDesc, char *key) {
+    return NO_OP;
 }

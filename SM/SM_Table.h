@@ -57,7 +57,7 @@ public:
 
     int getIndexKeyLength(IndexDesc indexDesc);
 
-    RC composeIndexKey(char *record, IndexDesc indexDesc, char *key);
+    RC composeIndexKeyByRecord(char *record, IndexDesc indexDesc, char *key);
 
     //获取一个key在index中出现了多少次
     int getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDesc);
@@ -97,6 +97,8 @@ private:
     RC setColumnNull(char *columnData, ColumnId columnId);
 
     RC setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &expr, bool alreadyComputed = false);
+
+    Operator composeIndexKeyByExprList(std::vector<PS_Expr> *exprList, IndexDesc indexDesc, char *key);
 };
 
 #endif //ROBODBMS_SM_TABLE_H

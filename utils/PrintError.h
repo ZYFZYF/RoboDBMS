@@ -7,7 +7,7 @@
 
 #include "../Constant.h"
 
-#define DO(_something) try{if (RC __rc = (_something)) printError(__rc);}catch(const char* str){printf("%s\n",str);}catch(std::string str){std::cout<<str<<std::endl;}
+#define DO(_something) try{if (RC __rc = (_something)) printError(__rc);}catch(const char* str){printf("%s\n",str);}catch(std::string &str){std::cout<<str<<std::endl;}
 
 void printError(RC rc);
 
