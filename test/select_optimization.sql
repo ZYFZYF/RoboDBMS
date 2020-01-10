@@ -35,6 +35,9 @@ create table test_customer (
 		C_COMMENT		VARCHAR(117)
 	);
 insert into test_customer from '../../dataset/customer.tbl';
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERSTATUS == 'P' and test_order.O_ORDERKEY == 65;
+alter table test_order add index multiindex(O_ORDERSTATUS, O_ORDERKEY);
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERSTATUS == 'P' and test_order.O_ORDERKEY == 65;
 select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERSTATUS == 'P';
 alter table test_order add index statusindex(O_ORDERSTATUS);
 select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY and test_order.O_ORDERSTATUS == 'P';
