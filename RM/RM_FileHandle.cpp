@@ -6,6 +6,7 @@
 #include <cstring>
 #include <iostream>
 #include "RM_FileHandle.h"
+#include "../utils/PrintError.h"
 
 const int BitsNum = sizeof(MultiBits) * 8;
 
@@ -303,7 +304,8 @@ RC RM_FileHandle::AllocateNewPage(PF_PageHandle &pfPageHandle, PageNum &pageNum)
     return OK_RC;
 }
 
-RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pfPageHandle, bool findInNextPage) {
+RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pfPageHandle,
+                                bool findInNextPage) {
     char *bitmap;
     struct RM_PageHeader *rmPageHeader;
     int nextRec;
@@ -338,4 +340,19 @@ RC RM_FileHandle::GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_P
     TRY(rec.Set(rid, bitmap + (rmFileHeader.bitMapSize) + (nextRecSlot) * (rmFileHeader.recordSize),
                 rmFileHeader.recordSize));
     return OK_RC;
+}
+
+int RM_FileHandle::GetRecordCount() {
+    PF_PageHandle pfPageHandle;
+    int count = 0;
+    PageNum pageNum = 0;
+    while (pfFileHandle.GetNextPage(pageNum, pfPageHandle) != PF_EOF) {
+        pfPageHandle.GetPageNum(pageNum);
+        char *bitmap;
+        struct RM_PageHeader *rph;
+        DO(GetPageHeaderAndBitmap(pfPageHandle, rph, bitmap))
+        count += rph->recordNum;
+        DO(pfFileHandle.UnpinPage(pageNum))
+    }
+    return count;
 }

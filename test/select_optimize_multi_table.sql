@@ -12,9 +12,6 @@ create table test_order(  O_ORDERKEY      INT,
                                 O_SHIPPRIORITY	INT,
                                 O_COMMENT		VARCHAR(79));
 insert into test_order from '../../dataset/orders.tbl';
-insert into test_order from '../../dataset/orders.tbl';
-insert into test_order from '../../dataset/orders.tbl';
-
 
 drop table test_customer;
 create table test_customer (
@@ -28,10 +25,16 @@ create table test_customer (
 		C_COMMENT		VARCHAR(117)
 	);
 insert into test_customer from '../../dataset/customer.tbl';
+alter table test_order add index custkeyIndex(O_CUSTKEY);
+alter table test_customer add index custkeyIndex(C_CUSTKEY);
+
+select * from test_customer,test_order where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
+select * from test_order, test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
+
+insert into test_order from '../../dataset/orders.tbl';
+insert into test_order from '../../dataset/orders.tbl';
 insert into test_customer from '../../dataset/customer.tbl';
 insert into test_customer from '../../dataset/customer.tbl';
 
-alter table test_order add index custkeyIndex(O_CUSTKEY);
 select * from test_customer,test_order where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;
-alter table test_customer add index custkeyIndex(C_CUSTKEY);
 select * from test_order,test_customer where test_order.O_CUSTKEY == test_customer.C_CUSTKEY;

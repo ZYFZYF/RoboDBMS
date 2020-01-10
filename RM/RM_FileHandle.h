@@ -32,6 +32,8 @@ public:
     // from the buffer pool to disk.  Default value forces all pages.
     RC ForcePages(PageNum pageNum = ALL_PAGES);
 
+    int GetRecordCount();
+
 //private:
 
     RC GetNextRecord(PageNum page, SlotNum slot, RM_Record &rec, PF_PageHandle &pfPageHandle, bool findInNextPage);

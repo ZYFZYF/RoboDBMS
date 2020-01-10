@@ -313,6 +313,8 @@ SM_Table::~SM_Table() {
 }
 
 RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) {
+    clock_t start_time = clock();
+    int totalCount = 0;
     //自己拉的屎自己擦屁股，保证新建的时候没有，新建的时候出问题的话自己关掉/删掉相关文件
     int attrLength = getIndexKeyLength(indexDesc);
     std::string indexFileName = Utils::getIndexFileName(tableMeta.createName, indexNo);
@@ -328,6 +330,7 @@ RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) 
     char key[attrLength];
     //逐条组织成index所需要的key，然后insert进去
     while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        totalCount++;
         RM_RID rmRid;
         char *record;
         TRY(rmRecord.GetData(record))
@@ -354,6 +357,8 @@ RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) 
         }
         TRY(rmFileScan.CloseScan())
     }
+    auto cost_time = clock() - start_time;
+    printf("建索引: 共计为%d个条目建立了索引，花费%.3f秒\n", totalCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
@@ -464,15 +469,16 @@ RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid, bool influencePrima
 }
 
 int SM_Table::count() {
-    RM_FileScan rmFileScan;
-    rmFileScan.OpenScan(rmFileHandle);
-    RM_Record rmRecord;
-    int cnt = 0;
-    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
-        cnt++;
-    }
-    rmFileScan.CloseScan();
-    return cnt;
+    return rmFileHandle.GetRecordCount();
+//    RM_FileScan rmFileScan;
+//    rmFileScan.OpenScan(rmFileHandle);
+//    RM_Record rmRecord;
+//    int cnt = 0;
+//    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+//        cnt++;
+//    }
+//    rmFileScan.CloseScan();
+//    return cnt;
 }
 
 RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS_Expr> > *assignExprList,
@@ -598,7 +604,38 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
             tableMeta.getColumnIdByName(expr.left->columnName.data()) >= 0 &&
             expr.right->type != UNKNOWN) {
             myCondition->push_back(expr);
-            //it = conditionList->erase(it);
+        }
+        //如果列在右边，需要转换
+        if (expr.right->isColumn && (expr.right->tableName.empty() || expr.right->tableName == tableMeta.name) &&
+            tableMeta.getColumnIdByName(expr.right->columnName.data()) >= 0 &&
+            expr.left->type != UNKNOWN) {
+            PS_Expr reverseExpr = expr;
+            std::swap(reverseExpr.left, reverseExpr.right);
+            switch (expr.op) {
+                case EQ_OP:
+                case NE_OP: {
+                    break;
+                }
+                case LT_OP: {
+                    reverseExpr.op = GT_OP;
+                    break;
+                }
+                case GT_OP: {
+                    reverseExpr.op = LT_OP;
+                    break;
+                }
+                case LE_OP: {
+                    reverseExpr.op = GE_OP;
+                    break;
+                }
+                case GE_OP: {
+                    reverseExpr.op = LE_OP;
+                    break;
+                }
+                default:
+                    throw "it should not be here";
+            }
+            myCondition->push_back(reverseExpr);
         }
     }
     //尝试用每个索引来检索，看哪个效果更好

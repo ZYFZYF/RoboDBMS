@@ -16,7 +16,7 @@ std::map<std::pair<std::string, int>, PS_Expr> group_aggregation_expr{};
 
 PS_Expr::PS_Expr() {
     isConst = true;
-    type = UNKNOWN;
+    type = INT;
     value.isNull = true;
 }
 
