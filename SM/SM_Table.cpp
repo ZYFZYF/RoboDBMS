@@ -493,51 +493,37 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
             if (tableMeta.primaryKey.columnId[i] == columnId)influencePrimaryKey = true;
         updateColumnIdList.push_back(columnId);
     }
-    int totalCount = 0, updateCount = 0, updateSuccessCount = 0;
-    RM_FileScan rmFileScan;
-    TRY(rmFileScan.OpenScan(rmFileHandle))
+    int updateCount = 0, updateSuccessCount = 0;
     RM_Record rmRecord;
     char newRecord[recordSize];
-    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
-        char *record;
-        rmRecord.GetData(record);
-        RM_RID rmRid;
-        rmRecord.GetRid(rmRid);
-        bool conditionSatisfied = true;
-        for (auto &condition:*conditionList) {
-            TRY(condition.eval(*this, record))
-            conditionSatisfied &= condition.value.boolValue;
-            if (!conditionSatisfied)break;
+    auto ridList = filter(conditionList);
+    for (auto &rid:ridList) {
+        rmFileHandle.GetRec(rid, rmRecord);
+        updateCount++;
+        //拷贝一个新的出来，因为不能直接修改原来的值
+        memcpy(newRecord, rmRecord.getData(), recordSize);
+        //这里一定要先尝试赋值，因为先删再赋值有可能出错这样就凭白少了一条记录，如果更新不成功跳过这一条的
+        bool updateSuccess = true;
+        for (int i = 0; i < updateColumnIdList.size(); i++) {
+            if (setColumnDataByExpr(newRecord + columnOffset[updateColumnIdList[i]], updateColumnIdList[i],
+                                    (*assignExprList)[i].second) !=
+                OK_RC) {
+                updateSuccess = false;
+                break;
+            }
         }
-        totalCount++;
-        if (conditionSatisfied) {
-            updateCount++;
-            //拷贝一个新的出来，因为不能直接修改原来的值
-            memcpy(newRecord, record, recordSize);
-            //这里一定要先尝试赋值，因为先删再赋值有可能出错这样就凭白少了一条记录，如果更新不成功跳过这一条的
-            bool updateSuccess = true;
-            for (int i = 0; i < updateColumnIdList.size(); i++) {
-                if (setColumnDataByExpr(newRecord + columnOffset[updateColumnIdList[i]], updateColumnIdList[i],
-                                        (*assignExprList)[i].second) !=
-                    OK_RC) {
-                    updateSuccess = false;
-                    break;
-                }
-            }
-            if (updateSuccess) {
-                updateSuccessCount++;
-                //这些基本不会出错
-                TRY(deleteRecord(record, rmRid, influencePrimaryKey))
-                TRY(insertRecord(newRecord, influencePrimaryKey));
-            }
+        if (updateSuccess) {
+            updateSuccessCount++;
+            //这些基本不会出错
+            TRY(deleteRecord(rmRecord.getData(), rid, influencePrimaryKey))
+            TRY(insertRecord(newRecord, influencePrimaryKey));
         }
     }
-    TRY(rmFileScan.CloseScan())
     auto cost_time = clock() - start_time;
-    printf("更新: 共计%d条，需要更新%d条，成功更新%d条，花费%.3f秒\n", totalCount, updateCount, updateSuccessCount,
-           (float) cost_time / CLOCKS_PER_SEC);
+    printf("更新: 需要更新%d条，成功更新%d条，花费%.3f秒\n", updateCount, updateSuccessCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
+
 
 RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &expr, bool alreadyComputed) {
     if (!alreadyComputed)TRY(expr.eval(*this, columnData - columnOffset[columnId]))
