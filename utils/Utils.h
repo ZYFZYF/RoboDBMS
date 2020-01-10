@@ -42,6 +42,8 @@ public:
     static bool isArithmetic(Operator op);
 
     static bool isLogic(Operator op);
+
+    static bool like(std::string &a, std::string &b);
 };
 
 

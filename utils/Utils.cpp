@@ -5,6 +5,8 @@
 #include <cmath>
 #include <cstring>
 #include "Utils.h"
+#include <map>
+#include <set>
 
 #define MAX_ROOT_PATH_LENGTH 100
 
@@ -146,3 +148,56 @@ std::string Utils::transferDateToString(Date date) {
     sprintf(temp, "%04d-%02d-%02d", date.year, date.month, date.day);
     return std::string(temp);
 }
+
+std::map<std::pair<int, int>, bool> dp;
+
+bool dfs(std::string &a, std::string &b, int x, int y) {
+    auto key = std::make_pair(x, y);
+    //std::cout << x << ' ' << y << std::endl;
+    if (dp.find(key) != dp.end())return dp[key];
+    if (x == a.size() && y == b.size()) {
+        dp[key] = true;
+    } else if (y == b.size()) {
+        dp[key] = false;
+    } else {
+        bool ans = false;
+        std::set<char> validSet;
+        int z = y + 1;//z指向下一个应该匹配的位置
+        if (b[y] == '[') {
+            while (z != b.size() && b[z] != ']')z++;
+            if (z == b.size()) {
+                printf("can't find ], invalid format\n");
+                dp[key] = false;
+                return dp[key];
+            }
+            if (b[y + 1] == '^') {
+                std::set<char> invalidSet;
+                for (int i = y + 2; i < z; i++)invalidSet.insert(b[i]);
+                for (int i = 0; i < 128; i++)if (invalidSet.find(i) == invalidSet.end())validSet.insert(i);
+            } else {
+                for (int i = y + 1; i < z; i++)validSet.insert(b[i]);
+            }
+            z++;
+        } else {
+
+        }
+        if (z < b.size() && b[z] == '?') {
+            z++;
+            ans |= dfs(a, b, x, z);
+        }
+        if (b[y] == '[') {
+            if (x < a.size() && validSet.find(a[x]) != validSet.end())ans |= dfs(a, b, x + 1, z);
+        } else if (b[y] == '%') ans |= dfs(a, b, x, z) || dfs(a, b, x + 1, y) || dfs(a, b, x + 1, z);
+        else if (x < a.size() && b[y] == '_') ans |= dfs(a, b, x + 1, z);
+        else if (x < a.size() && a[x] == b[y])ans |= dfs(a, b, x + 1, z);
+        dp[key] = ans;
+    }
+    return dp[key];
+}
+
+bool Utils::like(std::string &a, std::string &b) {
+    dp.clear();
+    return dfs(a, b, 0, 0);
+}
+
+
