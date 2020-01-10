@@ -17,8 +17,27 @@ QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
     tableNum = tableMetaList->size();
     tableList.reserve(tableNum);
     recordList.reserve(tableNum);
-    for (auto &tableMeta:*tableMetaList) {
-        tableList.emplace_back(tableMeta);
+    int recordNum[tableNum];
+    int index[tableNum];
+    for (int i = 0; i < tableNum; i++) {
+        SM_Table table((*tableMetaList)[i]);
+        recordNum[i] = table.count();
+        index[i] = i;
+    }
+    //for (int i = 0; i < tableNum; i++)std::cout << index[i] << ' ' << recordNum[index[i]] << std::endl;
+    std::sort(index, index + tableNum, [&](int x, int y) -> bool { return recordNum[x] < recordNum[y]; });
+    //for (int i = 0; i < tableNum; i++)std::cout << index[i] << ' ' << recordNum[index[i]] << std::endl;
+    for (int i = 0; i < tableNum; i++)
+        if (index[i] != i) {
+            printf("\n调整表的顺序从 ");
+            for (int j = 0; j < tableNum; j++)printf(" %s:%d ", (*tableMetaList)[j].name, recordNum[j]);
+            printf(" 到 ");
+            for (int j = 0; j < tableNum; j++)printf(" %s:%d ", (*tableMetaList)[index[j]].name, recordNum[index[j]]);
+            printf("\n");
+            break;
+        }
+    for (int i = 0; i < tableNum; i++) {
+        tableList.emplace_back((*tableMetaList)[index[i]]);
         recordList.emplace_back();
     }
 }
