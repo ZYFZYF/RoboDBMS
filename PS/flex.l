@@ -63,7 +63,8 @@ RENAME|rename           return P_RENAME;
 TO|to                   return P_TO;
 
 INT|int                 return T_INT;
-BIGINT|bigint           return T_BIGINT;
+BIGINT|bigint           return T_INT;
+INTEGER|integer         return T_INT;
 CHAR|char               return T_CHAR;
 CHARACTER|character     return T_CHAR;
 VARCHAR|varchar         return T_VARCHAR;

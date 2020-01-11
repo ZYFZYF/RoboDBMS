@@ -5,7 +5,7 @@ extern FILE *yyin;
 extern int yyparse();
 
 int main() {
-    const char test_sql[] = "../test/update_column.sql";
+    const char test_sql[] = "../test/test.sql";
     yyin = fopen(test_sql, "r");
     if (yyin == nullptr) {
         printf("Open file  %s\n failed", test_sql);

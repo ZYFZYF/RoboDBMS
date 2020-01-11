@@ -517,7 +517,7 @@ SM_Manager::AddForeignKey(const char *name, const char *foreignTable, std::vecto
             for (auto &reference : dbMeta.tableMetas[primaryTableId].primaryKey.references)
                 if (reference.keyNum == 0) {
                     //各类信息归位
-                    TRY(table.createIndex(foreignKey.indexIndex, index, false));
+                    TRY(table.createIndex(foreignKey.indexIndex, index))
                     dbMeta.tableMetas[foreignTableId].indexes[foreignKey.indexIndex] = index;
                     k = foreignKey;
                     reference = foreignKey;

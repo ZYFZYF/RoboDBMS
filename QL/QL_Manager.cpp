@@ -38,7 +38,7 @@ QL_Manager::Insert(const char *tbName, std::vector<const char *> *columnList, st
     TRY(table.setRecordData(record, columnList == nullptr ? nullptr : &columnIdList, constValueList));
     TRY(table.insertRecord(record));
     auto cost_time = clock() - start_time;
-    printf("\n插入: 成功插入1条，花费%.3f秒", (float) cost_time / CLOCKS_PER_SEC);
+    //printf("\n插入: 成功插入1条，花费%.3f秒", (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
@@ -46,6 +46,7 @@ char line[MAX_LINE_LENGTH];
 char *test[100];
 
 RC QL_Manager::Insert(const char *tbName, const char *fileName) {
+    printf("\n从文件%s导入表%s", fileName, tbName);
     auto start_time = clock();
     //这里很奇怪，这里所处的位置是cmake-build-debug/QL下，所以要注意文件的路径书写方式
     FILE *fp;
@@ -74,6 +75,8 @@ RC QL_Manager::Insert(const char *tbName, const char *fileName) {
         if ((rc = Insert(tbName, nullptr, constValueList)) == OK_RC) {
             insertCount++;
         } else {
+            printf("\n");
+            for (char i : line)printf("%c", i);
             printError(rc);
         }
         delete constValueList;

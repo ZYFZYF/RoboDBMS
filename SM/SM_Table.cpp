@@ -834,15 +834,17 @@ bool SM_Table::validForeignKey(IndexDesc indexDesc, TableId primaryTableId) {
     SM_Table table(primaryTableId);
     //遍历所有记录
     RM_FileScan rmFileScan;
-    rmFileScan.OpenScan(rmFileHandle);
+    DO(rmFileScan.OpenScan(rmFileHandle))
     RM_Record rmRecord;
     while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
         composeIndexKeyByRecord(rmRecord.getData(), indexDesc, key);
         if (table.getPrimaryKeyCount(key) == 0) {
+            printf("\n%s", formatRecordToString(rmRecord.getData()).data());
+            DO(rmFileScan.CloseScan())
             return false;
         }
     }
-    rmFileScan.CloseScan();
+    DO(rmFileScan.CloseScan())
     return true;
 }
 
