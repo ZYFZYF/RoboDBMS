@@ -445,7 +445,21 @@ SM_Manager::AddForeignKey(const char *name, const char *foreignTable, std::vecto
             return SM_PRIMARY_KEY_NOT_EXIST;
         }
     }
-    //TODO 按理说还应该检查这里面有没有链接到空的主键上去的记录，如果嫌麻烦可以不做
+    //先把索引拿出来
+    IndexDesc index{};
+    for (int i = 0; i < MAX_INDEX_NUM; i++)
+        if (dbMeta.tableMetas[foreignTableId].indexes[i].keyNum == 0) {
+            //注意这里，索引的名字和外键的名字是一样的
+            strcpy(index.name, name);
+            index.keyNum = foreignKey.keyNum;
+            for (int j = 0; j < foreignKey.keyNum; j++) {
+                index.columnId[j] = foreignKey.foreign[j];
+            }
+            foreignKey.indexIndex = i;
+        }
+    //检查所有记录里有没有链接到空的主键上去的记录
+    SM_Table table(foreignTableId);
+    if (!table.validForeignKey(index, primaryTableId))return QL_NO_INDICATE_PRIMARY_KEY_EXIST;
     //有同名的直接返回
     for (auto &k : dbMeta.tableMetas[foreignTableId].foreignKeys)
         if (strcmp(k.name, name) == 0)
@@ -456,29 +470,16 @@ SM_Manager::AddForeignKey(const char *name, const char *foreignTable, std::vecto
             //再找到空的链接位置
             for (auto &reference : dbMeta.tableMetas[primaryTableId].primaryKey.references)
                 if (reference.keyNum == 0) {
-                    //再找到空的索引位置
-                    for (int i = 0; i < MAX_INDEX_NUM; i++)
-                        if (dbMeta.tableMetas[foreignTableId].indexes[i].keyNum == 0) {
-                            IndexDesc indexDesc{};
-                            //注意这里，索引的名字和外键的名字是一样的
-                            strcpy(indexDesc.name, name);
-                            indexDesc.keyNum = foreignKey.keyNum;
-                            for (int j = 0; j < foreignKey.keyNum; j++) {
-                                indexDesc.columnId[j] = foreignKey.foreign[j];
-                            }
-                            foreignKey.indexIndex = i;
-                            SM_Table table(foreignTableId);
-                            TRY(table.createIndex(i, indexDesc, false));
-                            dbMeta.tableMetas[foreignTableId].indexes[i] = indexDesc;
-                            k = foreignKey;
-                            reference = foreignKey;
-                            WriteDbMeta();
-                            return OK_RC;
-                        }
+                    //各类信息归位
+                    TRY(table.createIndex(foreignKey.indexIndex, index, false));
+                    dbMeta.tableMetas[foreignTableId].indexes[foreignKey.indexIndex] = index;
+                    k = foreignKey;
+                    reference = foreignKey;
+                    WriteDbMeta();
+                    return OK_RC;
                 }
             return SM_REFERENCE_IS_FULL;
         }
-
     return SM_FOREIGN_KEYS_IS_FULL;
 }
 

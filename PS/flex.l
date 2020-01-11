@@ -78,7 +78,7 @@ COUNT|count             return C_COUNT;
 [a-zA-Z][a-zA-Z0-9_]*   yylval.str = strdup(yytext); return IDENTIFIER;
 '[^']*'                 {yylval.str = new char[strlen(yytext)-1];memcpy(yylval.str,yytext+1,strlen(yytext)-2);yylval.str[strlen(yytext)-2]='\0';return STR;}
 
-"//".*                  {}
+"//".*                  {printf("%s",yytext+2);}
 [*/+\-%=<>':;,.|&()]    return yytext[0];
 
 %%

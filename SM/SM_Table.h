@@ -60,7 +60,11 @@ public:
     RC composeIndexKeyByRecord(char *record, IndexDesc indexDesc, char *key);
 
     //获取一个key在index中出现了多少次
-    int getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDesc);
+    int getIndexKeyCount(char *key, int indexNo);
+
+    int getPrimaryKeyCount(char *key);
+
+    int getForeignKeyCount(char *key, int foreignKeyIndexIndex);
 
     int count();
 
@@ -78,6 +82,8 @@ public:
     RC orderBy(std::vector<const char *> *orderByColumn, bool increasingOrder, int limitOffset, int limitLength);
 
     std::vector<PS_Expr> *extractValueInRecords();
+
+    bool validForeignKey(IndexDesc indexDesc, TableId primaryTableId);
 
 private:
     TableId tableId;

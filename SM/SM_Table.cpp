@@ -86,9 +86,19 @@ RC SM_Table::insertRecord(char *record, bool influencePrimaryKey) {
         int indexKeyLength = getIndexKeyLength(indexDesc);
         char key[indexKeyLength];
         TRY(composeIndexKeyByRecord(record, indexDesc, key))
-        if (getIndexKeyDuplicateNum(key, indexNo, indexDesc))return QL_PRIMARY_KEY_DUPLICATE;
+        if (getIndexKeyCount(key, indexNo))return QL_PRIMARY_KEY_DUPLICATE;
     }
-    //TODO 插入之前判断外键是否存在
+    //插入之前判断外键连接的主键的值是否存在，不存在则不能插入
+    for (auto &foreignKey:tableMeta.foreignKeys)
+        if (foreignKey.keyNum) {
+            IndexDesc &index = tableMeta.indexes[foreignKey.indexIndex];
+            char key[getIndexKeyLength(index)];
+            composeIndexKeyByRecord(record, index, key);
+            SM_Table table(foreignKey.primaryTable);
+            if (table.getPrimaryKeyCount(key) == 0) {
+                return QL_NO_INDICATE_PRIMARY_KEY_EXIST;
+            }
+        }
     TRY(rmFileHandle.InsertRec(record, rmRid))
     //插入索引
     for (int i = 0; i < MAX_INDEX_NUM; i++) {
@@ -349,7 +359,7 @@ RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) 
             TRY(rmRecord.GetData(record))
             composeIndexKeyByRecord(record, indexDesc, key);
             TRY(rmRecord.GetRid(rmRid))
-            if (getIndexKeyDuplicateNum(key, indexNo, indexDesc) > 1) {
+            if (getIndexKeyCount(key, indexNo) > 1) {
                 TRY(rmFileScan.CloseScan())
                 TRY(IX_Manager::Instance().DestroyIndex(tableMeta.createName, indexNo))
                 return SM_INDEX_NOT_ALLOW_DUPLICATE;
@@ -395,7 +405,7 @@ RC SM_Table::composeIndexKeyByRecord(char *record, IndexDesc indexDesc, char *ke
     }
 }
 
-int SM_Table::getIndexKeyDuplicateNum(char *key, int indexNo, IndexDesc indexDesc) {
+int SM_Table::getIndexKeyCount(char *key, int indexNo) {
     IX_IndexHandle ixIndexHandle;
     IX_Manager::Instance().OpenIndex(tableMeta.createName, indexNo, ixIndexHandle);
     IX_IndexScan ixIndexScan;
@@ -425,15 +435,19 @@ RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) 
 
 RC SM_Table::deleteRecord(char *record, const RM_RID &rmRid, bool influencePrimaryKey) {
     //删除之前判断主键的值是否被外联，外联的话不能删除，没有主键不用判断
-    if (tableMeta.primaryKey.keyNum) {
+    if (tableMeta.primaryKey.keyNum && influencePrimaryKey) {
         int indexNo = tableMeta.primaryKey.indexIndex;
         IndexDesc &indexDesc = tableMeta.indexes[indexNo];
         int indexKeyLength = getIndexKeyLength(indexDesc);
         char key[indexKeyLength];
         TRY(composeIndexKeyByRecord(record, indexDesc, key))
-        if (influencePrimaryKey) {
-            //TODO 判断这个主键是否外链了存在的外键
-        }
+        for (auto &reference:tableMeta.primaryKey.references)
+            if (reference.keyNum) {
+                SM_Table table(reference.foreignTable);
+                if (table.getForeignKeyCount(key, reference.indexIndex) > 0) {
+                    return QL_INDICATE_PRIMARY_KEY_HAS_REFERENCE_FOREIGN_KEY;
+                }
+            }
     }
     TRY(rmFileHandle.DeleteRec(rmRid))
     //删除索引
@@ -802,4 +816,30 @@ Operator SM_Table::findAndCopy(ColumnId columnId, std::vector<PS_Expr> *exprList
             return expr.op;
         }
     return NO_OP;
+}
+
+int SM_Table::getPrimaryKeyCount(char *key) {
+    return getIndexKeyCount(key, tableMeta.primaryKey.indexIndex);
+}
+
+int SM_Table::getForeignKeyCount(char *key, int foreignKeyIndexIndex) {
+    return getIndexKeyCount(key, foreignKeyIndexIndex);
+}
+
+bool SM_Table::validForeignKey(IndexDesc indexDesc, TableId primaryTableId) {
+    char key[getIndexKeyLength(indexDesc)];
+    //打开一个主键表用来判断
+    SM_Table table(primaryTableId);
+    //遍历所有记录
+    RM_FileScan rmFileScan;
+    rmFileScan.OpenScan(rmFileHandle);
+    RM_Record rmRecord;
+    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        composeIndexKeyByRecord(rmRecord.getData(), indexDesc, key);
+        if (table.getPrimaryKeyCount(key) == 0) {
+            return false;
+        }
+    }
+    rmFileScan.CloseScan();
+    return true;
 }

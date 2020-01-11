@@ -8,6 +8,7 @@ insert into constrain_primary_key values(2,2);
 
 drop table constrain_foreign_key;
 create table constrain_foreign_key(c int primary key, d int);
+insert into constrain_foreign_key values(1,1);
 insert into constrain_foreign_key values(3,3);
 alter table constrain_foreign_key add constraint test foreign key (d) references constrain_primary_key(a);//此处应该报错误无法建立外键
 delete from constrain_foreign_key where d==3;
