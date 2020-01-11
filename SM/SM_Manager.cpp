@@ -93,7 +93,7 @@ RC SM_Manager::CreateDb(const char *dbName) {
             if (mkdir(dbName, S_IRWXU) < 0) {
                 return SM_UNIX;
             }
-            TRY(pfManager.UpdateMeta(dbmsMetaFile.c_str(), &dbmsMeta, sizeof(DbmsMeta)));
+            TRY(pfManager.UpdateMeta(dbmsMetaFile.c_str(), &dbmsMeta, sizeof(DbmsMeta)))
             return OK_RC;
         }
     }

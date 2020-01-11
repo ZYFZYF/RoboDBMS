@@ -147,7 +147,7 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
         if (orderByColumn != nullptr) {
             table->orderBy(orderByColumn, increaseOrder, limitOffset, limitLength);
         }
-        table->showRecords(100);
+        table->showRecords(5);
         delete table;
         //把这个临时表删掉
         DestroyTable(tableMeta.createName);

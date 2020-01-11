@@ -25,8 +25,31 @@ QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
         index[i] = i;
     }
     //for (int i = 0; i < tableNum; i++)std::cout << index[i] << ' ' << recordNum[index[i]] << std::endl;
-    std::sort(index, index + tableNum, [&](int x, int y) -> bool { return recordNum[x] < recordNum[y]; });
+    //std::sort(index, index + tableNum, [&](int x, int y) -> bool { return recordNum[x] > recordNum[y]; });
     //for (int i = 0; i < tableNum; i++)std::cout << index[i] << ' ' << recordNum[index[i]] << std::endl;
+    int maxRecordNum = 0;
+    for (int i = 0; i < tableNum; i++)maxRecordNum = std::max(maxRecordNum, recordNum[i]);
+    int minCost = 1 << 30;
+    int minCostIndex = 0;
+    int indexCount = 0;
+    do {
+        int cost = 0, nowRecord = 1;
+        for (int i = 0; i < tableNum; i++) {
+            cost += nowRecord;
+            if (nowRecord != maxRecordNum)nowRecord *= recordNum[index[i]];
+            if (recordNum[index[i]] == maxRecordNum)nowRecord = maxRecordNum;
+        }
+        if (cost < minCost) {
+            minCost = cost;
+            minCostIndex = indexCount;
+        }
+        indexCount++;
+        printf("\n表的顺序为 ");
+        for (int j = 0; j < tableNum; j++)printf(" %s:%d ", (*tableMetaList)[index[j]].name, recordNum[index[j]]);
+        printf("时预计耗费为%d", cost);
+    } while (std::next_permutation(index, index + tableNum));
+    for (int i = 0; i < tableNum; i++)index[i] = i;
+    for (int i = 0; i < minCostIndex; i++)std::next_permutation(index, index + tableNum);
     for (int i = 0; i < tableNum; i++)
         if (index[i] != i) {
             printf("\n调整表的顺序从 ");
