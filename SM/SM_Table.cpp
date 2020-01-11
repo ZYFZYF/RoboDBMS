@@ -843,3 +843,40 @@ bool SM_Table::validForeignKey(IndexDesc indexDesc, TableId primaryTableId) {
     rmFileScan.CloseScan();
     return true;
 }
+
+RC SM_Table::addColumn(ColumnDesc column) {
+    if (!column.allowNull && !column.hasDefaultValue && count() > 0)return QL_COLUMN_NOT_ALLOW_NULL;
+    if (column.isPrimaryKey || column.hasForeignKey)return SM_NOT_ALLOW_ADD_SPECIAL_KEY;
+    if (tableMeta.columnNum == MAX_COLUMN_NUM)return SM_COLUMN_IS_FULL;
+    TableMeta newTableMeta = tableMeta;
+    newTableMeta.columns[newTableMeta.columnNum++] = column;
+    //这里有可能越来越长最后出问题
+    strcat(newTableMeta.createName, "_a");
+    //先把索引清了之后再加
+    memset(newTableMeta.indexes, 0, sizeof(newTableMeta.indexes));
+    SM_Table table(newTableMeta);
+    //遍历所有记录
+    RM_FileScan rmFileScan;
+    TRY(rmFileScan.OpenScan(rmFileHandle))
+    RM_Record rmRecord;
+    if (column.hasDefaultValue)
+        TRY(table.completeAttrValueByColumnId(newTableMeta.columnNum - 1,
+                                              newTableMeta.columns[newTableMeta.columnNum -
+                                                                   1].defaultValue))
+    char record[table.getRecordSize()];
+    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        memcpy(record, rmRecord.getData(), getRecordSize());
+        TRY(table.setColumnNull(record + getRecordSize(), newTableMeta.columnNum - 1))
+        TRY(table.insertRecord(record, false))
+    }
+    TRY(rmFileScan.CloseScan())
+    for (int i = 0; i < MAX_INDEX_NUM; i++) {
+        IndexDesc &index = tableMeta.indexes[i];
+        if (index.keyNum) {
+            newTableMeta.indexes[i] = index;
+            //TRY(table.createIndex(i, index, true))
+        }
+    }
+    tableMeta = newTableMeta;
+    return OK_RC;
+}

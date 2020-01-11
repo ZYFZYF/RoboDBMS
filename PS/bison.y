@@ -83,6 +83,7 @@ DDL 	: 	CreateDatabase
 	|	DropForeignKey
 	|	AddIndex
 	|	DropIndex
+	|	AddColumn
 	;
 
 DML	: 	InsertRow
@@ -135,6 +136,7 @@ DropTable	:	DROP TABLE IDENTIFIER ';'
 				DO(SM_Manager::Instance().DropTable($3));
 			}
 
+
 ColumnDescList	:	ColumnDescList ',' Column
 			{
 				$$ = $1;
@@ -145,6 +147,12 @@ ColumnDescList	:	ColumnDescList ',' Column
 				$$ = new std::vector<ColumnDesc>;
 				$$->push_back($1);
 			};
+
+AddColumn	:	ALTER TABLE IDENTIFIER ADD Column ';'
+			{
+				DO(SM_Manager::Instance().AddColumn($3,$5));
+			}
+		;
 
 Column		:	IDENTIFIER ColumnType NotNull DefaultValue PrimaryKey ForeignKey
 			{

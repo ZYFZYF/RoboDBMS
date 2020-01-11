@@ -85,6 +85,8 @@ public:
 
     bool validForeignKey(IndexDesc indexDesc, TableId primaryTableId);
 
+    RC addColumn(ColumnDesc column);
+
 private:
     TableId tableId;
     TableMeta &tableMeta;

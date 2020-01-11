@@ -123,8 +123,12 @@ RC SM_Manager::UseDb(const char *dbName) {
     return OK_RC;
 }
 
-RC SM_Manager::AddColumn(const char *dbName, ColumnDesc columnDesc) {
-    return PF_NOBUF;
+RC SM_Manager::AddColumn(const char *tbName, ColumnDesc columnDesc) {
+    TableId tableId = GetTableIdFromName(tbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    SM_Table table(tableId);
+    TRY(table.addColumn(columnDesc))
+    return OK_RC;
 }
 
 RC SM_Manager::DropColumn(const char *dbName, const char *columnName) {

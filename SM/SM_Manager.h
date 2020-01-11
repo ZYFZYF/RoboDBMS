@@ -49,9 +49,9 @@ public:
 
     RC UseDb(const char *dbName);
 
-    RC AddColumn(const char *dbName, ColumnDesc columnDesc);
+    RC AddColumn(const char *tbName, ColumnDesc columnDesc);
 
-    RC DropColumn(const char *dbName, const char *columnName);
+    RC DropColumn(const char *tbName, const char *columnName);
 
     //SHOW 相关操作
 
