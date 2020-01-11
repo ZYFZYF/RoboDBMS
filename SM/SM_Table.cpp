@@ -27,10 +27,12 @@ void SM_Table::init() {
     for (int i = 0; i < tableMeta.columnNum; i++) {
         columnOffset[i] = recordSize;
         recordSize += tableMeta.columns[i].attrLength + 1;//多一位来存储是否是NULL，放在数据的开头
-        columnShowLength[i] = std::max(tableMeta.columns[i].stringMaxLength,
-                                       std::max(tableMeta.columns[i].attrLength, COLUMN_SHOW_LENGTH));
+        columnShowLength[i] = std::max(tableMeta.columns[i].attrLength, COLUMN_SHOW_LENGTH);
+        if (tableMeta.columns[i].attrType == STRING || tableMeta.columns[i].attrType == VARCHAR) {
+            columnShowLength[i] = std::max(tableMeta.columns[i].stringMaxLength, columnShowLength[i]);
+        }
+        //printf("%d %d %d\n", i, columnShowLength[i], tableMeta.columns[i].attrLength);
     }
-    columnOffset[tableMeta.columnNum] = recordSize;
     std::string recordFileName = Utils::getRecordFileName(tableMeta.createName);
     if (access(recordFileName.c_str(), F_OK) < 0) {
         RM_Manager::Instance().CreateFile(recordFileName.c_str(), recordSize);
@@ -129,8 +131,10 @@ void SM_Table::showRecords(int num) {
     for (int i = 0; i < tableMeta.columnNum; i++) {
         std::string columnName = std::string(tableMeta.columns[i].name);
         headerLine.append(columnName);
+        //printf("\n%d %d %d\n", i, columnShowLength[i], headerLine.length());
         if (columnName.length() < columnShowLength[i])
             headerLine.append(columnShowLength[i] - columnName.length(), ' ');
+        //printf("\n%d %d %d\n", i, columnShowLength[i], headerLine.length());
     }
     std::cout << headerLine << std::endl;
     std::cout << splitLine << std::endl;
