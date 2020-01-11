@@ -40,15 +40,15 @@ void Utils::GetMaximumValue(void *value, AttrType attrType) {
 }
 
 std::string Utils::getIndexFileName(const char *fileName, int indexNo) {
-    return std::string(fileName) + "_" + std::to_string(indexNo) + ".index";
+    return std::string(fileName) + "_" + std::to_string(indexNo) + ".id";
 }
 
 std::string Utils::getStringPoolFileName(const char *fileName) {
-    return std::string(fileName) + ".stringpool";
+    return std::string(fileName) + ".sp";
 }
 
 std::string Utils::getRecordFileName(const char *fileName) {
-    return std::string(fileName) + ".record";
+    return std::string(fileName) + ".rc";
 }
 
 int Utils::Cmp(void *value1, void *value2, AttrType attrType, int attrLength) {

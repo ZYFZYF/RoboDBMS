@@ -27,7 +27,7 @@ alter table foreign_key drop c;
 alter table foreign_key drop d;//此处出错不能drop特殊列
 alter table foreign_key drop foreign key test;
 alter table foreign_key drop d;
-alter table foreign_key add l varchar(10) 'tatqaq';
+alter table foreign_key add l varchar(10) default 'tatqaq';
 desc table primary_key;
 desc table foreign_key;
 

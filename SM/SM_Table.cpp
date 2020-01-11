@@ -851,7 +851,7 @@ RC SM_Table::addColumn(ColumnDesc column) {
     TableMeta newTableMeta = tableMeta;
     newTableMeta.columns[newTableMeta.columnNum++] = column;
     //这里有可能越来越长最后出问题
-    strcat(newTableMeta.createName, "_a");
+    strcat(newTableMeta.createName, "_backup");
     //先把索引清了之后再加
     memset(newTableMeta.indexes, 0, sizeof(newTableMeta.indexes));
     SM_Table table(newTableMeta);
@@ -863,6 +863,14 @@ RC SM_Table::addColumn(ColumnDesc column) {
         TRY(table.completeAttrValueByColumnId(newTableMeta.columnNum - 1,
                                               newTableMeta.columns[newTableMeta.columnNum -
                                                                    1].defaultValue))
+    //把索引恢复,之后一条一条加入
+    for (int i = 0; i < MAX_INDEX_NUM; i++) {
+        IndexDesc &index = tableMeta.indexes[i];
+        if (index.keyNum) {
+            newTableMeta.indexes[i] = index;
+            TRY(table.createIndex(i, index, true))
+        }
+    }
     //插入所有记录
     char record[table.getRecordSize()];
     while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
@@ -871,14 +879,6 @@ RC SM_Table::addColumn(ColumnDesc column) {
         TRY(table.insertRecord(record, false))
     }
     TRY(rmFileScan.CloseScan())
-    //把索引恢复
-    for (int i = 0; i < MAX_INDEX_NUM; i++) {
-        IndexDesc &index = tableMeta.indexes[i];
-        if (index.keyNum) {
-            newTableMeta.indexes[i] = index;
-            TRY(table.createIndex(i, index, true))
-        }
-    }
     //修改table的meta信息
     tableMeta = newTableMeta;
     return OK_RC;

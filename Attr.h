@@ -42,6 +42,9 @@ struct Varchar {
 
     void getData(char *pData) {
         SP_Handle spHandle;
+        if (strstr(spName, "_backup") != nullptr) {
+            strcpy(spName + strlen(spName) - 10, ".sp");
+        }
         SP_Manager::OpenStringPool(spName, spHandle);
         spHandle.GetStringData(pData, offset, length);
         pData[length] = 0;
