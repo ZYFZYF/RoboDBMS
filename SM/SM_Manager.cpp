@@ -488,6 +488,9 @@ RC SM_Manager::DropPrimaryKey(const char *table) {
     if (primaryTableId < 0)return SM_PRIMARY_KEY_NOT_EXIST;
     //主键先根据引用把外键一条条删除，最后再删除主键
     for (auto &reference:dbMeta.tableMetas[primaryTableId].primaryKey.references) {
+//        if (reference.keyNum) {
+//            return SM_PRIMAYKEY_HAS_FOREIGN_KEY_DEPENDENCY;
+//        }
         TRY(DropForeignKey(GetTableNameFromTableId(reference.foreignTable), reference.name));
     }
     int primaryIndex = dbMeta.tableMetas[primaryTableId].primaryKey.indexIndex;

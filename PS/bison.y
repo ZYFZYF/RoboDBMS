@@ -65,9 +65,13 @@ TableMeta tableTemp;
 %%
 
 CommondList	: 	CommondList Commond
-		| 	Commond ;
+		| 	Commond
+		;
 
-Commond	: 	DDL | DML | HELP;
+Commond	: 	DDL 
+	| 	DML
+	| 	HELP
+	;
 
 DDL 	: 	CreateDatabase
 	| 	DropDatabase
