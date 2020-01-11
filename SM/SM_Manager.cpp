@@ -420,25 +420,25 @@ RC
 SM_Manager::AddForeignKey(const char *name, const char *foreignTable, std::vector<const char *> *foreignColumns,
                           const char *primaryTable,
                           std::vector<const char *> *primaryColumns) {
-    TableId i = GetTableIdFromName(foreignTable);
-    if (i < 0)return SM_TABLE_NOT_EXIST;
-    TableId j = GetTableIdFromName(primaryTable);
-    if (j < 0)return SM_TABLE_NOT_EXIST;
+    TableId foreignTableId = GetTableIdFromName(foreignTable);
+    if (foreignTableId < 0)return SM_TABLE_NOT_EXIST;
+    TableId primaryTableId = GetTableIdFromName(primaryTable);
+    if (primaryTableId < 0)return SM_TABLE_NOT_EXIST;
     if (foreignColumns->size() != primaryColumns->size())return SM_FOREIGN_KEYS_AND_PRIMARY_KEYS_NOT_MATCH;
     ForeignKeyDesc foreignKey{};
     strcpy(foreignKey.name, name);
-    foreignKey.foreignTable = i;
-    foreignKey.primaryTable = j;
+    foreignKey.foreignTable = foreignTableId;
+    foreignKey.primaryTable = primaryTableId;
     foreignKey.keyNum = foreignColumns->size();
     for (int k = 0; k < foreignKey.keyNum; k++) {
-        foreignKey.foreign[k] = GetColumnIdFromName(i, (*foreignColumns)[k]);
-        foreignKey.primary[k] = GetColumnIdFromName(j, (*primaryColumns)[k]);
+        foreignKey.foreign[k] = GetColumnIdFromName(foreignTableId, (*foreignColumns)[k]);
+        foreignKey.primary[k] = GetColumnIdFromName(primaryTableId, (*primaryColumns)[k]);
         if (foreignKey.foreign[k] < 0 || foreignKey.primary[k] < 0) {
             return SM_COLUMN_NOT_EXIST;
         }
     }
     //检查引用的是不是唯一主键
-    PrimaryKeyDesc &primaryKey = dbMeta.tableMetas[j].primaryKey;
+    PrimaryKeyDesc &primaryKey = dbMeta.tableMetas[primaryTableId].primaryKey;
     if (foreignKey.keyNum != primaryKey.keyNum)return SM_PRIMARY_KEY_NOT_EXIST;
     for (int k = 0; k < foreignKey.keyNum; k++) {
         if (foreignKey.primary[k] != primaryKey.columnId[k]) {
@@ -446,14 +446,35 @@ SM_Manager::AddForeignKey(const char *name, const char *foreignTable, std::vecto
         }
     }
     //TODO 按理说还应该检查这里面有没有链接到空的主键上去的记录，如果嫌麻烦可以不做
-    for (auto &k : dbMeta.tableMetas[i].foreignKeys)
+    //有同名的直接返回
+    for (auto &k : dbMeta.tableMetas[foreignTableId].foreignKeys)
+        if (strcmp(k.name, name) == 0)
+            return SM_FOREIGN_KEY_ALREADY_EXIST;
+    //先找到空的外键位置
+    for (auto &k : dbMeta.tableMetas[foreignTableId].foreignKeys)
         if (k.keyNum == 0) {
-            for (auto &reference : dbMeta.tableMetas[j].primaryKey.references)
+            //再找到空的链接位置
+            for (auto &reference : dbMeta.tableMetas[primaryTableId].primaryKey.references)
                 if (reference.keyNum == 0) {
-                    k = foreignKey;
-                    reference = foreignKey;
-                    WriteDbMeta();
-                    return OK_RC;
+                    //再找到空的索引位置
+                    for (int i = 0; i < MAX_INDEX_NUM; i++)
+                        if (dbMeta.tableMetas[foreignTableId].indexes[i].keyNum == 0) {
+                            IndexDesc indexDesc{};
+                            //注意这里，索引的名字和外键的名字是一样的
+                            strcpy(indexDesc.name, name);
+                            indexDesc.keyNum = foreignKey.keyNum;
+                            for (int j = 0; j < foreignKey.keyNum; j++) {
+                                indexDesc.columnId[j] = foreignKey.foreign[j];
+                            }
+                            foreignKey.indexIndex = i;
+                            SM_Table table(foreignTableId);
+                            TRY(table.createIndex(i, indexDesc, false));
+                            dbMeta.tableMetas[foreignTableId].indexes[i] = indexDesc;
+                            k = foreignKey;
+                            reference = foreignKey;
+                            WriteDbMeta();
+                            return OK_RC;
+                        }
                 }
             return SM_REFERENCE_IS_FULL;
         }
@@ -488,16 +509,19 @@ RC SM_Manager::DropPrimaryKey(const char *table) {
     if (primaryTableId < 0)return SM_PRIMARY_KEY_NOT_EXIST;
     //主键先根据引用把外键一条条删除，最后再删除主键
     for (auto &reference:dbMeta.tableMetas[primaryTableId].primaryKey.references) {
-//        if (reference.keyNum) {
-//            return SM_PRIMAYKEY_HAS_FOREIGN_KEY_DEPENDENCY;
-//        }
-        TRY(DropForeignKey(GetTableNameFromTableId(reference.foreignTable), reference.name));
+        if (reference.keyNum) {
+            return SM_PRIMARY_KEY_HAS_FOREIGN_KEY_DEPENDENCY;
+        }
     }
-    int primaryIndex = dbMeta.tableMetas[primaryTableId].primaryKey.indexIndex;
-    //删除主键的索引以及索引记录
-    TRY(IX_Manager::Instance().DestroyIndex(dbMeta.tableMetas[primaryTableId].createName, primaryIndex))
-    memset(&dbMeta.tableMetas[primaryTableId].indexes[primaryIndex], 0, sizeof(IndexDesc));
-    memset(&dbMeta.tableMetas[primaryTableId].primaryKey, 0, sizeof(PrimaryKeyDesc));
+    if (dbMeta.tableMetas[primaryTableId].primaryKey.keyNum) {
+        int primaryIndex = dbMeta.tableMetas[primaryTableId].primaryKey.indexIndex;
+        //删除主键的索引以及索引记录
+        TRY(IX_Manager::Instance().DestroyIndex(dbMeta.tableMetas[primaryTableId].createName, primaryIndex))
+        memset(&dbMeta.tableMetas[primaryTableId].indexes[primaryIndex], 0, sizeof(IndexDesc));
+        memset(&dbMeta.tableMetas[primaryTableId].primaryKey, 0, sizeof(PrimaryKeyDesc));
+    } else {
+        return SM_PRIMARY_KEY_NOT_EXIST;
+    }
     return OK_RC;
 }
 
@@ -512,6 +536,11 @@ RC SM_Manager::DropForeignKey(const char *foreignTable, const char *name) {
                     memset(&reference, 0, sizeof(reference));
                     break;
                 }
+            //删除外键的索引以及索引记录
+            int foreignIndex = foreignKey.indexIndex;
+            TRY(IX_Manager::Instance().DestroyIndex(dbMeta.tableMetas[foreignTableId].createName, foreignIndex))
+            memset(&dbMeta.tableMetas[foreignTableId].indexes[foreignIndex], 0, sizeof(IndexDesc));
+            //清空外键记录以及写入
             memset(&foreignKey, 0, sizeof(foreignKey));
             WriteDbMeta();
             return OK_RC;

@@ -49,6 +49,7 @@ struct ColumnDesc {
 struct ForeignKeyDesc {
     char name[MAX_NAME_LENGTH];
     int keyNum;
+    int indexIndex;//记录外键在索引里存的下标
     TableId foreignTable;
     ColumnId foreign[MAX_COLUMN_NUM];
     TableId primaryTable;
