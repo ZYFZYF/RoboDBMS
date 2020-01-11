@@ -40,6 +40,8 @@ insert into foreign_key values(,'qaq', 'www');
 select you from foreign_key;
 select * from foreign_key;
 
-
+alter table foreign_key rename to tat;
+select * from tat;
+select * from foreign_key;
 
 

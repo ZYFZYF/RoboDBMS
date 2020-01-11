@@ -59,6 +59,8 @@ ANY|any                 return P_ANY;
 ALL|all                 return P_MYALL;
 LIKE|like               return P_LIKE;
 CHANGE|change           return P_CHANGE;
+RENAME|rename           return P_RENAME;
+TO|to                   return P_TO;
 
 INT|int                 return T_INT;
 BIGINT|bigint           return T_BIGINT;

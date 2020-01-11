@@ -40,7 +40,7 @@ TableMeta tableTemp;
 %token SHOW USE CREATE DROP UPDATE INSERT DELETE ALTER SELECT ADD QUIT
 %token DATABASES DATABASE TABLES TABLE INDEX PRIMARY KEY DEFAULT REFERENCES FOREIGN CONSTRAINT
 %token P_ON P_SET P_WHERE P_INTO P_NOT P_NULL P_VALUES P_FROM P_IS P_AS P_GROUP P_BY P_DESC P_ASC P_LIMIT P_ORDER P_IN
-%token P_ANY P_MYALL P_LIKE P_CHANGE
+%token P_ANY P_MYALL P_LIKE P_CHANGE P_RENAME P_TO
 %token T_INT T_BIGINT T_CHAR T_VARCHAR T_DATE T_DECIMAL
 %token C_AND C_OR C_MAX C_MIN C_AVG C_SUM C_COUNT
 
@@ -86,6 +86,7 @@ DDL 	: 	CreateDatabase
 	|	AddColumn
 	|	DropColumn
 	|	UpdateColumn
+	|	RenameTable
 	;
 
 DML	: 	InsertRow
@@ -137,6 +138,12 @@ DropTable	:	DROP TABLE IDENTIFIER ';'
 			{
 				DO(SM_Manager::Instance().DropTable($3));
 			}
+
+RenameTable	:	ALTER TABLE IDENTIFIER P_RENAME P_TO IDENTIFIER ';'
+			{
+				DO(SM_Manager::Instance().RenameTable($3,$6));
+			}
+		;
 
 
 ColumnDescList	:	ColumnDescList ',' Column

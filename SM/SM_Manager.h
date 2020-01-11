@@ -96,6 +96,8 @@ public:
 
     TableMeta &GetTableMeta(const char *tbName);
 
+    RC RenameTable(const char *oldTbName, const char *newTbName);
+
 private:
     SM_Manager();
 

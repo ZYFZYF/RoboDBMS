@@ -126,6 +126,7 @@ RC SM_Manager::UseDb(const char *dbName) {
 RC SM_Manager::AddColumn(const char *tbName, ColumnDesc columnDesc) {
     TableId tableId = GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    if (GetColumnIdFromName(tableId, columnDesc.name) >= 0)return SM_COLUMN_ALREADY_IN;
     SM_Table table(tableId);
     std::string preName = dbMeta.tableMetas[tableId].createName;
     TRY(table.addColumn(columnDesc))
@@ -655,6 +656,8 @@ AttrType SM_Manager::GetType(TableId tableId, ColumnId columnId) {
 
 TableMeta &SM_Manager::GetTableMeta(const char *tbName) {
     TableId tableId = GetTableIdFromName(tbName);
+    //万不得已QAQ
+    assert(tableId >= 0);
     return GetTableMeta(tableId);
 }
 
@@ -663,12 +666,22 @@ RC SM_Manager::UpdateColumn(const char *tbName, const char *columnName, const ch
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
     ColumnId columnId = GetColumnIdFromName(tableId, columnName);
     if (columnId < 0)return SM_COLUMN_NOT_EXIST;
+    if (GetColumnIdFromName(tableId, newColumnName) >= 0)return SM_COLUMN_ALREADY_IN;
     strcpy(dbMeta.tableMetas[tableId].columns[columnId].name, newColumnName);
 }
 
 RC SM_Manager::UpdateColumn(const char *tbName, const char *columnName, ColumnDesc columnDesc) {
     TRY(DropColumn(tbName, columnName))
     TRY(AddColumn(tbName, columnDesc))
+}
+
+RC SM_Manager::RenameTable(const char *oldTbName, const char *newTbName) {
+    TableId tableId = GetTableIdFromName(oldTbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    if (GetTableIdFromName(newTbName) >= 0)return SM_TABLE_ALREADY_IN;
+    strcpy(dbMeta.tableMetas[tableId].name, newTbName);
+    strcpy(dbMeta.tableNames[tableId], newTbName);
+    return OK_RC;
 }
 
 
