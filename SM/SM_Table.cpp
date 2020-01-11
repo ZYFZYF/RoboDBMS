@@ -118,6 +118,7 @@ RC SM_Table::insertRecord(char *record, bool influencePrimaryKey) {
 
 void SM_Table::showRecords(int num) {
     //分割线
+    std::cout << std::endl;
     int lineLength = COLUMN_SHOW_LENGTH;
     for (int i = 0; i < tableMeta.columnNum; i++)lineLength += columnShowLength[i] + 1;
     std::string splitLine(lineLength, '-');
@@ -960,3 +961,4 @@ RC SM_Table::dropColumn(ColumnId deleteColumnId) {
     printf("\n删除列: 删除1列，花费%.3f秒", (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
+

@@ -53,6 +53,10 @@ public:
 
     RC DropColumn(const char *tbName, const char *columnName);
 
+    RC UpdateColumn(const char *tbName, const char *columnName, const char *newColumnName);
+
+    RC UpdateColumn(const char *tbName, const char *columnName, ColumnDesc columnDesc);
+
     //SHOW 相关操作
 
     RC ShowDatabases();

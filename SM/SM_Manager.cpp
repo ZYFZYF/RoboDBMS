@@ -657,4 +657,17 @@ TableMeta &SM_Manager::GetTableMeta(const char *tbName) {
     return GetTableMeta(tableId);
 }
 
+RC SM_Manager::UpdateColumn(const char *tbName, const char *columnName, const char *newColumnName) {
+    TableId tableId = GetTableIdFromName(tbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    ColumnId columnId = GetColumnIdFromName(tableId, columnName);
+    if (columnId < 0)return SM_COLUMN_NOT_EXIST;
+    strcpy(dbMeta.tableMetas[tableId].columns[columnId].name, newColumnName);
+}
+
+RC SM_Manager::UpdateColumn(const char *tbName, const char *columnName, ColumnDesc columnDesc) {
+    TRY(DropColumn(tbName, columnName))
+    TRY(AddColumn(tbName, columnDesc))
+}
+
 

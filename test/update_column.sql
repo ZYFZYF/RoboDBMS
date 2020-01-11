@@ -27,9 +27,18 @@ alter table foreign_key drop c;//此处drop成功
 alter table foreign_key drop d;//此处出错不能drop特殊列
 alter table foreign_key drop foreign key test;
 alter table foreign_key drop d;//此处drop成功
-alter table foreign_key add l varchar(10) default 'tatqaq';
+alter table foreign_key add l char(10) default 'tatqaq';
 desc table primary_key;
 desc table foreign_key;
+
+alter table foreign_key change j my;
+desc table foreign_key;
+select my from foreign_key;
+select * from foreign_key;
+alter table foreign_key change my you varchar(19) default 'pass';
+select you from foreign_key;
+select * from foreign_key;
+
 
 
 
