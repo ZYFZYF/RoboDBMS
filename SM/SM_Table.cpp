@@ -874,7 +874,7 @@ RC SM_Table::addColumn(ColumnDesc column) {
         IndexDesc &index = tableMeta.indexes[i];
         if (index.keyNum) {
             newTableMeta.indexes[i] = index;
-            //TRY(table.createIndex(i, index, true))
+            TRY(table.createIndex(i, index, true))
         }
     }
     tableMeta = newTableMeta;
