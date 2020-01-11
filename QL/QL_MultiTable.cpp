@@ -39,6 +39,7 @@ QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
             if (nowRecord != maxRecordNum)nowRecord *= recordNum[index[i]];
             if (recordNum[index[i]] == maxRecordNum)nowRecord = maxRecordNum;
         }
+        cost += nowRecord;
         if (cost < minCost) {
             minCost = cost;
             minCostIndex = indexCount;

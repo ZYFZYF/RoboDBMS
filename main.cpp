@@ -8,7 +8,7 @@ extern int yyparse();
 int main(int argc, char *argv[]) {
     //有任意参数从文件读，否则从标准输入读
     if (argc > 1) {
-        const char test_sql[] = "../test/test_select.sql";
+        const char test_sql[] = "../test/test_select_index.sql";
         yyin = fopen(test_sql, "r");
         if (yyin == nullptr) {
             printf("Open file  %s\n failed", test_sql);

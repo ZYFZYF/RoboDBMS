@@ -146,6 +146,7 @@ RC SM_Manager::AddColumn(const char *tbName, ColumnDesc columnDesc) {
                    Utils::getIndexFileName(preName.data(), i).data());
         }
     strcpy(dbMeta.tableMetas[tableId].createName, preName.data());
+    WriteDbMeta();
     return OK_RC;
 }
 
@@ -173,6 +174,7 @@ RC SM_Manager::DropColumn(const char *tbName, const char *columnName) {
                    Utils::getIndexFileName(preName.data(), i).data());
         }
     strcpy(dbMeta.tableMetas[tableId].createName, preName.data());
+    WriteDbMeta();
     return OK_RC;
 }
 
@@ -566,6 +568,7 @@ RC SM_Manager::DropPrimaryKey(const char *table) {
         TRY(IX_Manager::Instance().DestroyIndex(dbMeta.tableMetas[primaryTableId].createName, primaryIndex))
         memset(&dbMeta.tableMetas[primaryTableId].indexes[primaryIndex], 0, sizeof(IndexDesc));
         memset(&dbMeta.tableMetas[primaryTableId].primaryKey, 0, sizeof(PrimaryKeyDesc));
+        WriteDbMeta();
     } else {
         return SM_PRIMARY_KEY_NOT_EXIST;
     }
@@ -644,6 +647,7 @@ RC SM_Manager::DropIndex(const char *tbName, const char *indexName) {
         if (strcmp(dbMeta.tableMetas[tableId].indexes[i].name, indexName) == 0) {
             TRY(ixManager.DestroyIndex(dbMeta.tableMetas[tableId].createName, i))
             memset(&dbMeta.tableMetas[tableId].indexes[i], 0, sizeof(IndexDesc));
+            WriteDbMeta();
             return OK_RC;
         }
     return SM_INDEX_NOT_EXIST;
@@ -668,11 +672,15 @@ RC SM_Manager::UpdateColumn(const char *tbName, const char *columnName, const ch
     if (columnId < 0)return SM_COLUMN_NOT_EXIST;
     if (GetColumnIdFromName(tableId, newColumnName) >= 0)return SM_COLUMN_ALREADY_IN;
     strcpy(dbMeta.tableMetas[tableId].columns[columnId].name, newColumnName);
+    WriteDbMeta();
+    return OK_RC;
 }
 
 RC SM_Manager::UpdateColumn(const char *tbName, const char *columnName, ColumnDesc columnDesc) {
     TRY(DropColumn(tbName, columnName))
     TRY(AddColumn(tbName, columnDesc))
+    WriteDbMeta();
+    return OK_RC;
 }
 
 RC SM_Manager::RenameTable(const char *oldTbName, const char *newTbName) {
@@ -681,6 +689,7 @@ RC SM_Manager::RenameTable(const char *oldTbName, const char *newTbName) {
     if (GetTableIdFromName(newTbName) >= 0)return SM_TABLE_ALREADY_IN;
     strcpy(dbMeta.tableMetas[tableId].name, newTbName);
     strcpy(dbMeta.tableNames[tableId], newTbName);
+    WriteDbMeta();
     return OK_RC;
 }
 
