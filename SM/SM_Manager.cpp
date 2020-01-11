@@ -141,7 +141,7 @@ RC SM_Manager::ShowDatabases() {
     for (auto &db : dbmsMeta.databaseName)
         if (strlen(db) > 0) {
             cnt++;
-            printf("%20s", db);
+            printf("%30s", db);
             if (++cnt % 5 == 0) {
                 printf("\n");
             }
@@ -162,7 +162,7 @@ RC SM_Manager::ShowTables() {
     for (auto &tb : dbMeta.tableNames)
         if (strlen(tb) > 0) {
             cnt++;
-            printf("%20s", tb);
+            printf("%30s", tb);
             if (++cnt % 5 == 0) {
                 printf("\n");
             }
@@ -170,6 +170,8 @@ RC SM_Manager::ShowTables() {
     printf("\n");
     return OK_RC;
 }
+
+std::string splitLine = "---------------------------------------------------------------------------------------------------------------------";
 
 RC SM_Manager::DescTable(const char *tbName) {
     if (!isUsingDb) {
@@ -181,13 +183,13 @@ RC SM_Manager::DescTable(const char *tbName) {
     //列内容展示
     printf("Column\n");
     char indent[] = "\t\t";
-    printf("%s-----------------------------------------------------------------------------\n", indent);
-    printf("%s%-20s%-20s%-20s%-20s\n", indent, "name", "type", "nullable", "default");
-    printf("%s-----------------------------------------------------------------------------\n", indent);
+    printf("%s%s\n", indent, splitLine.data());
+    printf("%s%-30s%-30s%-30s%-30s\n", indent, "name", "type", "nullable", "default");
+    printf("%s%s\n", indent, splitLine.data());
     for (int i = 0; i < dbMeta.tableMetas[tableId].columnNum; i++) {
         ColumnDesc column = dbMeta.tableMetas[tableId].columns[i];
         if (strlen(column.name) > 0) {
-            printf("%s%-20s", indent, column.name);
+            printf("%s%-30s", indent, column.name);
             char typeStr[100];
             switch (column.attrType) {
                 case INT:
@@ -212,29 +214,29 @@ RC SM_Manager::DescTable(const char *tbName) {
                 case ATTRARRAY:
                     break;
             }
-            printf("%-20s", typeStr);
-            printf("%-20s", column.allowNull ? "" : "not null");
+            printf("%-30s", typeStr);
+            printf("%-30s", column.allowNull ? "" : "not null");
             if (column.hasDefaultValue) {
                 printf("%s\n", table.formatAttrValueToString(i, column.defaultValue).c_str());
             } else printf("\n");
         }
     }
 
-    printf("%s-----------------------------------------------------------------------------\n", indent);
+    printf("%s%s\n", indent, splitLine.data());
     //索引信息展示
     printf("Index\n");
-    printf("%s-----------------------------------------------------------------------------\n", indent);
-    printf("%s%-20s%-20s\n", indent, "name", "columns");
-    printf("%s-----------------------------------------------------------------------------\n", indent);
+    printf("%s%s\n", indent, splitLine.data());
+    printf("%s%-30s%-30s\n", indent, "name", "columns");
+    printf("%s%s\n", indent, splitLine.data());
     for (auto &index : dbMeta.tableMetas[tableId].indexes)
         if (index.keyNum) {
-            printf("%s%-20s", indent, index.name);
+            printf("%s%-30s", indent, index.name);
             for (int j = 0; j < index.keyNum; j++) {
                 printf("%s%s", GetColumnNameFromId(tableId, index.columnId[j]), j == index.keyNum - 1 ? "" : ",");
             }
             printf("\n");
         }
-    printf("%s-----------------------------------------------------------------------------\n", indent);
+    printf("%s%s\n", indent, splitLine.data());
 
     //主键信息展示
     printf("Primary key\n");
@@ -246,14 +248,14 @@ RC SM_Manager::DescTable(const char *tbName) {
             printf("%s%s", GetColumnNameFromId(tableId, dbMeta.tableMetas[tableId].primaryKey.columnId[j]),
                    j == dbMeta.tableMetas[tableId].primaryKey.keyNum - 1 ? "\n" : ",");
         }
-        printf("%s-----------------------------------------------------------------------------\n", indent);
-        printf("%s%-20s%-20s%-20s\n", indent, "table", "name", "foreign key");
-        printf("%s-----------------------------------------------------------------------------\n", indent);
+        printf("%s%s\n", indent, splitLine.data());
+        printf("%s%-30s%-30s%-30s\n", indent, "table", "name", "foreign key");
+        printf("%s%s\n", indent, splitLine.data());
         for (auto &reference : dbMeta.tableMetas[tableId].primaryKey.references)
             if (reference.keyNum) {
                 printf("%s", indent);
-                printf("%-20s", GetTableNameFromTableId(reference.foreignTable));
-                printf("%-20s", reference.name);
+                printf("%-30s", GetTableNameFromTableId(reference.foreignTable));
+                printf("%-30s", reference.name);
                 for (int j = 0; j < reference.keyNum; j++) {
                     printf("%s%s", GetColumnNameFromId(reference.foreignTable, reference.foreign[j]),
                            j == reference.keyNum - 1 ? "\n" : ",");
@@ -263,24 +265,24 @@ RC SM_Manager::DescTable(const char *tbName) {
 
     //外键信息展示
     printf("Foreign key\n");
-    printf("%s-----------------------------------------------------------------------------\n", indent);
-    printf("%s%-20s%-20s%-20s%-20s\n", indent, "name", "foreign key", "table", "primary key");
-    printf("%s-----------------------------------------------------------------------------\n", indent);
+    printf("%s%s\n", indent, splitLine.data());
+    printf("%s%-30s%-30s%-30s%-30s\n", indent, "name", "foreign key", "table", "primary key");
+    printf("%s%s\n", indent, splitLine.data());
     for (auto &foreignKey : dbMeta.tableMetas[tableId].foreignKeys)
         if (foreignKey.keyNum) {
             printf("%s", indent);
-            printf("%-20s", foreignKey.name);
+            printf("%-30s", foreignKey.name);
             for (int j = 0; j < foreignKey.keyNum; j++) {
                 printf("%s%s", GetColumnNameFromId(tableId, foreignKey.foreign[j]),
                        j == foreignKey.keyNum - 1 ? "" : ",");
             }
-            printf("%-20s", GetTableNameFromTableId(foreignKey.primaryTable));
+            printf("%-30s", GetTableNameFromTableId(foreignKey.primaryTable));
             for (int j = 0; j < foreignKey.keyNum; j++) {
                 printf("%s%s", GetColumnNameFromId(foreignKey.primaryTable, foreignKey.primary[j]),
                        j == foreignKey.keyNum - 1 ? "\n" : ",");
             }
         }
-    printf("%s-----------------------------------------------------------------------------\n", indent);
+    printf("%s%s\n", indent, splitLine.data());
     //显示表数据的前五行
     printf("Front(<=5) rows\n");
     table.showRecords(5);
