@@ -22,6 +22,7 @@ QL_Manager::QL_Manager() : rmManager(RM_Manager::Instance()), ixManager(IX_Manag
 
 RC
 QL_Manager::Insert(const char *tbName, std::vector<const char *> *columnList, std::vector<AttrValue> *constValueList) {
+    auto start_time = clock();
     TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
     SM_Table table(tableId);
@@ -36,6 +37,8 @@ QL_Manager::Insert(const char *tbName, std::vector<const char *> *columnList, st
     char record[table.getRecordSize()];
     TRY(table.setRecordData(record, columnList == nullptr ? nullptr : &columnIdList, constValueList));
     TRY(table.insertRecord(record));
+    auto cost_time = clock() - start_time;
+    printf("\n插入: 共计%d条，成功%d条，花费%.3f秒", 1, 1, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
@@ -77,7 +80,7 @@ RC QL_Manager::Insert(const char *tbName, const char *fileName) {
     }
     fclose(fp);
     auto cost_time = clock() - start_time;
-    printf("插入: 共计%d条，成功%d条，花费%.3f秒\n", totalCount, insertCount, (float) cost_time / CLOCKS_PER_SEC);
+    printf("\n插入: 共计%d条，成功%d条，花费%.3f秒", totalCount, insertCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
@@ -93,7 +96,7 @@ RC QL_Manager::Count(const char *tbName) {
     TableId tableId = SM_Manager::Instance().GetTableIdFromName(tbName);
     if (tableId < 0)return SM_TABLE_NOT_EXIST;
     SM_Table table(tableId);
-    printf("Table %s has %d rows\n", tbName, table.count());
+    printf("\nTable %s has %d rows\n", tbName, table.count());
     return OK_RC;
 }
 

@@ -127,8 +127,8 @@ map<RC, string> msg = {
 
 void printError(RC rc) {
     if (msg.find(rc) == msg.end()) {
-        printf("%s\n", "Sorry. Rc is not recorded in note.");
+        printf("\n%s", "Sorry. Rc is not recorded in note.");
     } else {
-        printf("%s\n", msg[rc].data());
+        printf("\n%s", msg[rc].data());
     }
 }

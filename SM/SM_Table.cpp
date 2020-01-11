@@ -368,7 +368,7 @@ RC SM_Table::createIndex(int indexNo, IndexDesc indexDesc, bool allowDuplicate) 
         TRY(rmFileScan.CloseScan())
     }
     auto cost_time = clock() - start_time;
-    printf("建索引: 共计为%d个条目建立了索引，花费%.3f秒\n", totalCount, (float) cost_time / CLOCKS_PER_SEC);
+    printf("\n建索引: 共计为%d个条目建立了索引，花费%.3f秒", totalCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
@@ -429,7 +429,7 @@ RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) 
         TRY(deleteRecord(rmRecord.getData(), rid))
     }
     auto cost_time = clock() - start_time;
-    printf("删除: 成功删除%d条，花费%.3f秒\n", deleteCount, (float) cost_time / CLOCKS_PER_SEC);
+    printf("\n删除: 成功删除%d条，花费%.3f秒", deleteCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
@@ -508,7 +508,7 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
         }
     }
     auto cost_time = clock() - start_time;
-    printf("更新: 需要更新%d条，成功更新%d条，花费%.3f秒\n", updateCount, updateSuccessCount, (float) cost_time / CLOCKS_PER_SEC);
+    printf("\n更新: 需要更新%d条，成功更新%d条，花费%.3f秒", updateCount, updateSuccessCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
@@ -672,7 +672,7 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
         DO(IX_Manager::Instance().CloseIndex(ixIndexHandle))
     }
     auto cost_time = clock() - start_time;
-    //printf("过滤: 获得%zu条，花费%.3f秒\n", ans.size(), (float) cost_time / CLOCKS_PER_SEC);
+    //printf("\n过滤: 获得%zu条，花费%.3f秒\n", ans.size(), (float) cost_time / CLOCKS_PER_SEC);
     delete myCondition;
     return ans;
 }
@@ -737,7 +737,7 @@ RC SM_Table::orderBy(std::vector<const char *> *orderByColumn, bool increasingOr
         TRY(rmFileHandle.DeleteRec(rmRid))
     }
     auto cost_time = clock() - start_time;
-    printf("排序: 共计%d条，成功按序选取%d条，花费%.3f秒\n", totalCount, orderCount, (float) cost_time / CLOCKS_PER_SEC);
+    printf("\n排序: 共计%d条，成功按序选取%d条，花费%.3f秒", totalCount, orderCount, (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 
