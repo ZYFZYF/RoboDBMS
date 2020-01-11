@@ -149,7 +149,30 @@ RC SM_Manager::AddColumn(const char *tbName, ColumnDesc columnDesc) {
 }
 
 RC SM_Manager::DropColumn(const char *tbName, const char *columnName) {
-    return PF_NOBUF;
+    TableId tableId = GetTableIdFromName(tbName);
+    if (tableId < 0)return SM_TABLE_NOT_EXIST;
+    ColumnId columnId = GetColumnIdFromName(tableId, columnName);
+    if (columnId < 0)return SM_COLUMN_NOT_EXIST;
+    SM_Table table(tableId);
+    std::string preName = dbMeta.tableMetas[tableId].createName;
+    TRY(table.dropColumn(columnId))
+    std::string nowName = dbMeta.tableMetas[tableId].createName;
+    //执行文件的alias操作
+    //记录文件
+    remove(Utils::getRecordFileName(preName.data()).data());
+    rename(Utils::getRecordFileName(nowName.data()).data(), Utils::getRecordFileName(preName.data()).data());
+    //字符池文件
+    remove(Utils::getStringPoolFileName(preName.data()).data());
+    rename(Utils::getStringPoolFileName(nowName.data()).data(), Utils::getStringPoolFileName(preName.data()).data());
+    //索引文件
+    for (int i = 0; i < MAX_INDEX_NUM; i++)
+        if (dbMeta.tableMetas[tableId].indexes[i].keyNum) {
+            remove(Utils::getIndexFileName(preName.data(), i).data());
+            rename(Utils::getIndexFileName(nowName.data(), i).data(),
+                   Utils::getIndexFileName(preName.data(), i).data());
+        }
+    strcpy(dbMeta.tableMetas[tableId].createName, preName.data());
+    return OK_RC;
 }
 
 SM_Manager &SM_Manager::Instance() {

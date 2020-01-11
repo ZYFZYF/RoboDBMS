@@ -38,7 +38,7 @@ QL_Manager::Insert(const char *tbName, std::vector<const char *> *columnList, st
     TRY(table.setRecordData(record, columnList == nullptr ? nullptr : &columnIdList, constValueList));
     TRY(table.insertRecord(record));
     auto cost_time = clock() - start_time;
-    printf("\n插入: 共计%d条，成功%d条，花费%.3f秒", 1, 1, (float) cost_time / CLOCKS_PER_SEC);
+    printf("\n插入: 成功插入1条，花费%.3f秒", (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }
 

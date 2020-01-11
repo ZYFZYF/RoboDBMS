@@ -30,6 +30,7 @@ void SM_Table::init() {
         columnShowLength[i] = std::max(tableMeta.columns[i].stringMaxLength,
                                        std::max(tableMeta.columns[i].attrLength, COLUMN_SHOW_LENGTH));
     }
+    columnOffset[tableMeta.columnNum] = recordSize;
     std::string recordFileName = Utils::getRecordFileName(tableMeta.createName);
     if (access(recordFileName.c_str(), F_OK) < 0) {
         RM_Manager::Instance().CreateFile(recordFileName.c_str(), recordSize);
@@ -845,6 +846,7 @@ bool SM_Table::validForeignKey(IndexDesc indexDesc, TableId primaryTableId) {
 }
 
 RC SM_Table::addColumn(ColumnDesc column) {
+    clock_t start_time = clock();
     if (!column.allowNull && !column.hasDefaultValue && count() > 0)return QL_COLUMN_NOT_ALLOW_NULL;
     if (column.isPrimaryKey || column.hasForeignKey)return SM_NOT_ALLOW_ADD_SPECIAL_KEY;
     if (tableMeta.columnNum == MAX_COLUMN_NUM)return SM_COLUMN_IS_FULL;
@@ -852,8 +854,6 @@ RC SM_Table::addColumn(ColumnDesc column) {
     newTableMeta.columns[newTableMeta.columnNum++] = column;
     //这里有可能越来越长最后出问题
     strcat(newTableMeta.createName, "_backup");
-    //先把索引清了之后再加
-    memset(newTableMeta.indexes, 0, sizeof(newTableMeta.indexes));
     SM_Table table(newTableMeta);
     //遍历所有记录
     RM_FileScan rmFileScan;
@@ -867,7 +867,6 @@ RC SM_Table::addColumn(ColumnDesc column) {
     for (int i = 0; i < MAX_INDEX_NUM; i++) {
         IndexDesc &index = tableMeta.indexes[i];
         if (index.keyNum) {
-            newTableMeta.indexes[i] = index;
             TRY(table.createIndex(i, index, true))
         }
     }
@@ -881,5 +880,83 @@ RC SM_Table::addColumn(ColumnDesc column) {
     TRY(rmFileScan.CloseScan())
     //修改table的meta信息
     tableMeta = newTableMeta;
+    auto cost_time = clock() - start_time;
+    printf("\n增加列: 增加1列，花费%.3f秒", (float) cost_time / CLOCKS_PER_SEC);
+    return OK_RC;
+}
+
+RC SM_Table::dropColumn(ColumnId deleteColumnId) {
+    clock_t start_time = clock();
+    TableMeta newTableMeta = tableMeta;
+    //先把后面的往前挪
+    for (int i = deleteColumnId; i < tableMeta.columnNum - 1; i++) {
+        newTableMeta.columns[i] = newTableMeta.columns[i + 1];
+    }
+    memset(&newTableMeta.columns[tableMeta.columnNum - 1], 0, sizeof(ColumnDesc));
+    newTableMeta.columnNum--;
+
+    //边进行id的转换，边判断是否合法
+    //判断是否牵扯到主键
+    strcat(newTableMeta.createName, "_backup");
+    for (int i = 0; i < newTableMeta.primaryKey.keyNum; i++) {
+        if (newTableMeta.primaryKey.columnId[i] == deleteColumnId) {
+            return SM_CANNOT_DROP_SPECIAL_COLUMN;
+        }
+        if (newTableMeta.primaryKey.columnId[i] > deleteColumnId) {
+            newTableMeta.primaryKey.columnId[i]--;
+        }
+    }
+
+    //判断是否牵扯到主键
+    for (auto &foreignKey:newTableMeta.foreignKeys)
+        if (foreignKey.keyNum) {
+            for (int i = 0; i < foreignKey.keyNum; i++) {
+                if (foreignKey.foreign[i] == deleteColumnId) {
+                    return SM_CANNOT_DROP_SPECIAL_COLUMN;
+                }
+                if (foreignKey.foreign[i] > deleteColumnId) {
+                    foreignKey.foreign[i]--;
+                }
+            }
+        }
+    //判断是否牵扯到索引
+    for (auto &index:newTableMeta.indexes)
+        if (index.keyNum) {
+            for (int i = 0; i < index.keyNum; i++) {
+                if (index.columnId[i] == deleteColumnId) {
+                    return SM_CANNOT_DROP_SPECIAL_COLUMN;
+                }
+                if (index.columnId[i] > deleteColumnId) {
+                    index.columnId[i]--;
+                }
+            }
+        }
+    SM_Table table(newTableMeta);
+    //遍历所有记录
+    RM_FileScan rmFileScan;
+    TRY(rmFileScan.OpenScan(rmFileHandle))
+    RM_Record rmRecord;
+    //把索引恢复,之后一条一条加入
+    for (int i = 0; i < MAX_INDEX_NUM; i++) {
+        IndexDesc &index = newTableMeta.indexes[i];
+        if (index.keyNum) {
+            TRY(table.createIndex(i, index, true))
+        }
+    }
+    //插入所有记录
+    char record[table.getRecordSize()];
+    while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
+        memcpy(record, rmRecord.getData(), columnOffset[deleteColumnId]);
+        if (deleteColumnId < tableMeta.columnNum - 1) {
+            memcpy(record + columnOffset[deleteColumnId], rmRecord.getData() + columnOffset[deleteColumnId + 1],
+                   recordSize - columnOffset[deleteColumnId + 1]);
+        }
+        TRY(table.insertRecord(record, false))
+    }
+    TRY(rmFileScan.CloseScan())
+    //修改table的meta信息
+    tableMeta = newTableMeta;
+    auto cost_time = clock() - start_time;
+    printf("\n删除列: 删除1列，花费%.3f秒", (float) cost_time / CLOCKS_PER_SEC);
     return OK_RC;
 }

@@ -87,6 +87,8 @@ public:
 
     RC addColumn(ColumnDesc column);
 
+    RC dropColumn(ColumnId deleteColumnId);
+
 private:
     TableId tableId;
     TableMeta &tableMeta;
