@@ -7,9 +7,9 @@ insert into primary_key values(2,2);
 
 
 drop table foreign_key;
-create table foreign_key(c int primary key, d int);
-insert into foreign_key values(3,1);
-insert into foreign_key values(4,2);
+create table foreign_key(c int primary key, d int, e varchar(10) default 'test');
+insert into foreign_key values(3,1,);
+insert into foreign_key values(4,2,);
 alter table foreign_key add constraint test foreign key (d) references primary_key(a);
 
 alter table primary_key add f int not null default 100;
@@ -27,15 +27,16 @@ alter table foreign_key drop c;//此处drop成功
 alter table foreign_key drop d;//此处出错不能drop特殊列
 alter table foreign_key drop foreign key test;
 alter table foreign_key drop d;//此处drop成功
-alter table foreign_key add l char(10) default 'tatqaq';
+alter table foreign_key add l varchar(10) default 'tatqaq';
+insert into foreign_key values(,233, 'pap');
 desc table primary_key;
 desc table foreign_key;
 
 alter table foreign_key change j my;
-desc table foreign_key;
 select my from foreign_key;
 select * from foreign_key;
 alter table foreign_key change my you varchar(19) default 'pass';
+insert into foreign_key values(,'qaq', 'www');
 select you from foreign_key;
 select * from foreign_key;
 

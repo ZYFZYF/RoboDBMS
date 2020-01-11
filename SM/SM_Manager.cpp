@@ -500,6 +500,7 @@ SM_Manager::AddForeignKey(const char *name, const char *foreignTable, std::vecto
                 index.columnId[j] = foreignKey.foreign[j];
             }
             foreignKey.indexIndex = i;
+            break;
         }
     //检查所有记录里有没有链接到空的主键上去的记录
     SM_Table table(foreignTableId);

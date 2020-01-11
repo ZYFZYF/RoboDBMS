@@ -44,6 +44,8 @@ public:
     static bool isLogic(Operator op);
 
     static bool like(std::string &a, std::string &b);
+
+    static void copy(const char *src, const char *dst);
 };
 
 

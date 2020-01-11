@@ -855,6 +855,8 @@ RC SM_Table::addColumn(ColumnDesc column) {
     newTableMeta.columns[newTableMeta.columnNum++] = column;
     //这里有可能越来越长最后出问题
     strcat(newTableMeta.createName, "_backup");
+    Utils::copy(Utils::getStringPoolFileName(tableMeta.createName).data(),
+                Utils::getStringPoolFileName(newTableMeta.createName).data());
     SM_Table table(newTableMeta);
     //遍历所有记录
     RM_FileScan rmFileScan;
@@ -899,6 +901,8 @@ RC SM_Table::dropColumn(ColumnId deleteColumnId) {
     //边进行id的转换，边判断是否合法
     //判断是否牵扯到主键
     strcat(newTableMeta.createName, "_backup");
+    Utils::copy(Utils::getStringPoolFileName(tableMeta.createName).data(),
+                Utils::getStringPoolFileName(newTableMeta.createName).data());
     for (int i = 0; i < newTableMeta.primaryKey.keyNum; i++) {
         if (newTableMeta.primaryKey.columnId[i] == deleteColumnId) {
             return SM_CANNOT_DROP_SPECIAL_COLUMN;

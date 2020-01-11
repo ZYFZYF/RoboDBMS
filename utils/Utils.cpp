@@ -7,6 +7,7 @@
 #include "Utils.h"
 #include <map>
 #include <set>
+#include <fcntl.h>
 
 #define MAX_ROOT_PATH_LENGTH 100
 
@@ -209,4 +210,20 @@ bool Utils::like(std::string &a, std::string &b) {
     return dfs(a, b, 0, 0);
 }
 
+char buff[1024];
+int len;
+char cmd[100];
+
+void Utils::copy(const char *src, const char *dst) {
+    sprintf(cmd, "cp %s %s", src, dst);
+    system(cmd);
+//    int fd, fd2;
+//    fd = open(src, O_RDONLY);
+//    fd2 = open(dst, O_RDWR | O_CREAT);
+//    while (len = read(fd, buff, 1024)) {
+//        write(fd2, buff, len);
+//    }
+//    close(fd);
+//    close(fd2);
+}
 
