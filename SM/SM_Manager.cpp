@@ -148,7 +148,7 @@ RC SM_Manager::AddColumn(const char *tbName, ColumnDesc columnDesc) {
     return OK_RC;
 }
 
-RC SM_Manager::DropColumn(const char *dbName, const char *columnName) {
+RC SM_Manager::DropColumn(const char *tbName, const char *columnName) {
     return PF_NOBUF;
 }
 

@@ -84,6 +84,7 @@ DDL 	: 	CreateDatabase
 	|	AddIndex
 	|	DropIndex
 	|	AddColumn
+	|	DropColumn
 	;
 
 DML	: 	InsertRow
@@ -151,6 +152,12 @@ ColumnDescList	:	ColumnDescList ',' Column
 AddColumn	:	ALTER TABLE IDENTIFIER ADD Column ';'
 			{
 				DO(SM_Manager::Instance().AddColumn($3,$5));
+			}
+		;
+
+DropColumn	:	ALTER TABLE IDENTIFIER DROP IDENTIFIER ';'
+			{
+				DO(SM_Manager::Instance().DropColumn($3,$5));
 			}
 		;
 

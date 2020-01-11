@@ -863,6 +863,7 @@ RC SM_Table::addColumn(ColumnDesc column) {
         TRY(table.completeAttrValueByColumnId(newTableMeta.columnNum - 1,
                                               newTableMeta.columns[newTableMeta.columnNum -
                                                                    1].defaultValue))
+    //插入所有记录
     char record[table.getRecordSize()];
     while (rmFileScan.GetNextRec(rmRecord) == OK_RC) {
         memcpy(record, rmRecord.getData(), getRecordSize());
@@ -870,6 +871,7 @@ RC SM_Table::addColumn(ColumnDesc column) {
         TRY(table.insertRecord(record, false))
     }
     TRY(rmFileScan.CloseScan())
+    //把索引恢复
     for (int i = 0; i < MAX_INDEX_NUM; i++) {
         IndexDesc &index = tableMeta.indexes[i];
         if (index.keyNum) {
@@ -877,6 +879,7 @@ RC SM_Table::addColumn(ColumnDesc column) {
             TRY(table.createIndex(i, index, true))
         }
     }
+    //修改table的meta信息
     tableMeta = newTableMeta;
     return OK_RC;
 }
