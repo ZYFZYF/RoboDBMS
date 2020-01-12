@@ -30,18 +30,6 @@ public:
 
     RC DropIndex(const char *tbName, const char *indexName);
 
-    RC Load(const char *relName,
-            const char *fileName);
-
-    RC Help();
-
-    RC Help(const char *relName);
-
-    RC Print(const char *relName);
-
-    RC Set(const char *paramName,
-           const char *value);
-
     //课程中额外要求的操作
     RC CreateDb(const char *dbName);
 

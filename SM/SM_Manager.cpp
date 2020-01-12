@@ -62,26 +62,6 @@ RC SM_Manager::DropTable(const char *tbName) {
     return OK_RC;
 }
 
-RC SM_Manager::Load(const char *relName, const char *fileName) {
-    return PF_NOBUF;
-}
-
-RC SM_Manager::Help() {
-    return PF_NOBUF;
-}
-
-RC SM_Manager::Help(const char *relName) {
-    return PF_NOBUF;
-}
-
-RC SM_Manager::Print(const char *relName) {
-    return PF_NOBUF;
-}
-
-RC SM_Manager::Set(const char *paramName, const char *value) {
-    return PF_NOBUF;
-}
-
 RC SM_Manager::CreateDb(const char *dbName) {
     for (auto &db : dbmsMeta.databaseName)
         if (strcmp(db, dbName) == 0) {
