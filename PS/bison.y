@@ -2,8 +2,6 @@
 #include<cstdio>
 #include<vector>
 #include "../Attr.h"
-#include "../PS/PS_Node.h"
-#include "../PS/PS_ShowDatabases.h"
 #include "../PS/PS_Expr.h"
 #include "../SM/SM_Manager.h"
 #include "../utils/PrintError.h"
@@ -19,7 +17,6 @@ TableMeta tableTemp;
   float real;
   char * str;
   enum Operator comparator;
-  PS_Node *node;
   PS_Expr *expr;
   std::vector<PS_Expr> *exprList;
   ColumnDesc columnDesc;
