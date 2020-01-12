@@ -428,7 +428,7 @@ RC SM_Table::deleteWhereConditionSatisfied(std::vector<PS_Expr> *conditionList) 
     clock_t start_time = clock();
     RM_Record rmRecord;
     int deleteCount = 0;
-    auto ridList = filter(conditionList);
+    auto ridList = filter(conditionList, true);
     for (auto &rid:ridList) {
         rmFileHandle.GetRec(rid, rmRecord);
         deleteCount++;
@@ -490,7 +490,7 @@ RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS
     int updateCount = 0, updateSuccessCount = 0;
     RM_Record rmRecord;
     char newRecord[recordSize];
-    auto ridList = filter(conditionList);
+    auto ridList = filter(conditionList, true);
     for (auto &rid:ridList) {
         rmFileHandle.GetRec(rid, rmRecord);
         updateCount++;
@@ -574,7 +574,7 @@ RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &e
     return OK_RC;
 }
 
-std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
+std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList, bool allSatisfied) {
     clock_t start_time = clock();
     auto myCondition = new std::vector<PS_Expr>;
     for (const auto &expr : *conditionList) {
@@ -634,7 +634,6 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
             }
         }
     }
-
     std::vector<RM_RID> ans;
     //如果没找到索引，则遍历全局找到满足条件的
     if (optimizeIndex == -1) {
@@ -650,7 +649,9 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
                 conditionSatisfied &= condition.value.boolValue;
                 if (!conditionSatisfied)break;
             }
-            if (conditionSatisfied)ans.emplace_back(rmRid);
+            if (conditionSatisfied &&
+                (!allSatisfied || (allSatisfied && myCondition->size() == conditionList->size())))
+                ans.emplace_back(rmRid);
         }
         DO(rmFileScan.CloseScan())
     } else {
@@ -672,7 +673,8 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList) {
                 conditionSatisfied &= condition.value.boolValue;
                 if (!conditionSatisfied)break;
             }
-            if (conditionSatisfied)ans.emplace_back(rmRid);
+            if (conditionSatisfied && (!allSatisfied || (allSatisfied && myCondition->size() == conditionList->size())))
+                ans.emplace_back(rmRid);
         }
         DO(ixIndexScan.CloseScan())
         DO(IX_Manager::Instance().CloseIndex(ixIndexHandle))

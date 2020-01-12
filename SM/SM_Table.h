@@ -75,7 +75,7 @@ public:
     RC getRecordFromRID(RM_RID &rmRid, RM_Record &rmRecord);
 
     //从一系列限制中返回一个RM_RID list
-    std::vector<RM_RID> filter(std::vector<PS_Expr> *conditionList);
+    std::vector<RM_RID> filter(std::vector<PS_Expr> *conditionList, bool allSatisfied = false);
 
     int getRecordSize() const;
 
