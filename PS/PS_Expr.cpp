@@ -567,9 +567,15 @@ RC PS_Expr::initAggregation(Operator op, PS_Expr *expr) {
             string = expr->string;
             break;
         }
-        case AVG_OP:
-        case SUM_OP: {
+        case AVG_OP: {
             if (expr->type == INT)value.floatValue = expr->value.intValue;
+            else if (expr->type == FLOAT)value.floatValue = expr->value.floatValue;
+            else
+                throw "Not supported aggregation column";
+            break;
+        }
+        case SUM_OP: {
+            if (expr->type == INT)value.intValue = expr->value.intValue;
             else if (expr->type == FLOAT)value.floatValue = expr->value.floatValue;
             else
                 throw "Not supported aggregation column";
