@@ -128,6 +128,9 @@
  - Expr里面的字符串都用std::string来表示
  - 需要一个得到行数的函数
  - 列的话不需要一开始就知道type
+ 
+ SELECT * FROM orders WHERE O_CLERK like 'clerk%';
+ delete from customer where C_CUSTKEY == 5;
 ## Reference
  - https://github.com/huzecong/rebaseDB/tree/initial (Initial Redbase)
  - https://github.com/yifeih/redbase

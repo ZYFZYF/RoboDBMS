@@ -784,6 +784,7 @@ Operator SM_Table::composeIndexKeyByExprList(std::vector<PS_Expr> *exprList, Ind
 Operator SM_Table::findAndCopy(ColumnId columnId, std::vector<PS_Expr> *exprList, char *key) {
     for (auto &expr: *exprList)
         if (tableMeta.getColumnIdByName(expr.left->columnName.data()) == columnId) {
+            if (expr.op == IN_OP || expr.op == NIN_OP)continue;
             switch (tableMeta.columns[columnId].attrType) {
                 case INT: {
                     memcpy(key, &expr.right->value.intValue, tableMeta.columns[columnId].attrLength);

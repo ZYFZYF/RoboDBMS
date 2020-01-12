@@ -576,7 +576,7 @@ BoolExpr	:	BoolExpr C_OR BoolExpr
                         }
                 |	ValueExpr P_IN '(' ConstExprList ')'
                 	{
-                		//printf("%d\n",$4->size());
+                		printf("%d\n",$4->size());
 				$$ = new PS_Expr($1, IN_OP, new PS_Expr($4));
                 	}
                 |	ValueExpr P_NOT P_IN '(' ConstExprList ')'

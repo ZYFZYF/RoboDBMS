@@ -54,6 +54,7 @@ PS_Expr::PS_Expr(char *tbName, char *colName) {
 }
 
 PS_Expr::PS_Expr(std::vector<PS_Expr> *_exprList) {
+    auto expr1 = (*_exprList)[0], expr2 = (*_exprList)[1];
     isColumn = false;
     isConst = true;
     type = ATTRARRAY;
