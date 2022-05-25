@@ -9,7 +9,7 @@
 #include "../SM/SM_Table.h"
 
 //第一次循环用来计算聚合函数的值
-bool is_first_iteration = true;
+bool is_first_iteration_round = true;
 int aggregation_count = 0;
 std::map<std::pair<std::string, int>, PS_Expr> group_aggregation_expr{};
 
@@ -387,7 +387,7 @@ RC PS_Expr::pushUp(std::string group) {
             case AVG_OP:
             case COUNT_OP: {
                 //第一次的时候算到这儿卡住，上面的计算就不要了
-                if (is_first_iteration) {
+                if (is_first_iteration_round) {
                     type = UNKNOWN;
                     if (aggregationIndex == 0)aggregationIndex = ++aggregation_count;
                     auto key = std::make_pair(group, aggregationIndex);

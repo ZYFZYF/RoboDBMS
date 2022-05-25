@@ -34,6 +34,7 @@ private:
     SM_Table *smTable;
     bool isFirstIterate{};
     std::string name;
+    //记录查询结果的行数
     int totalCount{};
 };
 

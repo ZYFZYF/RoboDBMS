@@ -155,6 +155,7 @@ RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *t
     return OK_RC;
 }
 
+//select的结果会写入name表中
 TableMeta
 QL_Manager::getTableFromSelect(const char *name, std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
                                std::vector<PS_Expr> *conditionList, std::vector<PS_Expr> *groupByList,

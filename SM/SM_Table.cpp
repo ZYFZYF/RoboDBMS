@@ -574,6 +574,7 @@ RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &e
     return OK_RC;
 }
 
+//TODO: 这里是把满足条件的RM_RID全部放到内存里了，实际上这个可能不太现实
 std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList, bool allSatisfied) {
     clock_t start_time = clock();
     auto myCondition = new std::vector<PS_Expr>;
@@ -628,6 +629,7 @@ std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList, bool a
             IndexDesc &index = tableMeta.indexes[i];
             if (index.keyNum) {
                 char key[getIndexKeyLength(index)];
+                //能用联合索引的先用联合索引
                 if (composeIndexKeyByExprList(myCondition, index, key) != NO_OP && index.keyNum > maxSolvedColumn) {
                     optimizeIndex = i;
                 }
@@ -765,6 +767,7 @@ std::vector<PS_Expr> *SM_Table::extractValueInRecords() {
 
 Operator SM_Table::composeIndexKeyByExprList(std::vector<PS_Expr> *exprList, IndexDesc indexDesc, char *key) {
     if (indexDesc.keyNum == 1) {
+        //单一索引可以支持任意op
         ColumnId columnId = indexDesc.columnId[0];
         return findAndCopy(columnId, exprList, key);
     } else {
@@ -774,6 +777,7 @@ Operator SM_Table::composeIndexKeyByExprList(std::vector<PS_Expr> *exprList, Ind
             ColumnId columnId = indexDesc.columnId[i];
             *(AttrType *) (key + length) = tableMeta.columns[columnId].attrType;
             *(int *) (key + length + ATTR_TYPE_LENGTH) = tableMeta.columns[columnId].attrLength;
+            //为了简化策略，联合索引必须是=，并且每个key都得在表达式里出现
             if (findAndCopy(columnId, exprList, key + length + ATTR_TYPE_LENGTH + 4) != EQ_OP) {
                 return NO_OP;
             }

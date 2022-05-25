@@ -8,8 +8,11 @@
 #include "../utils/PrintError.h"
 #include <set>
 
-extern bool is_first_iteration;
+//groupBy的话要扫描两遍，标记是不是第一遍
+extern bool is_first_iteration_round;
+//对每个组可能有不同的聚合函数，因此不能直接用group作为最终结果查询的key，选择新增一维aggregationIndex，每次碰到一个新的group中的一次聚合，就aggregationIndex++（其实这样可以省略group）
 extern int aggregation_count;
+//记录已经计算结束的group，没有group语句的不更新
 std::set<std::string> insertGroups;
 extern std::map<std::pair<std::string, int>, PS_Expr> group_aggregation_expr;
 
@@ -76,14 +79,14 @@ QL_MultiTable::select(std::vector<PS_Expr> *_valueList, std::vector<PS_Expr> *_c
     name = _name;
     insertGroups.clear();
     group_aggregation_expr.clear();
-    is_first_iteration = true;
+    is_first_iteration_round = true;
     isFirstIterate = true;
     aggregation_count = 0;
     DO(iterateTables(0))
     //如果发现了聚合函数，那么需要进行第二遍扫描
     if (aggregation_count > 0 || groupByList != nullptr) {
         insertGroups.clear();
-        is_first_iteration = false;
+        is_first_iteration_round = false;
         isFirstIterate = true;
         DO(iterateTables(0))
     }
@@ -132,7 +135,7 @@ std::pair<int, ColumnId> QL_MultiTable::getColumn(std::string &tbName, std::stri
 
 RC QL_MultiTable::iterateTables(int n) {
     if (n == tableNum) {
-        //获取所属组的信息
+        //获取所属组的信息，用字符串来表示
         std::string group{};
         if (groupByList) {
             for (auto &groupColumn:*groupByList) {
@@ -140,9 +143,9 @@ RC QL_MultiTable::iterateTables(int n) {
                 group += groupColumn.to_string();
             }
         } else group = "NULL";
-
-        bool canInsert = !is_first_iteration || (aggregation_count == 0 && groupByList == nullptr);
-        //枚举到头了
+        //第二轮或者没有group by可以插入
+        bool canInsert = !is_first_iteration_round || (aggregation_count == 0 && groupByList == nullptr);
+        //第一次枚举到头
         if (isFirstIterate) {
             memset(&targetMeta, 0, sizeof(TableMeta));
             targetMeta.tableId = -1;
@@ -152,7 +155,7 @@ RC QL_MultiTable::iterateTables(int n) {
             for (auto &value:*valueList) {
                 TRY(eval(value, group))
             }
-            canInsert = !is_first_iteration || (aggregation_count == 0 && groupByList == nullptr);
+            canInsert = !is_first_iteration_round || (aggregation_count == 0 && groupByList == nullptr);
             if (canInsert) {
                 for (auto &value:*valueList) {
                     //TODO 注意，这样的转换会脱掉一些信息，比如float的位数信息
@@ -164,6 +167,7 @@ RC QL_MultiTable::iterateTables(int n) {
                             targetMeta.columns[targetMeta.columnNum].attrLength = 4;
                             break;
                         }
+                        //groupby第一次循环的时候会把字符串的最大长度求出来
                         case STRING: {
                             targetMeta.columns[targetMeta.columnNum].attrLength = value.stringMaxLength;
                             break;
@@ -220,6 +224,7 @@ RC QL_MultiTable::iterateTables(int n) {
     return OK_RC;
 }
 
+//对该分组group下求表达式value的值
 //maxI用来限制只能选择前多少个枚举的表
 RC QL_MultiTable::eval(PS_Expr &value, std::string group, int maxI) {
     //常数直接返回

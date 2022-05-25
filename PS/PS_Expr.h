@@ -10,7 +10,7 @@
 #include "../SM/SM_Constant.h"
 #include<map>
 
-extern bool is_first_iteration;
+extern bool is_first_iteration_round;
 extern int aggregation_count;
 
 
@@ -75,8 +75,8 @@ private:
     int stringMaxLength{};
     //聚合相关
     int aggregationIndex{0};
-    int updateCount{0};
-    //存一个list，用来解决in
+    int updateCount{0}; //该分组已经有多少个元素了
+    //存一个list，用来解决in（本来是一个right存一个表达式，有些情况右侧是多个表达式，那么弃用right，用这个list存）
     std::vector<PS_Expr> *exprList{nullptr};
     bool isAny{false};
 

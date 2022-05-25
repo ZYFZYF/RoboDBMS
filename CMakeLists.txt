@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(RoboDBMS)
-add_definitions(-std=c++17)
+add_definitions(-std=c++14)
 set(HEADER
         ${HEADER}
         ${CMAKE_CURRENT_SOURCE_DIR}/Constant.h
