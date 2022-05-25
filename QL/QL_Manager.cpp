@@ -112,10 +112,11 @@ RC QL_Manager::Update(const char *tbName, std::vector<std::pair<std::string, PS_
     return OK_RC;
 }
 
+//select总是会把结果存下来，然后show之后进行删除
 RC QL_Manager::Select(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
                       std::vector<PS_Expr> *conditionList, std::vector<PS_Expr> *groupByList,
                       std::vector<const char *> *orderByColumn, bool increaseOrder, int limitOffset, int limitLength) {
-    std::string name = "zyfdsb";
+    std::string name = "select_temp";
     auto *multiTable = new QL_MultiTable(tableMetaList);
     if (conditionList == nullptr)conditionList = new std::vector<PS_Expr>;
     if (groupByList != nullptr) {

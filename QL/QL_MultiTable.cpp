@@ -14,6 +14,7 @@ extern bool is_first_iteration_round;
 extern int aggregation_count;
 //记录已经计算结束的group，没有group语句的不更新
 std::set<std::string> insertGroups;
+//TODO: 实际场景的话，该hashTable不一定能在内存里全部存的下（本质上我们需要实现一个基于磁盘的HashMap）
 extern std::map<std::pair<std::string, int>, PS_Expr> group_aggregation_expr;
 
 QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
@@ -32,15 +33,18 @@ QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
     //for (int i = 0; i < tableNum; i++)std::cout << index[i] << ' ' << recordNum[index[i]] << std::endl;
     int maxRecordNum = 0;
     for (int i = 0; i < tableNum; i++)maxRecordNum = std::max(maxRecordNum, recordNum[i]);
-    int minCost = 1 << 30;
+    long long minCost = 1 << 30;
     int minCostIndex = 0;
     int indexCount = 0;
+    //简单估计了，对不同表的遍历顺序对结果的一个影响，最终结论应当是小表在前最好（其实根本不用估计，很直观的结论）
     do {
-        int cost = 0, nowRecord = 1;
+        long long cost = 0, nowRecord = 1;
         for (int i = 0; i < tableNum; i++) {
             cost += nowRecord;
-            if (nowRecord != maxRecordNum)nowRecord *= recordNum[index[i]];
-            if (recordNum[index[i]] == maxRecordNum)nowRecord = maxRecordNum;
+            // TODO: 这里的估计可能有点问题，就算不到最大的表这儿，nowRecord也可能已经非常大了
+            // if (nowRecord != maxRecordNum)nowRecord *= recordNum[index[i]];
+            // if (recordNum[index[i]] == maxRecordNum)nowRecord = maxRecordNum;
+            nowRecord *= recordNum[index[i]];
         }
         cost += nowRecord;
         if (cost < minCost) {
@@ -50,7 +54,7 @@ QL_MultiTable::QL_MultiTable(std::vector<TableMeta> *tableMetaList) {
         indexCount++;
         printf("\n表的顺序为 ");
         for (int j = 0; j < tableNum; j++)printf(" %s:%d ", (*tableMetaList)[index[j]].name, recordNum[index[j]]);
-        printf("时预计耗费为%d", cost);
+        printf("时预计耗费为%lld", cost);
     } while (std::next_permutation(index, index + tableNum));
     for (int i = 0; i < tableNum; i++)index[i] = i;
     for (int i = 0; i < minCostIndex; i++)std::next_permutation(index, index + tableNum);
@@ -212,6 +216,7 @@ RC QL_MultiTable::iterateTables(int n) {
         isFirstIterate = false;
     } else {
         //每次看情况拿下一次的节点
+        //TODO: 这里最好是用迭代器来实现，而不是全加载到内存
         auto ridList = tableList[n].filter(conditionList);
         for (auto &rid : ridList) {
             tableList[n].getRecordFromRID(rid, recordList[n]);

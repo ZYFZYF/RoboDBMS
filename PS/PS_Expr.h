@@ -39,7 +39,7 @@ public:
 
     PS_Expr(PS_Expr *_left, Operator _op, bool _isAny, std::vector<PS_Expr> *_exprList);
 
-    PS_Expr(char *tbName, char *colName);
+    PS_Expr(const char *tbName, const char *colName);
 
     //运算得到的类型
     PS_Expr(PS_Expr *_left, Operator _op, PS_Expr *_right);

@@ -698,6 +698,7 @@ RC SM_Table::clear() {
     std::string stringPoolFileName = Utils::getStringPoolFileName(tableMeta.name);
     TRY(SP_Manager::DestroyStringPool(stringPoolFileName.c_str()))
     //TODO 删除索引等
+    return OK_RC;
 }
 
 //必须保证该table是刚一条一条插入进来的，该操作结果才正确

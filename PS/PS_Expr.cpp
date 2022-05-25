@@ -45,7 +45,7 @@ PS_Expr::PS_Expr(char *_value) {
     stringMaxLength = string.size();
 }
 
-PS_Expr::PS_Expr(char *tbName, char *colName) {
+PS_Expr::PS_Expr(const char *tbName, const char *colName) {
     isColumn = true;
     type = UNKNOWN;
     if (tbName == nullptr)tableName = "";

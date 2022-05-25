@@ -32,6 +32,7 @@ public:
                        bool increaseOrder = true,
                        int limitOffset = 0, int limitLength = -1);
 
+    //将一个select语句转为一个list(const)或者const的方法
     std::vector<PS_Expr> *getExprListFromSelect(std::vector<PS_Expr> *valueList, std::vector<TableMeta> *tableMetaList,
                                                 std::vector<PS_Expr> *conditionList,
                                                 std::vector<PS_Expr> *groupByList,
