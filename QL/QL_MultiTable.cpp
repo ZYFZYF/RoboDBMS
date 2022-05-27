@@ -137,6 +137,9 @@ std::pair<int, ColumnId> QL_MultiTable::getColumn(std::string &tbName, std::stri
     }
 }
 
+// 目前是用的最简单的方式 Simple/Stupid Nested Loop Join，尽可能用了Index
+// TODO: 更好的做法是join的时候两个表排序，然后双指针（或者说类似归并），但排序比较耗时，所以如果两个表在这上面都有B+树索引的话，就更容易做了
+// 排序也是不需要的，有hash即可（类似于给第一个表建了一个hash索引，还可以用一个布隆过滤器来加速不存在的键的查找，build + probe） 如果写不到内存里，就先partition到磁盘里，每个分片分别join
 RC QL_MultiTable::iterateTables(int n) {
     if (n == tableNum) {
         //获取所属组的信息，用字符串来表示

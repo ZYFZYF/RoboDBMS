@@ -475,6 +475,7 @@ int SM_Table::count() {
     return rmFileHandle.GetRecordCount();
 }
 
+// TODO: 更新这里也是拿出了所有的节点，但是如果因为内存原因改成iterator后有可能会出现halloween problem，即同一个被处理多次
 RC SM_Table::updateWhereConditionSatisfied(std::vector<std::pair<std::string, PS_Expr> > *assignExprList,
                                            std::vector<PS_Expr> *conditionList) {
     clock_t start_time = clock();
@@ -575,6 +576,7 @@ RC SM_Table::setColumnDataByExpr(char *columnData, ColumnId columnId, PS_Expr &e
 }
 
 //TODO: 这里是把满足条件的RM_RID全部放到内存里了，实际上这个可能不太现实
+//TODO: 这里是选了一个index，然后sequence scan，其实有多个index的话可以每个用一遍，然后求交，哪怕之后再sequence scan
 std::vector<RM_RID> SM_Table::filter(std::vector<PS_Expr> *conditionList, bool allSatisfied) {
     clock_t start_time = clock();
     auto myCondition = new std::vector<PS_Expr>;
